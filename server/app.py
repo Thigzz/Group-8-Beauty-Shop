@@ -1,4 +1,3 @@
-from os
 from flask import Flask
 from flask_cors import CORS
 
@@ -10,4 +9,5 @@ def home():
     return {"message": "Hello, World!"}
 
 if __name__ == '__main__':
+
     app.run(debug=True)
