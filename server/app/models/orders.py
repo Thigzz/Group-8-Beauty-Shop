@@ -6,6 +6,8 @@ from app.extensions import db
 from app.models.enums import OrderStatus
 
 
+
+
 class Order(db.Model):
     __tablename__ = "orders"
 

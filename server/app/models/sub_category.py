@@ -4,6 +4,7 @@ from sqlalchemy import Column, String, DateTime, func, ForeignKey
 from sqlalchemy.orm import relationship
 from app.extensions import db
 
+
 class SubCategory(db.Model):
     __tablename__ = "sub_categories"
 

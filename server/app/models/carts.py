@@ -5,6 +5,7 @@ from sqlalchemy.orm import relationship
 from app.extensions import db
 from app.models.enums import CartStatus  
 
+
 class Cart(db.Model):
     __tablename__ = "carts"
 
@@ -14,5 +15,5 @@ class Cart(db.Model):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())
 
-    user = relationship("User", backref="carts")
+    user = relationship("User", back_populates="carts")
     items = relationship("CartItem", back_populates="cart", cascade="all, delete-orphan")

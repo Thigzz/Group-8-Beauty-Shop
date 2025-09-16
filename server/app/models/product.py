@@ -1,7 +1,11 @@
 from datetime import datetime
+import uuid
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 from app.extensions import db
 from app.models.enums import *
-import uuid
+
 
 class Product(db.Model):
     __tablename__ = 'products'
@@ -13,8 +17,14 @@ class Product(db.Model):
     stock_qty = db.Column(db.Integer, nullable=False)
     image_url = db.Column(db.String(255))
     category_id = db.Column(db.String(36), db.ForeignKey('categories.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
+    sub_category_id = db.Column(UUID(as_uuid=True), db.ForeignKey("sub_categories.id"), nullable=False)
+
+    created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
+
+    # relationships
+    category = relationship("Category", back_populates="products")
+    sub_category = relationship("SubCategory", back_populates="products")
+
     def __repr__(self):
         return f'<Product {self.product_name}>'
     
@@ -27,5 +37,6 @@ class Product(db.Model):
             'stock_qty': self.stock_qty,
             'image_url': self.image_url,
             'category_id': self.category_id,
+            'sub_category_id': str(self.sub_category_id),
             'created_at': self.created_at.isoformat() if self.created_at else None
         }

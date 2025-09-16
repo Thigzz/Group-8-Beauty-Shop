@@ -16,6 +16,6 @@ class DevelopmentConfig(Config):
 
 class ProductionConfig(Config):
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
+    SQLALCHEMY_DATABASE_URI = os.getenv("sqlite:///beauty_shop.db")
     JWT_COOKIE_SECURE = True          
     JWT_COOKIE_SAMESITE = "None" 

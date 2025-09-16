@@ -6,6 +6,8 @@ from app.extensions import db
 from app.models.enums import CartItemStatus
 
 
+
+
 class CartItem(db.Model):
     __tablename__ = "cart_items"
 

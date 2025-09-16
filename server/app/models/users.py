@@ -5,6 +5,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from .base import Base
 import enum
+from app.extensions import db  
 
 
 class UserRole(enum.Enum):
@@ -14,8 +15,6 @@ class UserRole(enum.Enum):
 
 class User(Base):
     __tablename__ = "users"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
     username = Column(String, unique=True, nullable=False)
@@ -24,11 +23,12 @@ class User(Base):
     secondary_phone_no = Column(String, nullable=True)
     role = Column(Enum(UserRole), default=UserRole.customer)
     password_hash = Column(String, nullable=False)
-    created_at = Column(TIMESTAMP, default=datetime.utcnow)
-    updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+
     last_loggedin_date = Column(TIMESTAMP, nullable=True)
     is_active = Column(Boolean, default=True)
     force_password_reset = Column(Boolean, default=False)
 
     # Relationships section
     addresses = relationship("Address", back_populates="user")
+    security_questions = relationship("UserSecurityQuestion", back_populates="user")
+    carts = relationship("Cart", back_populates="user", cascade="all, delete-orphan") 

@@ -5,6 +5,8 @@ from sqlalchemy.orm import relationship
 from app.extensions import db
 
 
+
+
 class OrderItem(db.Model):
     __tablename__ = "order_items"
 

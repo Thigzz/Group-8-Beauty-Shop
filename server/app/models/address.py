@@ -3,6 +3,8 @@ from sqlalchemy import Column, String, Boolean, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from .base import Base
+from app.extensions import db  
+
 
 
 class Address(Base):

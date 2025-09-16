@@ -3,6 +3,7 @@ from app.extensions import db
 from app.models.enums import PaymentMethod
 import uuid
 
+
 class Payment(db.Model):
     __tablename__ = 'payments'
     

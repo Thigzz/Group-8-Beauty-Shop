@@ -2,6 +2,8 @@ from datetime import datetime
 from app.extensions import db
 from app.models.enums import PaymentStatus
 import uuid
+from app.extensions import db
+
 
 class Invoice(db.Model):
     __tablename__ = 'invoices'

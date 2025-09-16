@@ -6,6 +6,7 @@ from sqlalchemy.orm import relationship
 from app.extensions import db
 
 
+
 class PasswordResetAudit(db.Model):
     __tablename__ = "password_reset_audit"
 

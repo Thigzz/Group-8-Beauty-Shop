@@ -1,9 +1,6 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import os
-
-db = SQLAlchemy()
 
 def create_app():
     app = Flask(__name__)
@@ -12,9 +9,16 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///beauty_shop.db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
-    # Initializiing extensions
+    # Import extensions
+    from app.extensions import db, migrate
+    
+    # Initialize extensions
     db.init_app(app)
+    migrate.init_app(app, db) 
     CORS(app)
+    
+    # Import models AFTER extensions are initialized
+    from app import models
     
     @app.route('/')
     def home():
