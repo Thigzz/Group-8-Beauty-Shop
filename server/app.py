@@ -1,13 +1,11 @@
-from flask import Flask
-from flask_cors import CORS
+import os
+from app import create_app
+from app.extensions import db
 
-app = Flask(__name__)
-CORS(app)
-
-@app.route('/')
-def home():
-    return {"message": "Hello, World!"}
+# Create the Flask application using the app factory
+app = create_app()
 
 if __name__ == '__main__':
-
+    with app.app_context():
+        db.create_all()  # Create database tables
     app.run(debug=True)
