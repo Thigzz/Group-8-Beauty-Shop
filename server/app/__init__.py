@@ -1,21 +1,23 @@
-import os
 from flask import Flask
-from .extensions import db, migrate
-from app.config import  DevelopmentConfig, ProductionConfig
-from app import models  
+from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
+import os
+
+db = SQLAlchemy()
 
 def create_app():
     app = Flask(__name__)
-
- # config class based on FLASK_ENV
-    env = os.getenv("FLASK_ENV", "development")
-    if env == "production":
-        app.config.from_object(ProductionConfig)
-    else:
-        app.config.from_object(DevelopmentConfig)
-
+    
+    # DB configuration
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///beauty_shop.db')
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    
+    # Initializiing extensions
     db.init_app(app)
-    migrate.init_app(app, db)
-
-
+    CORS(app)
+    
+    @app.route('/')
+    def home():
+        return {"message": "Hello, World!"}
+    
     return app
