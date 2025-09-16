@@ -24,3 +24,18 @@ dist-ssr
 *.sw?
 venv
 venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+
+# Environments
+venv/
+.env
+
+# Pip installer (not needed in repo)
+get-pip.py
