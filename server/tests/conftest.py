@@ -11,7 +11,6 @@ from app.models.users import User, UserRole
 
 @pytest.fixture(scope='module')
 def new_user():
-    """Fixture for creating a new user for testing."""
     user = User(
         first_name='Test',
         last_name='User',
@@ -25,7 +24,6 @@ def new_user():
 
 @pytest.fixture(scope='module')
 def new_admin():
-    """Fixture for creating a new admin user for testing."""
     admin = User(
         first_name='Admin',
         last_name='User',
@@ -37,10 +35,9 @@ def new_admin():
     admin.set_password('password123')
     return admin
 
-
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def test_client():
-    """Fixture for providing a test client."""
+    """Fixture to create a new app and client for each test function."""
     flask_app = create_app()
     flask_app.config.update({
         "TESTING": True,
