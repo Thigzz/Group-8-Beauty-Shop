@@ -2,17 +2,15 @@ from datetime import datetime
 from app.extensions import db
 from app.models.enums import PaymentMethod
 import uuid
+from .base import Base, USE_POSTGRES, PG_UUID
+from sqlalchemy import Column, String, Boolean, ForeignKey
 
-
-class Payment(db.Model):
+class Payment(Base):
     __tablename__ = 'payments'
-    
-    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     invoice_id = db.Column(db.String(36), db.ForeignKey('invoices.id'), nullable=False)
     payment_method = db.Column(db.Enum(PaymentMethod), default=PaymentMethod.mpesa)
     amount = db.Column(db.Numeric(10, 2), nullable=False)
     transaction_id = db.Column(db.String(255), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def __repr__(self):
         return f'<Payment {self.transaction_id}>'

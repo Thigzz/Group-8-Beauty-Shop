@@ -1,8 +1,9 @@
 import uuid
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from faker import Faker
 from werkzeug.security import generate_password_hash
+import os
 
 from app import create_app
 from app.extensions import db
@@ -19,60 +20,66 @@ from app.models.payment import Payment
 from app.models.security_question import SecurityQuestion
 from app.models.user_security_questions import UserSecurityQuestion
 from app.models.invoice import Invoice
-from app.models.enums import PaymentStatus
-
+from app.models.enums import PaymentStatus, OrderStatus
 
 fake = Faker()
-
 app = create_app()
 
+USE_POSTGRES = os.getenv("DATABASE_URL", "").startswith("postgres")
+
+def get_uuid():
+    return uuid.uuid4() if USE_POSTGRES else str(uuid.uuid4())
+
 with app.app_context():
-    # Reset database (DEV only!)
+    # ---------- Reset DB ----------
     db.drop_all()
     db.create_all()
 
-    # ---------- CATEGORIES ----------
+    # ---------- Categories ----------
     categories = [
-        Category(id=uuid.uuid4(), category_name="MakeUp"),
-        Category(id=uuid.uuid4(), category_name="Skincare"),
-        Category(id=uuid.uuid4(), category_name="Fragrance"),
-        Category(id=uuid.uuid4(), category_name="Haircare"),
-        Category(id=uuid.uuid4(), category_name="Accessories"),
+        Category(category_name="MakeUp"),
+        Category(category_name="Skincare"),
+        Category(category_name="Fragrance"),
+        Category(category_name="Haircare"),
+        Category(category_name="Accessories"),
     ]
     db.session.add_all(categories)
+    db.session.commit()
+    print(f"✅ Seeded {len(categories)} categories")
 
-    # ---------- SUBCATEGORIES ----------
+    # ---------- Subcategories ----------
     subcategories = [
         # MakeUp
-        SubCategory(id=uuid.uuid4(), category=categories[0], sub_category_name="Face"),
-        SubCategory(id=uuid.uuid4(), category=categories[0], sub_category_name="Lips"),
-        SubCategory(id=uuid.uuid4(), category=categories[0], sub_category_name="Nails"),
-        SubCategory(id=uuid.uuid4(), category=categories[0], sub_category_name="Eyes"),
+        SubCategory(category=categories[0], sub_category_name="Face"),
+        SubCategory(category=categories[0], sub_category_name="Lips"),
+        SubCategory(category=categories[0], sub_category_name="Nails"),
+        SubCategory(category=categories[0], sub_category_name="Eyes"),
         # Skincare
-        SubCategory(id=uuid.uuid4(), category=categories[1], sub_category_name="Face"),
-        SubCategory(id=uuid.uuid4(), category=categories[1], sub_category_name="Body"),
-        SubCategory(id=uuid.uuid4(), category=categories[1], sub_category_name="Sun Care"),
+        SubCategory(category=categories[1], sub_category_name="Face"),
+        SubCategory(category=categories[1], sub_category_name="Body"),
+        SubCategory(category=categories[1], sub_category_name="Sun Care"),
         # Fragrance
-        SubCategory(id=uuid.uuid4(), category=categories[2], sub_category_name="Men"),
-        SubCategory(id=uuid.uuid4(), category=categories[2], sub_category_name="Women"),
+        SubCategory(category=categories[2], sub_category_name="Men"),
+        SubCategory(category=categories[2], sub_category_name="Women"),
         # Haircare
-        SubCategory(id=uuid.uuid4(), category=categories[3], sub_category_name="Shampoo"),
-        SubCategory(id=uuid.uuid4(), category=categories[3], sub_category_name="Conditioner"),
-        SubCategory(id=uuid.uuid4(), category=categories[3], sub_category_name="Styling"),
-        SubCategory(id=uuid.uuid4(), category=categories[3], sub_category_name="Treatments"),
+        SubCategory(category=categories[3], sub_category_name="Shampoo"),
+        SubCategory(category=categories[3], sub_category_name="Conditioner"),
+        SubCategory(category=categories[3], sub_category_name="Styling"),
+        SubCategory(category=categories[3], sub_category_name="Treatments"),
         # Accessories
-        SubCategory(id=uuid.uuid4(), category=categories[4], sub_category_name="Brushes"),
-        SubCategory(id=uuid.uuid4(), category=categories[4], sub_category_name="Sponges"),
-        SubCategory(id=uuid.uuid4(), category=categories[4], sub_category_name="Tools"),
-        SubCategory(id=uuid.uuid4(), category=categories[4], sub_category_name="Bags"),
+        SubCategory(category=categories[4], sub_category_name="Brushes"),
+        SubCategory(category=categories[4], sub_category_name="Sponges"),
+        SubCategory(category=categories[4], sub_category_name="Tools"),
+        SubCategory(category=categories[4], sub_category_name="Bags"),
     ]
     db.session.add_all(subcategories)
+    db.session.commit()
+    print(f"✅ Seeded {len(subcategories)} subcategories")
 
     # ---------- Users ----------
     users = []
     for _ in range(100):
         user = User(
-            id=uuid.uuid4(),
             first_name=fake.first_name(),
             last_name=fake.last_name(),
             username=fake.user_name(),
@@ -81,26 +88,29 @@ with app.app_context():
             secondary_phone_no=fake.phone_number(),
             role=random.choice(["customer", "admin"]),
             password_hash=generate_password_hash("password123"),
-            created_at=datetime.now(),
-            is_active=True
+            is_active=True,
         )
         users.append(user)
+    db.session.add_all(users)
+    db.session.commit()
+    print(f"✅ Seeded {len(users)} users")
 
     # ---------- Addresses ----------
     addresses = []
     for user in users:
-        address = Address(
-            id=uuid.uuid4(),
-            user_id=user.id,
-            address_line_1=fake.street_address(),
-            city=fake.city(),
-            postal_code=fake.postcode(),
-            is_default=True
+        addresses.append(
+            Address(
+                user_id=user.id,
+                address_line_1=fake.street_address(),
+                city=fake.city(),
+                postal_code=fake.postcode(),
+                is_default=True,
+            )
         )
-        addresses.append(address)
-
-    db.session.add_all(users + addresses)
+    db.session.add_all(addresses)
     db.session.commit()
+    print(f"✅ Seeded {len(addresses)} addresses")
+
 
     # ---------- Security Questions ----------
     questions = [
@@ -113,46 +123,27 @@ with app.app_context():
         "What is your favorite movie?",
         "What is your father's middle name?",
         "What street did you grow up on?",
-        "What is the name of your first employer?"
+        "What is the name of your first employer?",
     ]
-
     for q in questions:
-        exists = SecurityQuestion.query.filter_by(question=q).first()
-        if not exists:
+        if not SecurityQuestion.query.filter_by(question=q).first():
             db.session.add(SecurityQuestion(question=q))
-    
     db.session.commit()
+    print(f"✅ Seeded {len(questions)} security questions")
 
     # ---------- User Security Question Answers ----------
-    def seed_user_security_questions():
-        users_fresh = User.query.all()
-        all_questions = SecurityQuestion.query.all()
+    users_fresh = User.query.all()
+    all_questions = SecurityQuestion.query.all()
+    for user in users_fresh:
+        selected = random.sample(all_questions, k=3)
+        for q in selected:
+            if not UserSecurityQuestion.query.filter_by(user_id=user.id, question_id=q.id).first():
+                fake_answer = fake.word()
+                hashed = generate_password_hash(fake_answer)
+                db.session.add(UserSecurityQuestion(user_id=user.id, question_id=q.id, answer_hash=hashed))
+    db.session.commit()
+    print(f"✅ Seeded user security question answers")
 
-        if not users_fresh or not all_questions:
-            print("❌ Users or Security Questions missing. Seed them first.")
-            return
-
-        for user in users_fresh:
-            selected = random.sample(all_questions, k=3) 
-            for q in selected:
-                exists = UserSecurityQuestion.query.filter_by(
-                    user_id=user.id, question_id=q.id
-                ).first()
-                if not exists:
-                    fake_answer = fake.word()
-                    hashed = generate_password_hash(fake_answer)
-                    db.session.add(
-                        UserSecurityQuestion(
-                            id=uuid.uuid4(),
-                            user_id=user.id,
-                            question_id=q.id,
-                            answer_hash=hashed,
-                        )
-                    )
-
-        db.session.commit()
-
-    seed_user_security_questions()
 
     # ---------- Products ----------
     product_samples = [
@@ -230,129 +221,100 @@ with app.app_context():
         # Accessories - Bags
         ("Ipsy Glam Bag", "Makeup bag subscription pouch.", "https://images.unsplash.com/photo-1570129477492-45c003edd2be", "Accessories", "Bags"),
         ("Sephora Collection Makeup Organizer Bag", "Function meets style.", "https://images.unsplash.com/photo-1615210100443-74b6a08b8a48", "Accessories", "Bags"),
-    ]
-
-    # ---------- EXPAND TO 100 PRODUCTS ----------
+    ]  
     products = []
-
-    for i in range(100):
-        sample = random.choice(product_samples)
-        variant_name = f"{sample[0]} {random.choice(['Mini', 'Pro', 'Deluxe', 'Edition'])}"
-        
-        category_obj = next(c for c in categories if c.category_name == sample[3])
-        
-        subcategory_obj = next(
-            sc for sc in subcategories 
-            if sc.sub_category_name == sample[4] and sc.category.category_name == sample[3]
-        )
-        
-        product = Product(
-            id=uuid.uuid4(),
+    with db.session.no_autoflush:
+        for _ in range(100):
+            sample = random.choice(product_samples)
+            variant_name = f"{sample[0]} {random.choice(['Mini','Pro','Deluxe','Edition'])}"
+            category_obj = next(c for c in categories if c.category_name == sample[3])
+            subcategory_obj = next(sc for sc in subcategories if sc.sub_category_name == sample[4] and sc.category.category_name == sample[3])
+            stock_qty = int(sample[5]) if len(sample) > 5 and sample[5] else 0
+            product = Product(
             product_name=variant_name,
             description=sample[1],
             price=round(random.uniform(5, 200), 2),
+            stock_qty=stock_qty,
             image_url=sample[2],
             category=category_obj,
             sub_category=subcategory_obj,
-        )
-        
-        products.append(product)
-
+            )
+            products.append(product)
     db.session.add_all(products)
     db.session.commit()
+    print(f"✅ Seeded {len(products)} products")
 
-    users_fresh = User.query.all()
-
-    # ---------- Orders ----------
-    orders = []
-    for _ in range(100):
-        user = random.choice(users_fresh)
-        order = Order(
-            id=uuid.uuid4(),
-            user_id=user.id,
-            status=random.choice(["pending", "shipped", "delivered", "cancelled"]),
-            created_at=datetime.now() - timedelta(days=random.randint(0, 30))
-        )
-        orders.append(order)
-    db.session.add_all(orders)
-    db.session.commit()
-
-    # ---------- Order Items ----------
-    order_items = []
-    for order in orders:
-        for _ in range(random.randint(1, 5)):  
-            product = random.choice(products)
-            item = OrderItem(
-                id=uuid.uuid4(),
-                order_id=order.id,
-                product_id=product.id,
-                quantity=random.randint(1, 3),
-                price=product.price
-            )
-            order_items.append(item)
-    db.session.add_all(order_items)
-    db.session.commit()
 
     # ---------- Carts & Cart Items ----------
-    carts = []
-    cart_items = []
-    for user in users_fresh[:50]: 
-        cart = Cart(id=uuid.uuid4(), user_id=user.id, created_at=datetime.now())
-        carts.append(cart)
-        for _ in range(random.randint(1, 4)): 
-            product = random.choice(products)
-            ci = CartItem(
-                id=uuid.uuid4(),
-                cart_id=cart.id,
-                product_id=product.id,
-                quantity=random.randint(1, 3)
+    products_fresh = Product.query.all()
+    for user in users_fresh[:50]:
+        cart = Cart(user_id=user.id)
+        db.session.add(cart)
+        db.session.flush()
+        for _ in range(random.randint(1,4)):
+            product = random.choice(products_fresh)
+            quantity = random.randint(1,3)
+            db.session.add(
+                CartItem(
+                    cart_id=cart.id,
+                    product_id=product.id,
+                    quantity=quantity,
+                    total_amount=product.price * quantity,
+                    status="active"
+                )
             )
-            cart_items.append(ci)
-    db.session.add_all(carts)
-    db.session.add_all(cart_items)
     db.session.commit()
+    print(f"✅ Seeded carts and cart items")
+
+    # ---------- Orders & Order Items ----------
+    for cart in Cart.query.all():
+        if not cart.items:
+            continue
+        order_total = sum(item.total_amount for item in cart.items)
+        order = Order(
+            cart_id=cart.id,
+            status=random.choice(list(OrderStatus)),
+            total_amount=order_total
+        )
+        db.session.add(order)
+        db.session.flush()
+        for ci in cart.items:
+            db.session.add(OrderItem(
+                order_id=order.id,
+                product_id=ci.product_id,
+                quantity=ci.quantity,
+                price=ci.product.price
+            ))
+    db.session.commit()
+    print(f"✅ Seeded orders and order items")
 
     # ---------- Payments ----------
-    payments = []
-    for order in orders:
-        if order.status in ["shipped", "delivered"]: 
-            payment = Payment(
-                id=uuid.uuid4(),
+    for order in Order.query.all():
+        if order.status in ["shipped","delivered"]:
+            db.session.add(Payment(
                 order_id=order.id,
-                amount=sum(item.price * item.quantity for item in order_items if item.order_id == order.id),
-                status="paid",
-                created_at=order.created_at + timedelta(hours=random.randint(1, 48))
-            )
-            payments.append(payment)
-    db.session.add_all(payments)
+                amount=order.total_amount,
+                status="paid"
+            ))
     db.session.commit()
+    print(f"✅ Seeded payments")
 
     # ---------- Invoices ----------
-    orders_fresh = Order.query.all()
     users_for_invoices = User.query.all()
-    
-    invoices = []
-    for i in range(min(10, len(orders_fresh))):  
-        order = orders_fresh[i]
+    for i, order in enumerate(Order.query.all()[:10]):
         user = random.choice(users_for_invoices)
-        
         invoice = Invoice(
-            id=uuid.uuid4(),
-            invoice_number=f"INV-{1000 + i + 1}",
-            order_id=str(order.id),
-            user_id=str(user.id),
-            amount=round(random.uniform(100, 5000), 2),
-            payment_status=random.choice([PaymentStatus.pending, PaymentStatus.paid, PaymentStatus.failed]),
-            created_at=datetime.utcnow() - timedelta(days=random.randint(0, 30))
+            invoice_number=f"INV-{1000+i+1}",
+            order_id=order.id,
+            user_id=user.id,
+            amount=order.total_amount,
+            payment_status=random.choice([PaymentStatus.pending, PaymentStatus.paid, PaymentStatus.failed])
         )
-        
-        # Add paid_at for paid invoices
         if invoice.payment_status == PaymentStatus.paid:
-            invoice.paid_at = invoice.created_at + timedelta(days=random.randint(1, 5))
-        
-        invoices.append(invoice)
-
-    db.session.add_all(invoices)
+            created_at = invoice.created_at or datetime.now(timezone.utc)
+            invoice.paid_at = created_at + timedelta(days=random.randint(1, 5))
+            db.session.add(invoice)
     db.session.commit()
+    print(f"✅ Seeded invoices")
 
-    print("✅ Database seeded with users, addresses, products, orders, order items, carts, payments, and invoices!")
+    print("✅ Database seeded successfully!")

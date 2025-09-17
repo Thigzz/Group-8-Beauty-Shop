@@ -1,19 +1,16 @@
 import uuid
-from sqlalchemy import Column, DateTime, ForeignKey, Enum, func
+from sqlalchemy import Column, DateTime, ForeignKey, Enum, func, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.extensions import db
 from app.models.enums import CartStatus  
+from .base import Base, USE_POSTGRES, PG_UUID
 
 
-class Cart(db.Model):
+class Cart(Base):
     __tablename__ = "carts"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    user_id = Column(PG_UUID(as_uuid=True) if USE_POSTGRES else String(36), ForeignKey("users.id"),nullable=False)
     status = Column(Enum(CartStatus), default=CartStatus.open, nullable=False)
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, onupdate=func.now())
 
     user = relationship("User", back_populates="carts")
     items = relationship("CartItem", back_populates="cart", cascade="all, delete-orphan")
