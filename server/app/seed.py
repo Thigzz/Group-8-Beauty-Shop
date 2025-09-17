@@ -30,7 +30,7 @@ USE_POSTGRES = os.getenv("DATABASE_URL", "").startswith("postgres")
 def get_uuid():
     return uuid.uuid4() if USE_POSTGRES else str(uuid.uuid4())
 
-with server.app.app_context():
+with app.app_context():
     # ---------- Reset DB ----------
     db.drop_all()
     db.create_all()
@@ -245,15 +245,17 @@ with server.app.app_context():
     print(f"✅ Seeded {len(products)} products")
 
 
-    # ---------- Carts & Cart Items ----------
+# ---------- Carts & Cart Items ----------
     products_fresh = Product.query.all()
+
+    # 1️⃣ User-linked carts
     for user in users_fresh[:50]:
         cart = Cart(user_id=user.id)
         db.session.add(cart)
         db.session.flush()
-        for _ in range(random.randint(1,4)):
+        for _ in range(random.randint(1, 4)):
             product = random.choice(products_fresh)
-            quantity = random.randint(1,3)
+            quantity = random.randint(1, 3)
             db.session.add(
                 CartItem(
                     cart_id=cart.id,
@@ -263,10 +265,30 @@ with server.app.app_context():
                     status="active"
                 )
             )
-    db.session.commit()
-    print(f"✅ Seeded carts and cart items")
 
-    # ---------- Orders & Order Items ----------
+# 2️⃣ Guest carts (session_id only)
+    for _ in range(20):  # create 20 guest carts
+        session_id = str(uuid.uuid4())
+        cart = Cart(session_id=session_id)
+        db.session.add(cart)
+        db.session.flush()
+        for _ in range(random.randint(1, 4)):
+            product = random.choice(products_fresh)
+            quantity = random.randint(1, 3)
+            db.session.add(
+                CartItem(
+                    cart_id=cart.id,
+                    product_id=product.id,
+                    quantity=quantity,
+                    total_amount=product.price * quantity,
+                    status="active"
+                )
+         )
+
+    db.session.commit()
+    print(f"✅ Seeded carts and cart items (including guest carts)")
+
+# ---------- Orders & Order Items ----------
     for cart in Cart.query.all():
         if not cart.items:
             continue
