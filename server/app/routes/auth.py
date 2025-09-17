@@ -1,7 +1,9 @@
 from flask import Blueprint, request, jsonify
 from app.models.users import User
 from app.extensions import db
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import create_access_token, jwt_required, current_user
+from app.decorators import admin_required
+from sqlalchemy import or_
 
 auth_bp = Blueprint('auth_bp', __name__)
 
@@ -33,10 +35,15 @@ def register():
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
-    user = User.query.filter_by(username=data.get('username')).first()
+    login_identifier = data.get('login_identifier')
+
+    # Query for user by either username or email
+    user = User.query.filter(
+        or_(User.username == login_identifier, User.email == login_identifier)
+    ).first()
 
     if user and user.check_password(data.get('password')):
-        access_token = create_access_token(identity={'username': user.username, 'role': user.role.name})
+        access_token = create_access_token(identity=user.username)
         return jsonify(access_token=access_token)
 
     return jsonify({"message": "Invalid credentials"}), 401
@@ -44,16 +51,19 @@ def login():
 @auth_bp.route('/profile', methods=['GET'])
 @jwt_required()
 def profile():
-    current_user = get_jwt_identity()
-    user = User.query.filter_by(username=current_user['username']).first()
-    
-    if user:
+    if current_user:
         return jsonify({
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "username": user.username,
-            "email": user.email,
-            "role": user.role.name
+            "first_name": current_user.first_name,
+            "last_name": current_user.last_name,
+            "username": current_user.username,
+            "email": current_user.email,
+            "role": current_user.role.name
         }), 200
     
     return jsonify({"message": "User not found"}), 404
+
+@auth_bp.route('/admin/dashboard', methods=['GET'])
+@jwt_required()
+@admin_required()
+def admin_dashboard():
+    return jsonify({"message": "Welcome to the admin dashboard!"}), 200

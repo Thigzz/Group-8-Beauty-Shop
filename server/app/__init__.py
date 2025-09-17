@@ -8,6 +8,7 @@ def create_app():
     # DB configuration
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///beauty_shop.db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "a_default_secret_key")
     
     # Import extensions
     from app.extensions import db, migrate, jwt, bcrypt
@@ -19,8 +20,14 @@ def create_app():
     bcrypt.init_app(app)
     CORS(app)
     
-    # Import models AFTER extensions are initialized
-    from app import models
+    # Import models
+    from app.models.users import User
+
+    # This function is called whenever a protected endpoint is accessed and returns the user object that the token belongs to.
+    @jwt.user_lookup_loader
+    def user_lookup_callback(_jwt_header, jwt_data):
+        identity = jwt_data["sub"]
+        return User.query.filter_by(username=identity).one_or_none()
 
     # Import and register blueprints
     from app.routes.auth import auth_bp
