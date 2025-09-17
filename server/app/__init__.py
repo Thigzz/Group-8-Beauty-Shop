@@ -20,8 +20,16 @@ def create_app():
     # Import models AFTER extensions are initialized
     from app import models
     
+    # Register API blueprints
+    from app.api.products import products_bp
+    from app.api.security_questions import security_questions_bp
+    from app.api.checkout import checkout_bp
+    app.register_blueprint(products_bp)
+    app.register_blueprint(security_questions_bp)
+    app.register_blueprint(checkout_bp)
+    
     @app.route('/')
     def home():
-        return {"message": "Hello, World!"}
+        return {"message": "Pambo Beauty Shop API"}
     
     return app
