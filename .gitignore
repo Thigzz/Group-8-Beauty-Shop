@@ -39,3 +39,10 @@ venv/
 
 # Pip installer (not needed in repo)
 get-pip.py
+
+# SQLite database
+*.db
+*.sqlite3
+
+# Alembic / migrations cache (optional)
+__pycache__/
