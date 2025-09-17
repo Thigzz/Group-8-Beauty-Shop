@@ -10,15 +10,21 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     # Import extensions
-    from app.extensions import db, migrate
+    from app.extensions import db, migrate, jwt, bcrypt
     
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db) 
+    jwt.init_app(app)
+    bcrypt.init_app(app)
     CORS(app)
     
     # Import models AFTER extensions are initialized
     from app import models
+
+    # Import and register blueprints
+    from app.routes.auth import auth_bp
+    app.register_blueprint(auth_bp, url_prefix='/auth')
     
     @app.route('/')
     def home():
