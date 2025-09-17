@@ -1,6 +1,6 @@
 from datetime import datetime
-from server.app.extensions import db
-from server.app.models.enums import PaymentMethod
+from app.extensions import db
+from app.models.enums import PaymentMethod
 import uuid
 from .base import Base, USE_POSTGRES, PG_UUID
 from sqlalchemy import Column, String, Boolean, ForeignKey

@@ -2,7 +2,7 @@ import uuid
 from sqlalchemy import Column, Integer, ForeignKey, Numeric, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from server.app.extensions import db
+from app.extensions import db
 from .base import Base, USE_POSTGRES, PG_UUID
 
 class OrderItem(Base):

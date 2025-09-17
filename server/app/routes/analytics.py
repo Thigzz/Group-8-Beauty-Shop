@@ -9,6 +9,7 @@ from app.models.product import Product
 from app.models.users import User
 from app.models.invoice import Invoice
 from app.models.category import Category
+from app.models.carts import Cart
 from app.models.enums import OrderStatus, PaymentStatus
 
 analytics_bp = Blueprint('analytics', __name__, url_prefix='/api/analytics')
@@ -209,12 +210,25 @@ def customer_analytics():
          .group_by(func.date(User.created_at))\
          .order_by('date').all()
         
-        # Top customers by total spent (Note: relationship needs verification)
-        # For now, commenting out the join that might be incorrect
-        top_customers = []  # Placeholder - needs relationship fix
+        # Top customers by total spent (using User -> Cart -> Order relationship)
+        top_customers = db.session.query(
+            User.first_name,
+            User.last_name,
+            User.email,
+            func.sum(Order.total_amount).label('total_spent'),
+            func.count(Order.id).label('order_count')
+        ).join(Cart, User.id == Cart.user_id)\
+         .join(Order, Cart.id == Order.cart_id)\
+         .filter(Order.status == OrderStatus.paid)\
+         .group_by(User.id, User.first_name, User.last_name, User.email)\
+         .order_by(desc('total_spent'))\
+         .limit(10).all()
         
         # Customer activity summary
-        active_customers = 0  # Placeholder - needs relationship fix
+        active_customers = db.session.query(func.count(func.distinct(User.id)))\
+            .join(Cart, User.id == Cart.user_id)\
+            .join(Order, Cart.id == Order.cart_id)\
+            .filter(Order.created_at >= start_date).scalar() or 0
         
         return jsonify({
             'period_days': days,
@@ -226,7 +240,14 @@ def customer_analytics():
                     'registrations': reg.registrations
                 } for reg in daily_registrations
             ],
-            'top_customers': top_customers
+            'top_customers': [
+                {
+                    'name': f"{customer.first_name} {customer.last_name}",
+                    'email': customer.email,
+                    'total_spent': float(customer.total_spent or 0),
+                    'order_count': customer.order_count
+                } for customer in top_customers
+            ]
         }), 200
         
     except Exception as e:

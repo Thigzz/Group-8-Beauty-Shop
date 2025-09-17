@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
 from uuid import UUID
-from server.app.extensions import db
-from server.app.models.carts import Cart, CartItem
-from server.app.models.enums import CartStatus
+from app.extensions import db
+from app.models.carts import Cart, CartItem
+from app.models.enums import CartStatus
 
 cart_bp = Blueprint("cart", __name__, url_prefix="/api/carts")
 

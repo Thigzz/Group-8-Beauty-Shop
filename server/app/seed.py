@@ -6,21 +6,21 @@ from werkzeug.security import generate_password_hash
 import os
 
 from server.app import create_app
-from server.app.extensions import db
-from server.app.models.users import User
-from server.app.models.address import Address
-from server.app.models.category import Category
-from server.app.models.sub_category import SubCategory
-from server.app.models.product import Product
-from server.app.models.orders import Order
-from server.app.models.order_items import OrderItem
-from server.app.models.carts import Cart
-from server.app.models.cart_items import CartItem
-from server.app.models.payment import Payment
-from server.app.models.security_question import SecurityQuestion
-from server.app.models.user_security_questions import UserSecurityQuestion
-from server.app.models.invoice import Invoice
-from server.app.models.enums import PaymentStatus, OrderStatus
+from app.extensions import db
+from app.models.users import User
+from app.models.address import Address
+from app.models.category import Category
+from app.models.sub_category import SubCategory
+from app.models.product import Product
+from app.models.orders import Order
+from app.models.order_items import OrderItem
+from app.models.carts import Cart
+from app.models.cart_items import CartItem
+from app.models.payment import Payment
+from app.models.security_question import SecurityQuestion
+from app.models.user_security_questions import UserSecurityQuestion
+from app.models.invoice import Invoice
+from app.models.enums import PaymentStatus, OrderStatus
 
 fake = Faker()
 app = create_app()

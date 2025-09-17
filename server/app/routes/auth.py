@@ -1,4 +1,4 @@
-from server.app.utils.cart_utils import merge_guest_cart
+from app.utils.cart_utils import merge_guest_cart
 from flask import request, jsonify
 
 

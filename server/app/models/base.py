@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from sqlalchemy import Column, String, TIMESTAMP
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from server.app.extensions import db
+from app.extensions import db
 import os
 
 # Determine if we are using Postgres

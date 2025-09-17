@@ -2,8 +2,8 @@ import uuid
 from sqlalchemy import Column, DateTime, ForeignKey, Enum, Numeric, func, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from server.app.extensions import db
-from server.app.models.enums import OrderStatus
+from app.extensions import db
+from app.models.enums import OrderStatus
 from .base import Base, USE_POSTGRES, PG_UUID
 
 
