@@ -10,7 +10,7 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     # Import extensions
-    from server.app.extensions import db, migrate
+    from app.extensions import db, migrate
     
     # Initialize extensions
     db.init_app(app)
@@ -18,15 +18,16 @@ def create_app():
     CORS(app)
     
     # Import models AFTER extensions are initialized
-    from server.app import models
+    from app import models
     
-    # Register all API blueprints
-    from app.api.products import products_bp
-    from app.api.security_questions import security_questions_bp
-    from app.api.checkout import checkout_bp
-    from app.api.orders import orders_bp
-    from app.api.admin_reset_password import admin_reset_bp
-    from app.api.categories import categories_bp
+    # Register all route blueprints (updated to use routes folder)
+    from app.routes.products import products_bp
+    from app.routes.security_questions import security_questions_bp
+    from app.routes.checkout import checkout_bp
+    from app.routes.orders import orders_bp
+    from app.routes.admin_reset_password import admin_reset_bp
+    from app.routes.categories import categories_bp
+    from app.routes.analytics import analytics_bp
     
     app.register_blueprint(products_bp)
     app.register_blueprint(security_questions_bp)
@@ -34,6 +35,7 @@ def create_app():
     app.register_blueprint(orders_bp)
     app.register_blueprint(admin_reset_bp)
     app.register_blueprint(categories_bp)
+    app.register_blueprint(analytics_bp)
     
     @app.route('/')
     def home():
