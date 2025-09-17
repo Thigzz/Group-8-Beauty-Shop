@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, func
 from sqlalchemy.orm import relationship
-from app.extensions import db
+from server.app.extensions import db
 from .base import Base, USE_POSTGRES, PG_UUID
 
 class UserSecurityQuestion(Base):

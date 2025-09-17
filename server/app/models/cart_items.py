@@ -2,8 +2,8 @@ import uuid
 from sqlalchemy import Column, Integer, ForeignKey, Enum, Numeric, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from app.extensions import db
-from app.models.enums import CartItemStatus
+from server.app.extensions import db
+from server.app.models.enums import CartItemStatus
 from .base import Base, USE_POSTGRES, PG_UUID
 
 class CartItem(Base):

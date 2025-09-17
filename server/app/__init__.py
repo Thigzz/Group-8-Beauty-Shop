@@ -10,7 +10,7 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     # Import extensions
-    from app.extensions import db, migrate
+    from server.app.extensions import db, migrate
     
     # Initialize extensions
     db.init_app(app)
@@ -18,7 +18,7 @@ def create_app():
     CORS(app)
     
     # Import models AFTER extensions are initialized
-    from app import models
+    from server.app import models
     
     @app.route('/')
     def home():
