@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import Column, String, Boolean, Enum, TIMESTAMP
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from .base import Base
+from .base import Base, USE_POSTGRES, PG_UUID
 import enum
 from app.extensions import db  
 

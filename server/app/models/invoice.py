@@ -3,18 +3,17 @@ from app.extensions import db
 from app.models.enums import PaymentStatus
 import uuid
 from app.extensions import db
+from .base import Base, USE_POSTGRES, PG_UUID
+from sqlalchemy import Column, String, Boolean, ForeignKey
 
 
-class Invoice(db.Model):
+class Invoice(Base):
     __tablename__ = 'invoices'
-    
-    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     invoice_number = db.Column(db.String(255), nullable=False, unique=True)
     order_id = db.Column(db.String(36), db.ForeignKey('orders.id'), nullable=False)
     user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     amount = db.Column(db.Numeric(10, 2), nullable=False)
     payment_status = db.Column(db.Enum(PaymentStatus), default=PaymentStatus.pending)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     paid_at = db.Column(db.DateTime)
     
     def __repr__(self):
