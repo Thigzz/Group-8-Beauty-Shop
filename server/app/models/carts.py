@@ -9,7 +9,7 @@ from .base import Base, USE_POSTGRES, PG_UUID
 
 class Cart(Base):
     __tablename__ = "carts"
-    user_id = Column(PG_UUID(as_uuid=True) if USE_POSTGRES else String(36), ForeignKey("users.id"),nullable=False)
+    user_id = Column(PG_UUID(as_uuid=True) if USE_POSTGRES else String(36), ForeignKey("users.id"),nullable=True)
     status = Column(Enum(CartStatus), default=CartStatus.open, nullable=False)
 
     user = relationship("User", back_populates="carts")
