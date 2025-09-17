@@ -1,22 +1,24 @@
 from flask import Blueprint, request, jsonify, current_app
-from app.models.users import User
-from app.extensions import db, bcrypt
-from flask_jwt_extended import create_access_token, jwt_required, current_user
-from app.decorators import admin_required
 from sqlalchemy import or_
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
+from flask_jwt_extended import create_access_token, jwt_required, current_user
+
+
+from server.app.models.users import User
+from server.app.extensions import db, bcrypt
+from server.app.decorators import admin_required
+from server.app.utils.cart_utils import merge_guest_cart
 
 auth_bp = Blueprint('auth_bp', __name__)
+
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
     
-    if User.query.filter_by(email=data.get('email')).first():
-        return jsonify({"message": "User with this email already exists"}), 409
-
-    if User.query.filter_by(username=data.get('username')).first():
-        return jsonify({"message": "Username is already taken"}), 409
+    # Check if email or username already exists
+    if User.query.filter(or_(User.email == data.get('email'), User.username == data.get('username'))).first():
+        return jsonify({"message": "User with this email or username already exists"}), 409
 
     new_user = User(
         first_name=data.get('first_name'),
@@ -32,20 +34,33 @@ def register():
 
     return jsonify({"message": "User registered successfully"}), 201
 
+
 @auth_bp.route('/login', methods=['POST'])
 def login():
+    """
+    Handles user login, merges guest cart if present, and returns a JWT.
+    """
     data = request.get_json()
     login_identifier = data.get('login_identifier')
+    password = data.get('password')
+    session_id = data.get('session_id')
 
+    # Allows login with either username or email
     user = User.query.filter(
         or_(User.username == login_identifier, User.email == login_identifier)
     ).first()
 
-    if user and user.check_password(data.get('password')):
+    if user and user.check_password(password):
+        # If a guest session exists, merge the cart
+        if session_id:
+            merge_guest_cart(user.id, session_id)
+        
+        # Create and return the JWT access token
         access_token = create_access_token(identity=user.username)
         return jsonify(access_token=access_token)
 
     return jsonify({"message": "Invalid credentials"}), 401
+
 
 @auth_bp.route('/reset-questions', methods=['POST'])
 def get_reset_questions():
@@ -63,6 +78,7 @@ def get_reset_questions():
         {"id": str(q.security_question.id), "question": q.security_question.question}
         for q in questions
     ]), 200
+
 
 @auth_bp.route('/verify-answers', methods=['POST'])
 def verify_answers():
@@ -87,11 +103,12 @@ def verify_answers():
         if question_id not in user_questions or not bcrypt.check_password_hash(user_questions[question_id], answer_text):
             return jsonify({"message": "One or more answers are incorrect."}), 401
 
-    # If all answers are correct, generate a short-lived reset token
+    # If answers are correct, generate a short-lived reset token
     s = URLSafeTimedSerializer(current_app.config['JWT_SECRET_KEY'])
     token = s.dumps(user.email, salt='password-reset-salt')
     
     return jsonify({"message": "Answers verified.", "reset_token": token}), 200
+
 
 @auth_bp.route('/reset-password', methods=['POST'])
 def reset_password():
@@ -101,12 +118,10 @@ def reset_password():
     
     s = URLSafeTimedSerializer(current_app.config['JWT_SECRET_KEY'])
     try:
-        # Token is valid for 15 minutes after answering questions
+        # Token is valid for 15 minutes
         email = s.loads(token, salt='password-reset-salt', max_age=900)
-    except SignatureExpired:
-        return jsonify({"message": "Token has expired."}), 400
-    except BadTimeSignature:
-        return jsonify({"message": "Invalid token."}), 400
+    except (SignatureExpired, BadTimeSignature):
+        return jsonify({"message": "Token is invalid or has expired."}), 400
 
     user = User.query.filter_by(email=email).first()
     if user:
@@ -116,19 +131,18 @@ def reset_password():
     
     return jsonify({"message": "User not found."}), 404
 
+
 @auth_bp.route('/profile', methods=['GET'])
 @jwt_required()
 def profile():
-    if current_user:
-        return jsonify({
-            "first_name": current_user.first_name,
-            "last_name": current_user.last_name,
-            "username": current_user.username,
-            "email": current_user.email,
-            "role": current_user.role.name
-        }), 200
-    
-    return jsonify({"message": "User not found"}), 404
+    return jsonify({
+        "first_name": current_user.first_name,
+        "last_name": current_user.last_name,
+        "username": current_user.username,
+        "email": current_user.email,
+        "role": current_user.role.name
+    }), 200
+
 
 @auth_bp.route('/admin/dashboard', methods=['GET'])
 @jwt_required()

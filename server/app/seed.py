@@ -5,22 +5,22 @@ from faker import Faker
 from werkzeug.security import generate_password_hash
 import os
 
-from app import create_app
-from app.extensions import db
-from app.models.users import User
-from app.models.address import Address
-from app.models.category import Category
-from app.models.sub_category import SubCategory
-from app.models.product import Product
-from app.models.orders import Order
-from app.models.order_items import OrderItem
-from app.models.carts import Cart
-from app.models.cart_items import CartItem
-from app.models.payment import Payment
-from app.models.security_question import SecurityQuestion
-from app.models.user_security_questions import UserSecurityQuestion
-from app.models.invoice import Invoice
-from app.models.enums import PaymentStatus, OrderStatus
+from server.app import create_app
+from server.app.extensions import db
+from server.app.models.users import User
+from server.app.models.address import Address
+from server.app.models.category import Category
+from server.app.models.sub_category import SubCategory
+from server.app.models.product import Product
+from server.app.models.orders import Order
+from server.app.models.order_items import OrderItem
+from server.app.models.carts import Cart
+from server.app.models.cart_items import CartItem
+from server.app.models.payment import Payment
+from server.app.models.security_question import SecurityQuestion
+from server.app.models.user_security_questions import UserSecurityQuestion
+from server.app.models.invoice import Invoice
+from server.app.models.enums import PaymentStatus, OrderStatus
 
 fake = Faker()
 app = create_app()
@@ -245,15 +245,17 @@ with app.app_context():
     print(f"✅ Seeded {len(products)} products")
 
 
-    # ---------- Carts & Cart Items ----------
+# ---------- Carts & Cart Items ----------
     products_fresh = Product.query.all()
+
+    # 1️⃣ User-linked carts
     for user in users_fresh[:50]:
         cart = Cart(user_id=user.id)
         db.session.add(cart)
         db.session.flush()
-        for _ in range(random.randint(1,4)):
+        for _ in range(random.randint(1, 4)):
             product = random.choice(products_fresh)
-            quantity = random.randint(1,3)
+            quantity = random.randint(1, 3)
             db.session.add(
                 CartItem(
                     cart_id=cart.id,
@@ -263,10 +265,30 @@ with app.app_context():
                     status="active"
                 )
             )
-    db.session.commit()
-    print(f"✅ Seeded carts and cart items")
 
-    # ---------- Orders & Order Items ----------
+# 2️⃣ Guest carts (session_id only)
+    for _ in range(20):  # create 20 guest carts
+        session_id = str(uuid.uuid4())
+        cart = Cart(session_id=session_id)
+        db.session.add(cart)
+        db.session.flush()
+        for _ in range(random.randint(1, 4)):
+            product = random.choice(products_fresh)
+            quantity = random.randint(1, 3)
+            db.session.add(
+                CartItem(
+                    cart_id=cart.id,
+                    product_id=product.id,
+                    quantity=quantity,
+                    total_amount=product.price * quantity,
+                    status="active"
+                )
+         )
+
+    db.session.commit()
+    print(f"✅ Seeded carts and cart items (including guest carts)")
+
+# ---------- Orders & Order Items ----------
     for cart in Cart.query.all():
         if not cart.items:
             continue

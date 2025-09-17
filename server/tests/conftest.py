@@ -2,15 +2,16 @@ import pytest
 import sys
 import os
 
-
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from app import create_app
-from app.extensions import db
-from app.models.users import User, UserRole
+
+from server.app import create_app
+from server.app.extensions import db
+from server.app.models.users import User, UserRole
 
 @pytest.fixture(scope='module')
 def new_user():
+    """Fixture for creating a new regular user instance."""
     user = User(
         first_name='Test',
         last_name='User',
@@ -24,6 +25,7 @@ def new_user():
 
 @pytest.fixture(scope='module')
 def new_admin():
+    """Fixture for creating a new admin user instance."""
     admin = User(
         first_name='Admin',
         last_name='User',
@@ -37,7 +39,10 @@ def new_admin():
 
 @pytest.fixture(scope='function')
 def test_client():
-    """Fixture to create a new app and client for each test function."""
+    """
+    Creates a Flask app and test client for each test function.
+    This provides a clean database and application context for isolated testing.
+    """
     flask_app = create_app()
     flask_app.config.update({
         "TESTING": True,
