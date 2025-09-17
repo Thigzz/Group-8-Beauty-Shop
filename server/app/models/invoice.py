@@ -1,8 +1,8 @@
 from datetime import datetime
-from app.extensions import db
-from app.models.enums import PaymentStatus
+from server.app.extensions import db
+from server.app.models.enums import PaymentStatus
 import uuid
-from app.extensions import db
+from server.app.extensions import db
 from .base import Base, USE_POSTGRES, PG_UUID
 from sqlalchemy import Column, String, Boolean, ForeignKey
 

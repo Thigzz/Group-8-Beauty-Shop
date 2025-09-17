@@ -1,8 +1,8 @@
 from flask import Flask
 from app.extensions import db
-from app.api.orders import orders_bp
-from app.api.admin_reset_password import admin_reset_bp
-from app.api.categories import categories_bp
+from app.routes.orders import orders_bp
+from app.routes.admin_reset_password import admin_reset_bp
+from app.routes.categories import categories_bp
 
 def create_app():
     app = Flask(__name__)

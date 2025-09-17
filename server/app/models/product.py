@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy import Column, String, Boolean, ForeignKey, Numeric, Integer, Text, DateTime
-from app.extensions import db
+from server.app.extensions import db
 from .base import Base, USE_POSTGRES, PG_UUID 
 
 class Product(Base):
