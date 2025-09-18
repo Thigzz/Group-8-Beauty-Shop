@@ -1,0 +1,105 @@
+name: CI/CD React + Flask (Render)
+
+on:
+  push:
+    branches: 
+      - main
+      - develop
+  pull_request:
+    branches: 
+      - develop
+      - main
+
+jobs:
+  frontend:
+    name: Frontend (React)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Cache Node modules
+        uses: actions/cache@v3
+        with:
+          path: client/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('client/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install frontend dependencies
+        working-directory: ./client
+        run: npm ci
+
+      - name: Run frontend tests
+        working-directory: ./client
+        run: npm test -- --watchAll=false
+
+      - name: Build frontend
+        working-directory: ./client
+        run: npm run build
+
+      - name: Upload React build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: react-build
+          path: ./client/build
+
+  backend:
+    name: Backend (Flask)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('server/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install backend dependencies
+        working-directory: ./server
+        run: pip install -r requirements.txt
+
+      - name: Run backend tests
+        working-directory: ./server
+        run: pytest
+
+      - name: Upload backend artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-ready
+          path: ./server
+
+  deploy:
+    name: Deploy to Render
+    runs-on: ubuntu-latest
+    needs: [frontend, backend]
+    if: github.ref == 'refs/heads/main' # only deploy on main
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download React build artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: react-build
+          path: ./server/static
+
+      - name: Deploy to Render
+        run: curl -X POST "$RENDER_DEPLOY_HOOK"
