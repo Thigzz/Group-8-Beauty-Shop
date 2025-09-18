@@ -4,22 +4,22 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy import Column, String, Boolean, ForeignKey, Numeric, Integer, Text, DateTime
 from server.app.extensions import db
-from .base import Base, USE_POSTGRES, PG_UUID 
+from .base import Base, GUID
 
 class Product(Base):
     __tablename__ = 'products'
-    id = Column(PG_UUID if USE_POSTGRES else String(36), primary_key=True,default=uuid.uuid4 if USE_POSTGRES else lambda: str(uuid.uuid4()))
+    id = Column(GUID(), primary_key=True,default=uuid.uuid4)
     product_name = Column(String(255), nullable=False)
     description = Column(Text)
     price = Column(Numeric(10, 2), nullable=False)
     stock_qty = Column(Integer, nullable=False)
     image_url = Column(String(255))
-    
+
     # Foreign keys
-    category_id = Column(PG_UUID if USE_POSTGRES else String(36),
+    category_id = Column(GUID(),
                          ForeignKey('categories.id'),
                          nullable=False)
-    sub_category_id = Column(PG_UUID if USE_POSTGRES else String(36),
+    sub_category_id = Column(GUID(),
                              ForeignKey('sub_categories.id'),
                              nullable=False)
 

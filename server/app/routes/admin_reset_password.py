@@ -1,11 +1,11 @@
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
-from app.extensions import db
-from app.models.users import User
-from app.models.security_question import SecurityQuestion
-from app.models.password_reset_audit import PasswordResetAudit
+from server.app.extensions import db
+from server.app.models.users import User
+from server.app.models.security_question import SecurityQuestion
+from server.app.models.password_reset_audit import PasswordResetAudit
 
-admin_reset_bp = Blueprint("admin_reset", __name__, url_prefix="/admin-reset")
+admin_reset_bp = Blueprint("admin_reset", __name__)
 
 
 @admin_reset_bp.route("/reset-password", methods=["POST"])

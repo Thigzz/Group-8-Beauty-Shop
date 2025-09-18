@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from sqlalchemy import or_
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
-from flask_jwt_extended import create_access_token, jwt_required, current_user
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt, current_user
 
 
 from server.app.models.users import User
@@ -9,14 +9,13 @@ from server.app.extensions import db, bcrypt
 from server.app.decorators import admin_required
 from server.app.utils.cart_utils import merge_guest_cart
 
-auth_bp = Blueprint('auth_bp', __name__)
+auth_bp = Blueprint('auth_bp', __name__, url_prefix='/auth')
 
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
     
-    # Check if email or username already exists
     if User.query.filter(or_(User.email == data.get('email'), User.username == data.get('username'))).first():
         return jsonify({"message": "User with this email or username already exists"}), 409
 
@@ -45,18 +44,17 @@ def login():
     password = data.get('password')
     session_id = data.get('session_id')
 
-    # Allows login with either username or email
     user = User.query.filter(
         or_(User.username == login_identifier, User.email == login_identifier)
     ).first()
 
     if user and user.check_password(password):
-        # If a guest session exists, merge the cart
         if session_id:
             merge_guest_cart(user.id, session_id)
         
-        # Create and return the JWT access token
-        access_token = create_access_token(identity=user.username)
+        # Add the user's role to the token's claims
+        additional_claims = {"role": user.role.name}
+        access_token = create_access_token(identity=user.username, additional_claims=additional_claims)
         return jsonify(access_token=access_token)
 
     return jsonify({"message": "Invalid credentials"}), 401
@@ -103,7 +101,7 @@ def verify_answers():
         if question_id not in user_questions or not bcrypt.check_password_hash(user_questions[question_id], answer_text):
             return jsonify({"message": "One or more answers are incorrect."}), 401
 
-    # If answers are correct, generate a short-lived reset token
+    # If answers are correct, generates a short-lived reset token
     s = URLSafeTimedSerializer(current_app.config['JWT_SECRET_KEY'])
     token = s.dumps(user.email, salt='password-reset-salt')
     

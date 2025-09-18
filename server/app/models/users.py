@@ -1,17 +1,14 @@
 import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, Boolean, Enum, TIMESTAMP
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from .base import Base
 import enum
-from server.app.extensions import db  
-
+from server.app.extensions import db, bcrypt
 
 class UserRole(enum.Enum):
     customer = "customer"
     admin = "admin"
-
 
 class User(Base):
     __tablename__ = "users"

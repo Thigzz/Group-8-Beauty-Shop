@@ -1,16 +1,16 @@
 from flask import Blueprint, request, jsonify
 import uuid
 from datetime import datetime
-from app.extensions import db
-from app.models.product import Product
-from app.models.carts import Cart
-from app.models.cart_items import CartItem
-from app.models.orders import Order
-from app.models.order_items import OrderItem
-from app.models.invoice import Invoice
-from app.models.payment import Payment
-from app.models.users import User
-from app.models.enums import OrderStatus, PaymentStatus, PaymentMethod, CartStatus, CartItemStatus
+from server.app.extensions import db
+from server.app.models.product import Product
+from server.app.models.carts import Cart
+from server.app.models.cart_items import CartItem
+from server.app.models.orders import Order
+from server.app.models.order_items import OrderItem
+from server.app.models.invoice import Invoice
+from server.app.models.payment import Payment
+from server.app.models.users import User
+from server.app.models.enums import OrderStatus, PaymentStatus, PaymentMethod, CartStatus, CartItemStatus
 
 checkout_bp = Blueprint('checkout', __name__, url_prefix='/api/checkout')
 
@@ -30,7 +30,9 @@ def calculate_total():
             if 'product_id' not in item or 'quantity' not in item:
                 return jsonify({'error': 'Each item must have product_id and quantity'}), 400
             
-            product = Product.query.get_or_404(item['product_id'])
+            # Convert product_id string to UUID object for lookup
+            product_uuid = uuid.UUID(item['product_id'])
+            product = Product.query.get_or_404(product_uuid)
             
             if product.stock_qty < item['quantity']:
                 return jsonify({'error': f'Insufficient stock for {product.product_name}'}), 400
@@ -56,6 +58,8 @@ def calculate_total():
             'total': total + shipping
         }), 200
         
+    except ValueError:
+        return jsonify({'error': 'Invalid UUID format'}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -77,7 +81,7 @@ def process_checkout():
         user_uuid = uuid.UUID(data['user_id'])
         user = User.query.get_or_404(user_uuid)
         
-        # Calculating totals and validatng stock
+        # Calculating totals and validating stock
         total = 0
         cart_items_data = []
         
@@ -85,7 +89,9 @@ def process_checkout():
             if 'product_id' not in item or 'quantity' not in item:
                 return jsonify({'error': 'Each item must have product_id and quantity'}), 400
             
-            product = Product.query.get_or_404(item['product_id'])
+            # Convert product_id string to UUID object for lookup
+            product_uuid = uuid.UUID(item['product_id'])
+            product = Product.query.get_or_404(product_uuid)
             
             if product.stock_qty < item['quantity']:
                 return jsonify({'error': f'Insufficient stock for {product.product_name}'}), 400
@@ -95,7 +101,7 @@ def process_checkout():
             
             cart_items_data.append({
                 'product': product,
-                'product_uuid': uuid.UUID(item['product_id']),
+                'product_uuid': product_uuid,
                 'quantity': item['quantity'],
                 'price': product.price,
                 'subtotal': item_total
@@ -128,7 +134,7 @@ def process_checkout():
         
         cart.status = CartStatus.closed
         
-        # Creatng Order (uses UUID objects)
+        # Creating Order (uses UUID objects)
         order = Order(
             id=uuid.uuid4(),
             cart_id=cart.id,
@@ -153,13 +159,12 @@ def process_checkout():
             # Updating product stock
             item_data['product'].stock_qty -= item_data['quantity']
         
-        # Creating Invoice (uses STRING IDs - different from other models)
+        # Creating Invoice (uses STRING IDs)
         invoice_number = f"INV-{datetime.now().strftime('%Y%m%d')}-{str(order.id)[:8]}"
         invoice = Invoice(
-            # Note: Invoice uses string IDs, not UUID objects
             invoice_number=invoice_number,
-            order_id=str(order.id),  # Convert UUID to string
-            user_id=str(user_uuid),  # Convert UUID to string
+            order_id=str(order.id),
+            user_id=str(user_uuid),
             amount=final_total,
             payment_status=PaymentStatus.pending
         )
@@ -170,8 +175,7 @@ def process_checkout():
         transaction_id = f"TXN-{datetime.now().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:8]}"
         
         payment = Payment(
-            # Note: Payment also uses string IDs
-            invoice_id=invoice.id,  # Already a string
+            invoice_id=str(invoice.id),  # Ensure invoice_id is a string
             payment_method=PaymentMethod(data['payment_method']),
             amount=final_total,
             transaction_id=transaction_id
@@ -199,13 +203,13 @@ def process_checkout():
                 'total_amount': float(order.total_amount)
             },
             'invoice': {
-                'id': invoice.id,  # Already a string
+                'id': invoice.id,
                 'invoice_number': invoice.invoice_number,
                 'amount': float(invoice.amount),
                 'payment_status': invoice.payment_status.value
             },
             'payment': {
-                'id': payment.id,  # Already a string
+                'id': payment.id,
                 'transaction_id': payment.transaction_id,
                 'method': payment.payment_method.value
             }

@@ -1,10 +1,12 @@
 from flask import Blueprint, request, jsonify
-from app.extensions import db
-from app.models.orders import Order
-from app.models.order_items import OrderItem
-from app.models.enums import OrderStatus
+from server.app.extensions import db
+from server.app.models.orders import Order
+from server.app.models.order_items import OrderItem
+from server.app.models.enums import OrderStatus
+from flask_jwt_extended import jwt_required
+from server.app.decorators import admin_required
 
-orders_bp = Blueprint("orders", __name__, url_prefix="/orders")
+orders_bp = Blueprint("orders", __name__, url_prefix="/api/orders")
 
 
 @orders_bp.route("/", methods=["POST"])
@@ -66,15 +68,12 @@ def delete_order(order_id):
 # ------order fulfillment-------
 @orders_bp.route("/<order_id>/status", methods=["PUT"])
 @jwt_required()
+@admin_required()
 def update_order_status(order_id):
     """
     Admin-only endpoint to update the status of an order.
     Expects JSON: { "status": "fulfilled" } 
     """
-    claims = get_jwt()
-    if claims.get("role") != "admin":
-        return jsonify({"error": "Admin privileges required"}), 403
-
     order = Order.query.get(order_id)
     if not order:
         return jsonify({"error": "Order not found"}), 404
@@ -93,4 +92,3 @@ def update_order_status(order_id):
         "order_id": str(order.id),
         "status": order.status.value
     })
-

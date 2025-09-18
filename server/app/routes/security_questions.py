@@ -1,10 +1,10 @@
 from flask import Blueprint, request, jsonify
 import uuid
 import hashlib
-from app.extensions import db
-from app.models.security_question import SecurityQuestion
-from app.models.user_security_questions import UserSecurityQuestion
-from app.models.users import User
+from server.app.extensions import db
+from server.app.models.security_question import SecurityQuestion
+from server.app.models.user_security_questions import UserSecurityQuestion
+from server.app.models.users import User
 
 security_questions_bp = Blueprint('security_questions', __name__, url_prefix='/api/security-questions')
 

@@ -2,10 +2,8 @@ from datetime import datetime
 from server.app.extensions import db
 from server.app.models.enums import PaymentStatus
 import uuid
-from server.app.extensions import db
-from .base import Base, USE_POSTGRES, PG_UUID
+from .base import Base
 from sqlalchemy import Column, String, Boolean, ForeignKey
-
 
 class Invoice(Base):
     __tablename__ = 'invoices'
@@ -15,10 +13,10 @@ class Invoice(Base):
     amount = db.Column(db.Numeric(10, 2), nullable=False)
     payment_status = db.Column(db.Enum(PaymentStatus), default=PaymentStatus.pending)
     paid_at = db.Column(db.DateTime)
-    
+
     def __repr__(self):
         return f'<Invoice {self.invoice_number}>'
-    
+
     def to_dict(self):
         return {
             'id': self.id,
