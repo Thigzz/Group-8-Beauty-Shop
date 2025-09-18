@@ -1,15 +1,14 @@
 import uuid
 from sqlalchemy import Column, Integer, ForeignKey, Enum, Numeric, String
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from server.app.extensions import db
 from server.app.models.enums import CartItemStatus
-from .base import Base, USE_POSTGRES, PG_UUID
+from .base import Base, GUID
 
 class CartItem(Base):
     __tablename__ = "cart_items"
-    cart_id =Column(PG_UUID(as_uuid=True) if USE_POSTGRES else String(36), ForeignKey("carts.id"), nullable=False)
-    product_id =Column(PG_UUID(as_uuid=True) if USE_POSTGRES else String(36), ForeignKey("products.id"), nullable=False)
+    cart_id =Column(GUID(), ForeignKey("carts.id"), nullable=False)
+    product_id =Column(GUID(), ForeignKey("products.id"), nullable=False)
     quantity = Column(Integer, nullable=False)
     status = Column(Enum(CartItemStatus), default=CartItemStatus.active, nullable=False)
     total_amount = Column(Numeric(10, 2), nullable=False)

@@ -1,7 +1,9 @@
 from flask import Blueprint, request, jsonify
 from uuid import UUID
 from server.app.extensions import db
-from server.app.models.carts import Cart, CartItem
+from server.app.models.carts import Cart
+from server.app.models.cart_items import CartItem
+from server.app.models.product import Product
 from server.app.models.enums import CartStatus
 
 cart_bp = Blueprint("cart", __name__, url_prefix="/api/carts")
@@ -19,7 +21,7 @@ def create_cart():
     cart = Cart(user_id=UUID(user_id) if user_id else None, session_id=session_id)
     db.session.add(cart)
     db.session.commit()
-    return jsonify({"id": str(cart.id), "user_id": str(cart.user_id) if cart.user_id else None, 
+    return jsonify({"id": str(cart.id), "user_id": str(cart.user_id) if cart.user_id else None,
                     "session_id": cart.session_id, "status": cart.status.name}), 201
 
 # Get cart by user_id or session_id
@@ -76,7 +78,15 @@ def add_item():
     if not cart_id or not product_id:
         return jsonify({"error": "cart_id and product_id are required"}), 400
 
-    cart_item = CartItem(cart_id=UUID(cart_id), product_id=UUID(product_id), quantity=quantity)
+    product = Product.query.get_or_404(product_id)
+    total_amount = product.price * quantity
+
+    cart_item = CartItem(
+        cart_id=UUID(cart_id),
+        product_id=UUID(product_id),
+        quantity=quantity,
+        total_amount=total_amount
+    )
     db.session.add(cart_item)
     db.session.commit()
     return jsonify({"cart_id": str(cart_item.cart_id), "product_id": str(cart_item.product_id), "quantity": cart_item.quantity}), 201
