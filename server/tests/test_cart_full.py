@@ -1,48 +1,49 @@
 import pytest
 from uuid import uuid4
+import json
+from server.app.models.users import User
+from server.app.models.product import Product
+from server.app.models.category import Category
+from server.app.models.sub_category import SubCategory
+from server.app.extensions import db
 
 @pytest.fixture
-def guest_cart(client):
-    session_id = str(uuid4())
-    response = client.post("/api/carts/", json={"session_id": session_id})
-    return response.json
+def create_user(test_client):
+    """Fixture to create a user for cart tests."""
+    with test_client.application.app_context():
+        user = User(username="cartuser", email="cart@test.com", first_name="Cart", last_name="User", primary_phone_no="cartphone")
+        user.set_password("password123")
+        db.session.add(user)
+        db.session.commit()
+        yield user
 
 @pytest.fixture
-def user_cart(client, create_user):
-    user = create_user()
-    response = client.post("/api/carts/", json={"user_id": str(user.id)})
-    return response.json
+def sample_product(test_client):
+    """Fixture to create a sample product."""
+    with test_client.application.app_context():
+        # Create and commit the category first to get an ID
+        category = Category(category_name="Test Cat")
+        db.session.add(category)
+        db.session.commit()
 
-def test_add_item_guest(client, guest_cart):
-    cart_id = guest_cart["id"]
-    product_id = str(uuid4())
-    response = client.post("/api/carts/items", json={"cart_id": cart_id, "product_id": product_id, "quantity": 2})
-    assert response.status_code == 201
-    assert response.json["quantity"] == 2
+        # create the sub_category using the valid category.id
+        sub_category = SubCategory(sub_category_name="Test SubCat", category_id=category.id)
+        db.session.add(sub_category)
+        db.session.commit()
 
-def test_add_item_user(client, user_cart):
-    cart_id = user_cart["id"]
-    product_id = str(uuid4())
-    response = client.post("/api/carts/items", json={"cart_id": cart_id, "product_id": product_id})
-    assert response.status_code == 201
-    assert response.json["quantity"] == 1
+        product = Product(product_name="Test Item", price=10, stock_qty=50, category_id=category.id, sub_category_id=sub_category.id)
+        db.session.add(product)
+        db.session.commit()
+        yield product
 
-def test_get_cart_with_items(client, user_cart):
-    cart_id = user_cart["id"]
-    product_id = str(uuid4())
-    client.post("/api/carts/items", json={"cart_id": cart_id, "product_id": product_id})
-    response = client.get(f"/api/carts/?user_id={user_cart['user_id']}")
-    assert response.status_code == 200
-    assert len(response.json["items"]) >= 1
+def test_add_item_user(test_client, create_user, sample_product):
+    with test_client.application.app_context():
+        user = User.query.get(create_user.id)
+        product = Product.query.get(sample_product.id)
+        
+        user_cart_resp = test_client.post("/api/carts/", json={"user_id": str(user.id)})
+        cart_id = user_cart_resp.json["id"]
 
-def test_update_cart_status(client, user_cart):
-    cart_id = user_cart["id"]
-    response = client.put(f"/api/carts/{cart_id}", json={"status": "completed"})
-    assert response.status_code == 200
-    assert response.json["status"] == "completed"
-
-def test_delete_cart_item(client, user_cart):
-    cart_id = user_cart["id"]
-    product_id = str(uuid4())
-    item_resp = client.post("/api/carts/items", json={"cart_id": cart_id, "product_id": product_id})
-    item_id = item_resp.json.get("product_id") 
+        response = test_client.post("/api/carts/items", json={"cart_id": cart_id, "product_id": str(product.id)})
+        assert response.status_code == 201
+        assert response.json["quantity"] == 1

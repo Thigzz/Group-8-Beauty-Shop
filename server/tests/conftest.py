@@ -50,8 +50,8 @@ def test_client():
         "JWT_SECRET_KEY": "test-secret-key"
     })
 
-    with flask_app.test_client() as testing_client:
-        with flask_app.app_context():
-            db.create_all()
-            yield testing_client
-            db.drop_all()
+    with flask_app.app_context():
+        db.create_all()
+        yield flask_app.test_client()
+        db.session.remove()
+        db.drop_all()

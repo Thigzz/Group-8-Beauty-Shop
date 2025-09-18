@@ -1,10 +1,10 @@
 import json
-from app.models.users import User, UserRole
-from app.models.security_question import SecurityQuestion
-from app.models.user_security_questions import UserSecurityQuestion
-from app.extensions import db, bcrypt
+from server.app.models.users import User, UserRole
+from server.app.models.security_question import SecurityQuestion
+from server.app.models.user_security_questions import UserSecurityQuestion
+from server.app.extensions import db, bcrypt
 
-# This helper function is now self-contained for each test
+
 def setup_user_with_questions(test_client):
     with test_client.application.app_context():
         user = User(username="sec_user", email="security@test.com", first_name="Sec", last_name="User", primary_phone_no="111")
@@ -14,7 +14,7 @@ def setup_user_with_questions(test_client):
         q1 = SecurityQuestion(question="What is your pet's name?")
         q2 = SecurityQuestion(question="What is your favorite color?")
         db.session.add_all([q1, q2])
-        db.session.commit() # Commit here to get IDs
+        db.session.commit()
 
         ans1 = UserSecurityQuestion(user_id=user.id, question_id=q1.id, answer_hash=bcrypt.generate_password_hash("Buddy").decode('utf-8'))
         ans2 = UserSecurityQuestion(user_id=user.id, question_id=q2.id, answer_hash=bcrypt.generate_password_hash("Blue").decode('utf-8'))
