@@ -30,3 +30,8 @@ gunicorn==23.0.0
 flask-sqlalchemy
 flask-migrate
 Flask-JWT-Extended==4.7.1
+
+# Reporting & Export
+reportlab==4.2.5
+openpyxl==3.1.5
+
