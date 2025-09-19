@@ -49,6 +49,17 @@ PATCH http://127.0.0.1:5000/api/categories/{category_id} (Admin)
 
 DELETE http://127.0.0.1:5000/api/categories/{category_id} (Admin)
 
+Sub_categories
+GET http://127.0.0.1:5000/api/sub_categories/
+
+GET http://127.0.0.1:5000/api/sub_categories/{sub_category_id}
+
+POST http://127.0.0.1:5000/api/sub_categories/ (Admin)
+
+PATCH http://127.0.0.1:5000/api/sub_categories/{sub_category_id} (Admin)
+
+DELETE http://127.0.0.1:5000/api/sub_categories/{sub_category_id} (Admin)
+
 Carts
 POST http://127.0.0.1:5000/api/carts/
 
