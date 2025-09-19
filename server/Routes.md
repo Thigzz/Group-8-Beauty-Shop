@@ -57,3 +57,16 @@
   * **PATCH** `http://127.0.0.1:5000/api/orders/{order_id}`
   * **DELETE** `http://127.0.0.1:5000/api/orders/{order_id}`
   * **PUT** `http://127.0.0.1:5000/api/orders/{order_id}/status` (Admin)
+
+  ##### Reports
+
+* **GET** `http://127.0.0.1:5000/reports/products` (Admin)
+* **GET** `http://127.0.0.1:5000/reports/orders` (Admin)
+
+##### Analytics
+
+* **GET** `http://127.0.0.1:5000/api/analytics/dashboard` (Admin)
+* **GET** `http://127.0.0.1:5000/api/analytics/sales` (Admin)
+* **GET** `http://127.0.0.1:5000/api/analytics/products` (Admin)
+* **GET** `http://127.0.0.1:5000/api/analytics/customers` (Admin)
+* **GET** `http://127.0.0.1:5000/api/analytics/financial` (Admin)
