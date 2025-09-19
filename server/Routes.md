@@ -3,6 +3,7 @@
   * **POST** `http://127.0.0.1:5000/auth/register`
   * **POST** `http://127.0.0.1:5000/auth/login`
   * **GET** `http://127.0.0.1:5000/auth/profile`
+  * **PUT** `http://127.0.0.1:5000/auth/profile`
   * **POST** `http://127.0.0.1:5000/auth/reset-questions`
   * **POST** `http://127.0.0.1:5000/auth/verify-answers`
   * **POST** `http://127.0.0.1:5000/auth/reset-password`
@@ -11,6 +12,7 @@
 
   * **GET** `http://127.0.0.1:5000/admin/users`
   * **GET** `http://127.0.0.1:5000/admin/users/{user_id}`
+  * **PUT** `http://127.0.0.1:5000/admin/users/{user_id}`
   * **PATCH** `http://127.0.0.1:5000/admin/users/{user_id}/activate`
   * **PATCH** `http://127.0.0.1:5000/admin/users/{user_id}/deactivate`
   * **POST** `http://127.0.0.1:5000/admin-reset/reset-password`
@@ -58,7 +60,14 @@
   * **DELETE** `http://127.0.0.1:5000/api/orders/{order_id}`
   * **PUT** `http://127.0.0.1:5000/api/orders/{order_id}/status` (Admin)
 
-  ##### Reports
+##### Addresses
+
+  * **POST** `http://127.0.0.1:5000/api/addresses/`
+  * **GET** `http://127.0.0.1:5000/api/addresses/`
+  * **PUT** `http://127.0.0.1:5000/api/addresses/{address_id}`
+  * **DELETE** `http://127.0.0.1:5000/api/addresses/{address_id}`
+
+##### Reports
 
 * **GET** `http://127.0.0.1:5000/reports/products` (Admin)
 * **GET** `http://127.0.0.1:5000/reports/orders` (Admin)
