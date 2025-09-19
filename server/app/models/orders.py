@@ -14,3 +14,12 @@ class Order(Base):
 
     cart = relationship("Cart", backref="order")
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+
+    def to_dict(self):
+        return {
+            'id': str(self.id),
+            'cart_id': str(self.cart_id),
+            'status': self.status.name,
+            'total_amount': float(self.total_amount),
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }

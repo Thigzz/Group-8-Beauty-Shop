@@ -9,7 +9,7 @@ def admin_token(test_client, new_admin):
     """Fixture to register and log in an admin user, returning an access token."""
     # Register admin
     test_client.post('/auth/register', data=json.dumps({
-        "username": new_admin.username, "email": new_admin.email, "password": "password123",
+        "username": new_admin.username, "email": new_admin.email, "password": "password123", "confirm_password": "password123",
         "first_name": "Admin", "last_name": "User", "primary_phone_no": "456"
     }), content_type='application/json')
 
