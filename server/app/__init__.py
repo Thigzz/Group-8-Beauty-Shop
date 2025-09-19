@@ -48,6 +48,8 @@ def create_app():
     from server.app.routes.categories import categories_bp
     from server.app.routes.admin import admin_bp
     from server.app.routes.cart import cart_bp
+    from server.app.routes.reports import reports_bp
+    from server.app.routes.analytics import analytics_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(products_bp)
@@ -58,6 +60,9 @@ def create_app():
     app.register_blueprint(admin_reset_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(cart_bp)
+    app.register_blueprint(reports_bp)
+    app.register_blueprint(analytics_bp)
+
     
     @app.cli.command("init-db")
     @with_appcontext
