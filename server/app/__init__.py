@@ -52,7 +52,6 @@ def create_app():
     from server.app.routes.analytics import analytics_bp
     from server.app.routes.addresses import addresses_bp
     from server.app.routes.sub_categories import sub_categories_bp
-    from server.app.routes.search import search_bp
 
 
     app.register_blueprint(auth_bp)
@@ -68,7 +67,6 @@ def create_app():
     app.register_blueprint(analytics_bp)
     app.register_blueprint(addresses_bp)
     app.register_blueprint(sub_categories_bp)
-    app.register_blueprint(search_bp)
 
     
     @app.cli.command("init-db")
