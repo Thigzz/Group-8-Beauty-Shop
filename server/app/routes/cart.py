@@ -22,7 +22,7 @@ def create_cart():
     db.session.add(cart)
     db.session.commit()
     return jsonify({"id": str(cart.id), "user_id": str(cart.user_id) if cart.user_id else None,
-                    "session_id": cart.session_id, "status": cart.status.name}), 201
+                    "session_id": cart.session_id, "status": cart.status.name,  "grand_total": 0.0, "items": []}), 201
 
 # Get cart by user_id or session_id
 @cart_bp.route("/", methods=["GET"])
@@ -38,13 +38,26 @@ def get_cart():
 
     if not cart:
         return jsonify({"error": "Cart not found"}), 404
+    
+    items_data = [
+        {
+            "product_id": str(item.product_id),
+            "product_name": item.product.product_name,
+            "price": float(item.product.price),
+            "stock_qty": item.quantity,
+            "total_amount": float(item.total_amount)
+        }
+        for item in cart.items
+    ]
+    grand_total = sum(i["total_amount"] for i in items_data)
 
     return jsonify({
         "id": str(cart.id),
         "user_id": str(cart.user_id) if cart.user_id else None,
         "session_id": cart.session_id,
         "status": cart.status.name,
-        "items": [{"product_id": str(item.product_id), "quantity": item.quantity} for item in cart.items]
+        "grand_total": grand_total,
+        "items": items_data
     }), 200
 
 # Update cart status
@@ -56,7 +69,26 @@ def update_cart(cart_id):
         return jsonify({"error": "Invalid status"}), 400
     cart.status = CartStatus[status]
     db.session.commit()
-    return jsonify({"id": str(cart.id), "status": cart.status.name}), 200
+    items_data = [
+        {
+            "product_id": str(item.product_id),
+            "product_name": item.product.product_name,
+            "price": float(item.product.price),
+            "stock_qty": item.quantity,
+            "total_amount": float(item.total_amount)
+        }
+        for item in cart.items
+    ]
+    grand_total = sum(i["total_amount"] for i in items_data)
+
+    return jsonify({
+        "id": str(cart.id),
+        "user_id": str(cart.user_id) if cart.user_id else None,
+        "session_id": cart.session_id,
+        "status": cart.status.name,
+        "grand_total": grand_total,
+        "items": items_data
+    }), 200
 
 # Delete cart
 @cart_bp.route("/<uuid:cart_id>", methods=["DELETE"])
@@ -64,9 +96,14 @@ def delete_cart(cart_id):
     cart = Cart.query.get_or_404(cart_id)
     db.session.delete(cart)
     db.session.commit()
-    return jsonify({"message": "Cart deleted"}), 200
-
-# ------------------ CART ITEM CRUD ------------------
+    return jsonify({
+        "id": str(cart.id),
+        "user_id": str(cart.user_id) if cart.user_id else None,
+        "session_id": cart.session_id,
+        "status": cart.status.name,
+        "grand_total": 0.0,
+        "items": []
+    }), 200
 
 # Add item to cart
 @cart_bp.route("/items", methods=["POST"])
@@ -75,37 +112,117 @@ def add_item():
     cart_id = data.get("cart_id")
     product_id = data.get("product_id")
     quantity = data.get("quantity", 1)
+
     if not cart_id or not product_id:
         return jsonify({"error": "cart_id and product_id are required"}), 400
 
     product = Product.query.get_or_404(product_id)
-    total_amount = product.price * quantity
+    cart = Cart.query.get_or_404(cart_id)
 
-    cart_item = CartItem(
-        cart_id=UUID(cart_id),
-        product_id=UUID(product_id),
-        quantity=quantity,
-        total_amount=total_amount
-    )
-    db.session.add(cart_item)
+    # check if item already exists -> update instead of duplicate
+    item = CartItem.query.filter_by(cart_id=cart.id, product_id=product.id).first()
+    if item:
+        item.quantity += quantity
+        item.total_amount = product.price * item.quantity
+    else:
+        item = CartItem(
+            cart_id=UUID(cart_id),
+            product_id=UUID(product_id),
+            quantity=quantity,
+            total_amount=product.price * quantity
+        )
+        db.session.add(item)
+
     db.session.commit()
-    return jsonify({"cart_id": str(cart_item.cart_id), "product_id": str(cart_item.product_id), "quantity": cart_item.quantity}), 201
+
+    # recalc grand total
+    items_data = [
+        {
+            "product_id": str(i.product_id),
+            "product_name": i.product.product_name,
+            "price": float(i.product.price),
+            "stock_qty": i.quantity,
+            "total_amount": float(i.total_amount)
+        }
+        for i in cart.items
+    ]
+    grand_total = sum(i["total_amount"] for i in items_data)
+
+    return jsonify({
+        "message": "Item added successfully",
+        "cart_id": str(cart.id),
+        "grand_total": grand_total,
+        "items": items_data
+    }), 201
+
 
 # Update item quantity
 @cart_bp.route("/items/<uuid:item_id>", methods=["PUT"])
 def update_item(item_id):
     item = CartItem.query.get_or_404(item_id)
     quantity = request.json.get("quantity")
+
     if not quantity or quantity < 1:
         return jsonify({"error": "quantity must be >= 1"}), 400
+
+    product = Product.query.get(item.product_id)
+    if not product:
+        return jsonify({"error": "Product not found"}), 404
+
+    # update and recalc
     item.quantity = quantity
+    item.total_amount = product.price * quantity
+    cart = item.cart
+
     db.session.commit()
-    return jsonify({"cart_id": str(item.cart_id), "product_id": str(item.product_id), "quantity": item.quantity}), 200
+
+    # recalc grand total
+    items_data = [
+        {
+            "product_id": str(i.product_id),
+            "product_name": i.product.product_name,
+            "price": float(i.product.price),
+            "stock_qty": i.quantity,
+            "total_amount": float(i.total_amount)
+        }
+        for i in cart.items
+    ]
+    grand_total = sum(i["total_amount"] for i in items_data)
+
+    return jsonify({
+        "message": "Item updated successfully",
+        "cart_id": str(cart.id),
+        "grand_total": grand_total,
+        "items": items_data
+    }), 200
+
 
 # Delete item
 @cart_bp.route("/items/<uuid:item_id>", methods=["DELETE"])
 def delete_item(item_id):
     item = CartItem.query.get_or_404(item_id)
+    cart = item.cart  # get the parent cart before deleting
+
     db.session.delete(item)
     db.session.commit()
-    return jsonify({"message": "Item deleted"}), 200
+
+    # recalc grand total after deletion
+    items_data = [
+        {
+            "product_id": str(i.product_id),
+            "product_name": i.product.product_name,
+            "price": float(i.product.price),
+            "stock_qty": i.quantity,
+            "total_amount": float(i.total_amount)
+        }
+        for i in cart.items
+    ]
+    grand_total = sum(i["total_amount"] for i in items_data)
+
+    return jsonify({
+        "message": "Item deleted",
+        "cart_id": str(cart.id),
+        "grand_total": grand_total,
+        "items": items_data
+    }), 200
+
