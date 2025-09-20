@@ -1,34 +1,30 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './server.app.css'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import Login from './pages/login'
+import Register from './pages/register'
+import ForgotPassword from './pages/forgot-password'
+import SecurityQuestions from './pages/security-questions'
+import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/server.app.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <Router>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/security-questions" element={<SecurityQuestions />} />
+        <Route path="/" element={
+          <div style={{ padding: '2rem', textAlign: 'center' }}>
+            <h1>Welcome to PAMBO</h1>
+            <p>Your Premium Beauty Destination</p>
+            <div style={{ marginTop: '2rem' }}>
+              <a href="/login" style={{ margin: '0 1rem', color: '#8B7355' }}>Login</a>
+              <a href="/register" style={{ margin: '0 1rem', color: '#8B7355' }}>Register</a>
+            </div>
+          </div>
+        } />
+      </Routes>
+    </Router>
   )
 }
 
