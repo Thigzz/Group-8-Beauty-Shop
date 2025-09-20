@@ -1,8 +1,8 @@
 from datetime import datetime
-from app.extensions import db
-from app.models.enums import PaymentMethod
+from server.app.extensions import db
+from server.app.models.enums import PaymentMethod
 import uuid
-from .base import Base, USE_POSTGRES, PG_UUID
+from .base import Base
 from sqlalchemy import Column, String, Boolean, ForeignKey
 
 class Payment(Base):
@@ -11,10 +11,10 @@ class Payment(Base):
     payment_method = db.Column(db.Enum(PaymentMethod), default=PaymentMethod.mpesa)
     amount = db.Column(db.Numeric(10, 2), nullable=False)
     transaction_id = db.Column(db.String(255), nullable=False)
-    
+
     def __repr__(self):
         return f'<Payment {self.transaction_id}>'
-    
+
     def to_dict(self):
         return {
             'id': self.id,

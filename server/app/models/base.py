@@ -1,20 +1,67 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, TIMESTAMP
+from sqlalchemy import Column, String, TIMESTAMP, TypeDecorator, CHAR
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from app.extensions import db
+from server.app.extensions import db
 import os
+from sqlalchemy.ext.compiler import compiles
 
 # Determine if we are using Postgres
 USE_POSTGRES = os.getenv("DATABASE_URL", "").startswith("postgres")
 
+class GUID(TypeDecorator):
+    """Platform-independent GUID type.
+
+    Uses PostgreSQL's UUID type, otherwise uses
+    CHAR(32), storing as string.
+    """
+    impl = CHAR
+    cache_ok = True
+    __visit_name__ = "GUID"
+
+    
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == 'postgresql':
+            return dialect.type_descriptor(PG_UUID())
+        else:
+            return dialect.type_descriptor(CHAR(32))
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return value
+        elif dialect.name == 'postgresql':
+            return str(value)
+        else:
+            if not isinstance(value, uuid.UUID):
+                return "%.32x" % uuid.UUID(value).int
+            else:
+                # hexstring
+                return "%.32x" % value.int
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return value
+        else:
+            if not isinstance(value, uuid.UUID):
+                value = uuid.UUID(value)
+            return value
+        
+    def __repr__(self):
+        return "GUID()"
+
+
+@compiles(GUID, 'postgresql')
+def compile_guid_postgresql(type_, compiler, **kw):
+    return "UUID"
+
+@compiles(GUID)
+def compile_guid_default(type_, compiler, **kw):
+    return "CHAR(32)"
+
 class Base(db.Model):
     __abstract__ = True
 
-    if USE_POSTGRES:
-        id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    else:
-        id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     created_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
