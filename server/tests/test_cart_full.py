@@ -46,4 +46,4 @@ def test_add_item_user(test_client, create_user, sample_product):
 
         response = test_client.post("/api/carts/items", json={"cart_id": cart_id, "product_id": str(product.id)})
         assert response.status_code == 201
-        assert response.json["quantity"] == 1
+        assert response.json["items"][0]["stock_qty"] == 1

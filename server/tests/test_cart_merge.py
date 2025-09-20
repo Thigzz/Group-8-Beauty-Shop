@@ -54,4 +54,4 @@ def test_guest_cart_merge(test_client, create_user, sample_product):
         user_cart_resp = test_client.get(f"/api/carts/?user_id={user.id}")
         assert user_cart_resp.status_code == 200
         items = user_cart_resp.json["items"]
-        assert any(i["product_id"] == str(product.id) and i["quantity"] == 2 for i in items)
+        assert any(i["product_id"] == str(product.id) and i["stock_qty"] == 2 for i in items)

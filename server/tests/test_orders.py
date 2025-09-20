@@ -9,7 +9,7 @@ from server.app.extensions import db
 @pytest.fixture
 def admin_token(test_client, new_admin):
     test_client.post('/auth/register', data=json.dumps({
-        "username": new_admin.username, "email": new_admin.email, "password": "password123",
+        "username": new_admin.username, "email": new_admin.email, "password": "password123", "confirm_password": "password123",
         "first_name": "Admin", "last_name": "User", "primary_phone_no": "456"
     }), content_type='application/json')
     with test_client.application.app_context():
@@ -24,7 +24,7 @@ def admin_token(test_client, new_admin):
 @pytest.fixture
 def user_token(test_client, new_user):
     test_client.post('/auth/register', data=json.dumps({
-        "username": new_user.username, "email": new_user.email, "password": "password123",
+        "username": new_user.username, "email": new_user.email, "password": "password123", "confirm_password": "password123",
         "first_name": "Test", "last_name": "User", "primary_phone_no": "123"
     }), content_type='application/json')
     login_res = test_client.post('/auth/login', data=json.dumps({
@@ -44,7 +44,7 @@ def sample_order(test_client):
 
 def test_update_order_status_admin(test_client, sample_order, admin_token):
     with test_client.application.app_context():
-        order = Order.query.get(sample_order.id)
+        order = db.session.get(Order, sample_order.id)
         headers = {"Authorization": f"Bearer {admin_token}"}
         response = test_client.put(
             f"/api/orders/{order.id}/status",
@@ -55,7 +55,7 @@ def test_update_order_status_admin(test_client, sample_order, admin_token):
 
 def test_update_order_status_non_admin(test_client, sample_order, user_token):
     with test_client.application.app_context():
-        order = Order.query.get(sample_order.id)
+        order = db.session.get(Order, sample_order.id)
         headers = {"Authorization": f"Bearer {user_token}"}
         response = test_client.put(
             f"/api/orders/{order.id}/status",
@@ -66,7 +66,7 @@ def test_update_order_status_non_admin(test_client, sample_order, user_token):
 
 def test_update_order_status_invalid(test_client, sample_order, admin_token):
     with test_client.application.app_context():
-        order = Order.query.get(sample_order.id)
+        order = db.session.get(Order, sample_order.id)
         headers = {"Authorization": f"Bearer {admin_token}"}
         response = test_client.put(
             f"/api/orders/{order.id}/status",

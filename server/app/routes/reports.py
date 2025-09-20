@@ -2,13 +2,15 @@
 import csv
 import io
 from flask import Blueprint, request, jsonify, Response
-from app.models import Product, Order
-from app.extensions import db
+from server.app.models import Product, Order
+from server.app.extensions import db
 from openpyxl import Workbook
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
+from flask_jwt_extended import jwt_required
+from server.app.decorators import admin_required
 
 reports_bp = Blueprint("reports", __name__, url_prefix="/reports")
 
@@ -39,7 +41,7 @@ def generate_excel(data, headers):
 
     return Response(
         output.getvalue(),
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheet.sheet",
         headers={"Content-Disposition": "attachment; filename=report.xlsx"}
     )
 
@@ -88,6 +90,8 @@ def export_data(queryset, format_type, title):
         return jsonify(data)
 
 @reports_bp.route("/products", methods=["GET"])
+@jwt_required()
+@admin_required()
 def export_products():
     """Admin: Export product report"""
     format_type = request.args.get("format", "json").lower()
@@ -95,6 +99,8 @@ def export_products():
     return export_data(products, format_type, "Product Report")
 
 @reports_bp.route("/orders", methods=["GET"])
+@jwt_required()
+@admin_required()
 def export_orders():
     """Admin: Export order report"""
     format_type = request.args.get("format", "json").lower()

@@ -220,7 +220,7 @@ def seed_data():
             ("Sephora Collection Makeup Organizer Bag", "Function meets style.", "https://images.unsplash.com/photo-1615210100443-74b6a08b8a48", "Accessories", "Bags"),
         ]  
         products = []
-        with db.session.no_autoflush:
+        with db.session.no_autoflush():
             for _ in range(100):
                 sample = random.choice(product_samples)
                 variant_name = f"{sample[0]} {random.choice(['Mini','Pro','Deluxe','Edition'])}"
@@ -317,7 +317,7 @@ def seed_data():
         for order in Order.query.all():
             if order.status in ["shipped","delivered"]:
                 db.session.add(Payment(
-                    order_id=order.id,
+                    order_id=str(order.id),
                     amount=order.total_amount,
                     status="paid"
                 ))
@@ -330,8 +330,8 @@ def seed_data():
             user = random.choice(users_for_invoices)
             invoice = Invoice(
                 invoice_number=f"INV-{1000+i+1}",
-                order_id=order.id,
-                user_id=user.id,
+                order_id=str(order.id),
+                user_id=str(user.id),
                 amount=order.total_amount,
                 payment_status=random.choice([PaymentStatus.pending, PaymentStatus.paid, PaymentStatus.failed])
             )
