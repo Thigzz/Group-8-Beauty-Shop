@@ -3,7 +3,7 @@ set -o errexit
 
 # 1. Install Backend Dependencies
 echo "--- Installing backend dependencies ---"
-pip install -r server/requirements.txt
+pip install -r ./requirements.txt
 
 # 2. Apply database migrations
 echo "--- Applying database migrations ---"
