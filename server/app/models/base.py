@@ -4,6 +4,7 @@ from sqlalchemy import Column, String, TIMESTAMP, TypeDecorator, CHAR
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from server.app.extensions import db
 import os
+from sqlalchemy.ext.compiler import compiles
 
 # Determine if we are using Postgres
 USE_POSTGRES = os.getenv("DATABASE_URL", "").startswith("postgres")
@@ -16,6 +17,9 @@ class GUID(TypeDecorator):
     """
     impl = CHAR
     cache_ok = True
+    __visit_name__ = "GUID"
+
+    
 
     def load_dialect_impl(self, dialect):
         if dialect.name == 'postgresql':
@@ -42,6 +46,18 @@ class GUID(TypeDecorator):
             if not isinstance(value, uuid.UUID):
                 value = uuid.UUID(value)
             return value
+        
+    def __repr__(self):
+        return "GUID()"
+
+
+@compiles(GUID, 'postgresql')
+def compile_guid_postgresql(type_, compiler, **kw):
+    return "UUID"
+
+@compiles(GUID)
+def compile_guid_default(type_, compiler, **kw):
+    return "CHAR(32)"
 
 class Base(db.Model):
     __abstract__ = True
