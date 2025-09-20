@@ -15,3 +15,14 @@ class Address(Base):
 
     # Relationships section
     user = relationship("User", back_populates="addresses")
+
+    def to_dict(self):
+        return {
+            'id': str(self.id),
+            'user_id': str(self.user_id),
+            'address_line_1': self.address_line_1,
+            'address_line_2': self.address_line_2,
+            'city': self.city,
+            'postal_code': self.postal_code,
+            'is_default': self.is_default
+        }

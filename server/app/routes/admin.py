@@ -12,25 +12,18 @@ admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 @admin_required()
 def get_users():
     users = User.query.all()
-    return jsonify([
-        {"id": str(user.id), "email": user.email, "is_active": user.is_active}
-        for user in users
-    ]), 200
+    return jsonify([user.to_dict() for user in users]), 200
 
 # --------Get single user------------------
 @admin_bp.route("/users/<uuid:user_id>", methods=["GET"])
 @jwt_required()
 @admin_required()
 def get_user(user_id):
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
     
-    return jsonify({
-        "id": str(user.id),
-        "email": user.email,
-        "is_active": user.is_active
-    }), 200
+    return jsonify(user.to_dict()), 200
 
 
 #----- Activate user------------
@@ -38,7 +31,7 @@ def get_user(user_id):
 @jwt_required()
 @admin_required()
 def activate_user(user_id):
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
     
@@ -59,7 +52,7 @@ def activate_user(user_id):
 @jwt_required()
 @admin_required()
 def deactivate_user(user_id):
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
     
@@ -74,3 +67,22 @@ def deactivate_user(user_id):
         "user_id": str(user.id),
         "is_active": user.is_active
     }), 200
+
+# -------- Update user -----------------
+@admin_bp.route("/users/<uuid:user_id>", methods=["PUT"])
+@jwt_required()
+@admin_required()
+def update_user(user_id):
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    data = request.get_json()
+    user.first_name = data.get('first_name', user.first_name)
+    user.last_name = data.get('last_name', user.last_name)
+    user.email = data.get('email', user.email)
+    user.primary_phone_no = data.get('primary_phone_no', user.primary_phone_no)
+    user.secondary_phone_no = data.get('secondary_phone_no', user.secondary_phone_no)
+    
+    db.session.commit()
+    return jsonify(user.to_dict()), 200
