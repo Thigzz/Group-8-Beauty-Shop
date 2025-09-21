@@ -15,6 +15,15 @@ auth_bp = Blueprint('auth_bp', __name__, url_prefix='/auth')
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
+
+    password = data.get('password')
+    confirm_password = data.get('confirm_password')
+
+    if not password or not confirm_password:
+        return jsonify({"message": "Password and confirm password are required"}), 400
+
+    if password != confirm_password:
+        return jsonify({"message": "Passwords do not match"}), 400
     
     if User.query.filter(or_(User.email == data.get('email'), User.username == data.get('username'))).first():
         return jsonify({"message": "User with this email or username already exists"}), 409
@@ -26,7 +35,7 @@ def register():
         email=data.get('email'),
         primary_phone_no=data.get('primary_phone_no')
     )
-    new_user.set_password(data.get('password'))
+    new_user.set_password(password)
 
     db.session.add(new_user)
     db.session.commit()
@@ -140,6 +149,22 @@ def profile():
         "email": current_user.email,
         "role": current_user.role.name
     }), 200
+
+
+@auth_bp.route('/profile', methods=['PUT'])
+@jwt_required()
+def update_profile():
+    data = request.get_json()
+    user = current_user
+
+    user.first_name = data.get('first_name', user.first_name)
+    user.last_name = data.get('last_name', user.last_name)
+    user.email = data.get('email', user.email)
+    user.primary_phone_no = data.get('primary_phone_no', user.primary_phone_no)
+    user.secondary_phone_no = data.get('secondary_phone_no', user.secondary_phone_no)
+
+    db.session.commit()
+    return jsonify(user.to_dict()), 200
 
 
 @auth_bp.route('/admin/dashboard', methods=['GET'])

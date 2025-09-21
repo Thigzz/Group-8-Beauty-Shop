@@ -11,7 +11,7 @@ def admin_token(test_client, new_admin):
     test_client.post('/auth/register', data=json.dumps({
         "username": new_admin.username,
         "email": new_admin.email,
-        "password": "password123",
+        "password": "password123", "confirm_password": "password123",
         "first_name": "Admin",
         "last_name": "User",
         "primary_phone_no": "456"
