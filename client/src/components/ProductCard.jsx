@@ -1,8 +1,14 @@
 import React from 'react';
+import { useDispatch } from 'react-redux';
+import { addItemToCart } from '../redux/features/cart/cartSlice';
+import toast from 'react-hot-toast';
 
 const ProductCard = ({ product }) => {
+  const dispatch = useDispatch();
+
   const handleAddToCart = () => {
-    alert(`Added ${product.product_name} to cart!`);
+    dispatch(addItemToCart(product));
+    toast.success(`${product.product_name} added to cart!`);
   };
 
   return (
