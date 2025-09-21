@@ -16,8 +16,8 @@ const Header = () => {
   return (
     <header className="bg-[#000000] text-gray-300 p-4 shadow-md">
       <div className="container mx-auto flex justify-between items-center">
-        <div className="font-['Orbitron'] text-4xl font">
-          <a href="/">
+        <div className="font-['Orbitron'] text-4xl font-bold">
+          <a href="/" data-testid="pambo-logo">
             <span className="text-white">PA</span>
             <span className="text-[#C9A35D]">M</span>
             <span className="text-white">BO</span>
@@ -32,7 +32,7 @@ const Header = () => {
             className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-full text-white focus:outline-none focus:ring-2 focus:ring-[#C9A35D]"
           />
         </form>
-        <div className="flex items-center space-x-20">
+        <div className="flex items-center space-x-6">
           <a href="/cart" className="relative">
             <FiShoppingCart className="h-6 w-6 text-[#C9A35D] hover:text-white" />
           </a>
