@@ -47,7 +47,7 @@ const Header = () => {
               <span>Profile</span>
             </Link>
           ) : (
-            <Link to="/login" className="flex items-center space-x-3 text-[#C9A35D] hover:text-white">
+            <Link to="/login" className="flex items-center space-x-2 text-[#C9A35D] hover:text-white">
               <FiUser className="h-6 w-6" />
               <span>Log In</span>
             </Link>
