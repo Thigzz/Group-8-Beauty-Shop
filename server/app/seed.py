@@ -167,7 +167,6 @@ def seed_data():
 
         # ---------- Products ----------
         product_samples = [
-            # ... (product data remains the same) ...
             # MakeUp - Face
             ("Maybelline Fit Me Foundation", "Matte finish foundation for oily skin.", "https://images.unsplash.com/photo-1580910051075-0a174670bfcf", "MakeUp", "Face"),
             ("L'Oréal True Match Concealer", "Lightweight concealer that blends perfectly.", "https://images.unsplash.com/photo-1590944491986-df3a1bffc909", "MakeUp", "Face"),
