@@ -16,7 +16,7 @@ const Header = () => {
   return (
     <header className="bg-[#000000] text-gray-300 p-4 shadow-md">
       <div className="container mx-auto flex justify-between items-center">
-        <div className="font-['Orbitron'] text-4xl font-bold">
+        <div className="font-['Orbitron'] text-4xl font">
           <a href="/" data-testid="pambo-logo">
             <span className="text-white">PA</span>
             <span className="text-[#C9A35D]">M</span>
