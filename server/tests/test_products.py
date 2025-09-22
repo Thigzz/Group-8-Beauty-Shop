@@ -154,21 +154,36 @@ def test_delete_product(test_client, admin_token, sample_product_data):
 
 def test_get_products_by_category(test_client, sample_product_data):
     category_id = sample_product_data['category_id']
-    response = test_client.get(f'/api/products/categories/{category_id}')
+    response = test_client.get(f'/api/products/?category_id={category_id}')
     assert response.status_code == 200
 
     data = json.loads(response.data)
-    assert isinstance(data, list)
-    assert len(data) == 2
-    assert all(prod['category_id'] == category_id for prod in data)
+    assert isinstance(data['products'], list)
+    assert len(data['products']) >= 2
+    assert all(prod['category_id'] == category_id for prod in data['products'])
 
 
 def test_get_products_by_subcategory(test_client, sample_product_data):
     sub_category_id = sample_product_data['sub_category_id']
-    response = test_client.get(f'/api/products/subcategories/{sub_category_id}')
+    response = test_client.get(f'/api/products/?sub_category_id={sub_category_id}')
     assert response.status_code == 200
 
     data = json.loads(response.data)
-    assert isinstance(data, list)
-    assert len(data) == 2
-    assert all(prod['sub_category_id'] == sub_category_id for prod in data)   
+    assert isinstance(data['products'], list)
+    assert len(data['products']) >= 2
+    assert all(prod['sub_category_id'] == sub_category_id for prod in data['products'])
+
+
+def test_get_products_by_category_and_subcategory(test_client, sample_product_data):
+    category_id = sample_product_data['category_id']
+    sub_category_id = sample_product_data['sub_category_id']
+    response = test_client.get(f'/api/products/?category_id={category_id}&sub_category_id={sub_category_id}')
+    assert response.status_code == 200
+
+    data = json.loads(response.data)
+    assert isinstance(data['products'], list)
+    assert len(data['products']) >= 2
+    assert all(
+        prod['category_id'] == category_id and prod['sub_category_id'] == sub_category_id
+        for prod in data['products']
+    )

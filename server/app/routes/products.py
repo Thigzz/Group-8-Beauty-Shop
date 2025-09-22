@@ -13,6 +13,7 @@ def get_all_products():
     """Get all products with optional filtering"""
     try:
         category_id = request.args.get('category_id')
+        sub_category_id = request.args.get('sub_category_id')
         search = request.args.get('search')
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
@@ -21,6 +22,8 @@ def get_all_products():
         
         if category_id:
             query = query.filter_by(category_id=category_id)
+        if sub_category_id:
+            query = query.filter_by(sub_category_id=sub_category_id)
         
         if search:
             query = query.filter(Product.product_name.contains(search))
@@ -49,24 +52,6 @@ def get_product(product_id):
         return jsonify({'error': 'Invalid product ID format'}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 404
-    
-@products_bp.route('/categories/<string:category_id>', methods=['GET'])
-def get_category_products(category_id):
-    """Get all products for a specific category"""
-    try:
-        products = Product.query.filter_by(category_id=category_id).all()
-        return jsonify([product.to_dict() for product in products]), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-    
-@products_bp.route('/subcategories/<string:sub_category_id>', methods=['GET'])
-def get_subcategory_products(sub_category_id):
-    """Get all products for a specific subcategory"""
-    try:
-        products = Product.query.filter_by(sub_category_id=sub_category_id).all()
-        return jsonify([product.to_dict() for product in products]), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 @products_bp.route('/', methods=['POST'])
 @jwt_required()

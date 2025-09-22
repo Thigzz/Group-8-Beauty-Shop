@@ -32,9 +32,11 @@ GET http://127.0.0.1:5000/api/products/
 
 GET http://127.0.0.1:5000/api/products/{product_id}
 
-GET http://127.0.0.1:5000/api/products/subcategories/{sub_category_id}
+GET http://127.0.0.1:5000/api/products/categories/{sub_category_id}
 
-GET http://127.0.0.1:5000/api/products/categories/{string:category_id}
+GET http://127.0.0.1:5000/api/products/{string:category_id}
+
+GET http://127.0.0.1:5000/api/products/?category_id={category_id}&sub_category_id={sub_category_id}
 
 POST http://127.0.0.1:5000/api/products/ (Admin)
 
