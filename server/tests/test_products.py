@@ -5,6 +5,8 @@ from server.app.models.users import User, UserRole
 from server.app.models.category import Category
 from server.app.models.sub_category import SubCategory
 from server.app.extensions import db
+from server.app.models.product import Product
+
 
 @pytest.fixture
 def admin_token(test_client, new_admin):
@@ -44,6 +46,27 @@ def sample_product_data(test_client):
         sub_category = SubCategory(sub_category_name="Test SubCategory", category_id=category.id)
         db.session.add(sub_category)
         db.session.commit()
+
+        # Create products
+        product1 = Product(
+            product_name="Product 1",
+            description="First product",
+            price=10.99,
+            stock_qty=50,
+            category_id=str(category.id),
+            sub_category_id=sub_category.id
+        )
+        product2 = Product(
+            product_name="Product 2",
+            description="Second product",
+            price=15.99,
+            stock_qty=30,
+            category_id=str(category.id),
+            sub_category_id=str(sub_category.id)
+        )
+        db.session.add_all([product1, product2])
+        db.session.commit()
+
 
         return {
             "product_name": "Test Product",
@@ -128,3 +151,24 @@ def test_delete_product(test_client, admin_token, sample_product_data):
     assert response.status_code == 200
     data = json.loads(response.data)
     assert data['message'] == 'Product deleted successfully'
+
+def test_get_products_by_category(test_client, sample_product_data):
+    category_id = sample_product_data['category_id']
+    response = test_client.get(f'/api/products/categories/{category_id}')
+    assert response.status_code == 200
+
+    data = json.loads(response.data)
+    assert isinstance(data, list)
+    assert len(data) == 2
+    assert all(prod['category_id'] == category_id for prod in data)
+
+
+def test_get_products_by_subcategory(test_client, sample_product_data):
+    sub_category_id = sample_product_data['sub_category_id']
+    response = test_client.get(f'/api/products/subcategories/{sub_category_id}')
+    assert response.status_code == 200
+
+    data = json.loads(response.data)
+    assert isinstance(data, list)
+    assert len(data) == 2
+    assert all(prod['sub_category_id'] == sub_category_id for prod in data)   

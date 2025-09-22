@@ -32,6 +32,10 @@ GET http://127.0.0.1:5000/api/products/
 
 GET http://127.0.0.1:5000/api/products/{product_id}
 
+GET http://127.0.0.1:5000/api/products/subcategories/{sub_category_id}
+
+GET http://127.0.0.1:5000/api/products/categories/{string:category_id}
+
 POST http://127.0.0.1:5000/api/products/ (Admin)
 
 PUT http://127.0.0.1:5000/api/products/{product_id} (Admin)
