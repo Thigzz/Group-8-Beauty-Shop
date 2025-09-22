@@ -7,7 +7,7 @@ import os
 
 from server.app import create_app
 from server.app.extensions import db
-from server.app.models.users import User
+from server.app.models.users import User, UserRole
 from server.app.models.address import Address
 from server.app.models.category import Category
 from server.app.models.sub_category import SubCategory
@@ -92,9 +92,37 @@ def seed_data():
         db.session.commit()
         print(f"✅ Seeded {len(users)} users")
 
+        # ---------- Specific Admin Users ----------
+        admins = [
+            {"first_name": "Simon", "last_name": "Warui", "username": "simon", "email": "simon@pambo.com"},
+            {"first_name": "Ruth", "last_name": "Siyoi", "username": "ruth", "email": "ruth@pambo.com"},
+            {"first_name": "Ike", "last_name": "Mwithiga", "username": "ike", "email": "ike@pambo.com"},
+            {"first_name": "Justin", "last_name": "Kipkorir", "username": "justin", "email": "justin@pambo.com"}
+        ]
+
+        for admin_data in admins:
+            # Check if user already exists to avoid duplicates
+            if not User.query.filter_by(email=admin_data["email"]).first():
+                admin_user = User(
+                    first_name=admin_data["first_name"],
+                    last_name=admin_data["last_name"],
+                    username=admin_data["username"],
+                    email=admin_data["email"],
+                    primary_phone_no=fake.phone_number(),
+                    role=UserRole.admin,  # Set role to admin
+                    password_hash=generate_password_hash("passnumber"), # Set password
+                    is_active=True,
+                )
+                db.session.add(admin_user)
+        
+        db.session.commit()
+        print(f"✅ Seeded {len(admins)} specific admin users")
+
         # ---------- Addresses ----------
         addresses = []
-        for user in users:
+        # Get all users again to include the new admins
+        all_users = User.query.all()
+        for user in all_users:
             addresses.append(
                 Address(
                     user_id=user.id,
@@ -144,6 +172,7 @@ def seed_data():
 
         # ---------- Products ----------
         product_samples = [
+            # ... (product data remains the same) ...
             # MakeUp - Face
             ("Maybelline Fit Me Foundation", "Matte finish foundation for oily skin.", "https://images.unsplash.com/photo-1580910051075-0a174670bfcf", "MakeUp", "Face"),
             ("L'Oréal True Match Concealer", "Lightweight concealer that blends perfectly.", "https://images.unsplash.com/photo-1590944491986-df3a1bffc909", "MakeUp", "Face"),
@@ -220,7 +249,7 @@ def seed_data():
             ("Sephora Collection Makeup Organizer Bag", "Function meets style.", "https://images.unsplash.com/photo-1615210100443-74b6a08b8a48", "Accessories", "Bags"),
         ]  
         products = []
-        with db.session.no_autoflush():
+        with db.session.no_autoflush:
             for _ in range(100):
                 sample = random.choice(product_samples)
                 variant_name = f"{sample[0]} {random.choice(['Mini','Pro','Deluxe','Edition'])}"
@@ -317,7 +346,7 @@ def seed_data():
         for order in Order.query.all():
             if order.status in ["shipped","delivered"]:
                 db.session.add(Payment(
-                    order_id=str(order.id),
+                    order_id=order.id,
                     amount=order.total_amount,
                     status="paid"
                 ))
