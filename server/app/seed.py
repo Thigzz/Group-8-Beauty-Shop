@@ -2,11 +2,10 @@ import uuid
 import random
 from datetime import datetime, timedelta, timezone
 from faker import Faker
-from werkzeug.security import generate_password_hash
 import os
 
 from server.app import create_app
-from server.app.extensions import db
+from server.app.extensions import db, bcrypt
 from server.app.models.users import User, UserRole
 from server.app.models.address import Address
 from server.app.models.category import Category
@@ -83,10 +82,10 @@ def seed_data():
                 email=fake.unique.email(),
                 primary_phone_no=fake.phone_number(),
                 secondary_phone_no=fake.phone_number(),
-                role=random.choice(["customer", "admin"]),
-                password_hash=generate_password_hash("password123"),
+                role=random.choice([UserRole.customer, UserRole.admin]),
                 is_active=True,
             )
+            user.set_password("password123")  # ✅ bcrypt
             users.append(user)
         db.session.add_all(users)
         db.session.commit()
@@ -101,7 +100,6 @@ def seed_data():
         ]
 
         for admin_data in admins:
-            # Check if user already exists to avoid duplicates
             if not User.query.filter_by(email=admin_data["email"]).first():
                 admin_user = User(
                     first_name=admin_data["first_name"],
@@ -109,10 +107,10 @@ def seed_data():
                     username=admin_data["username"],
                     email=admin_data["email"],
                     primary_phone_no=fake.phone_number(),
-                    role=UserRole.admin,  # Set role to admin
-                    password_hash=generate_password_hash("passnumber"), # Set password
+                    role=UserRole.admin,
                     is_active=True,
                 )
+                admin_user.set_password("passnumber")  # ✅ bcrypt
                 db.session.add(admin_user)
         
         db.session.commit()
@@ -120,7 +118,6 @@ def seed_data():
 
         # ---------- Addresses ----------
         addresses = []
-        # Get all users again to include the new admins
         all_users = User.query.all()
         for user in all_users:
             addresses.append(
@@ -135,7 +132,6 @@ def seed_data():
         db.session.add_all(addresses)
         db.session.commit()
         print(f"✅ Seeded {len(addresses)} addresses")
-
 
         # ---------- Security Questions ----------
         questions = [
@@ -164,11 +160,10 @@ def seed_data():
             for q in selected:
                 if not UserSecurityQuestion.query.filter_by(user_id=user.id, question_id=q.id).first():
                     fake_answer = fake.word()
-                    hashed = generate_password_hash(fake_answer)
+                    hashed = bcrypt.generate_password_hash(fake_answer).decode("utf-8")  # ✅ bcrypt
                     db.session.add(UserSecurityQuestion(user_id=user.id, question_id=q.id, answer_hash=hashed))
         db.session.commit()
         print(f"✅ Seeded user security question answers")
-
 
         # ---------- Products ----------
         product_samples = [
