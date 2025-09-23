@@ -4,7 +4,7 @@ import apiClient from '../api/axios';
 import Header from '../components/Header';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import ProductCard from '../components/ProductCard';
+import ProductCard from '../components/Product/ProductCard';
 
 const SearchResultsPage = () => {
   const [searchParams] = useSearchParams();
@@ -22,7 +22,7 @@ const SearchResultsPage = () => {
     const fetchResults = async () => {
       setIsLoading(true);
       try {
-        const response = await apiClient.get(`/api/search/?q=${query}`);
+        const response = await apiClient.get(`/search/?q=${query}`);
         setResults(response.data);
       } catch (error) {
         console.error("Failed to fetch search results:", error);
