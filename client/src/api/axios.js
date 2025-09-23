@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://group-8-beauty-shop.onrender.com'; //
+const API_BASE_URL = 'http://127.0.0.1:5000'; //
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

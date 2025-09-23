@@ -1,172 +1,85 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import apiClient from '../api/axios';
 
-const Navbar = ({ 
-  categories = [], 
-  selectedCategory, 
-  selectedSubcategory,
-  onCategorySelect, 
-  onSubcategorySelect 
-}) => {
-  const [activeDropdown, setActiveDropdown] = useState(null);
-  const dropdownRef = useRef(null);
-  const navigate = useNavigate();
+const Navbar = () => {
+  const [categories, setCategories] = useState([]);
+  const [subCategories, setSubCategories] = useState({});
+  const [activeMenu, setActiveMenu] = useState(null);
 
-  const normalizedCategories = categories.map(cat => ({
-    id: cat.id,
-    name: cat.name || cat.category_name || "Unnamed",
-    subcategories: (cat.subcategories || cat.sub_categories || []).map(sub => ({
-      id: sub.id,
-      name: sub.name || sub.sub_category_name || "Unnamed"
-    }))
-  }));
-
-  const menuCategories = [
-    { id: "shop-all", name: "SHOP ALL", subcategories: [] }, 
-    ...normalizedCategories
-  ];
-
+  // Fetch main categories on component
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setActiveDropdown(null);
+    const fetchCategories = async () => {
+      try {
+        const response = await apiClient.get('/api/categories/');
+        setCategories(response.data);
+      } catch (error) {
+        console.error("Failed to fetch categories:", error);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    fetchCategories();
   }, []);
 
-  const handleCategoryClick = (category) => {
-    console.log('Category clicked:', category);
-    const hasSubcategories = category.subcategories && category.subcategories.length > 0;
-
-    if (hasSubcategories) {
-      setActiveDropdown(activeDropdown === category.id ? null : category.id);
-    }
-
-    if (category.id === "shop-all") {
-      navigate("/products/");
-      onCategorySelect(null);
-      onSubcategorySelect(null);
-    } else {
-      navigate("/categories");
-      onCategorySelect(category);
-      onSubcategorySelect(null);
-    }
-
-    if (!hasSubcategories) setActiveDropdown(null);
-  };
-
-  const handleSubcategoryClick = (category, subcategory, event) => {
-    event.stopPropagation();
-    console.log('Subcategory clicked:', subcategory);
-    setActiveDropdown(null);
-    navigate("/categories");
-    
-    if (subcategory && subcategory.id) {
-      onCategorySelect(category);
-      onSubcategorySelect(subcategory);
-    } else {
-      onCategorySelect(category);
-      onSubcategorySelect(null);
+  // Function to handle hovering over a category
+  const handleMouseEnter = async (categoryId) => {
+    setActiveMenu(categoryId);
+    if (!subCategories[categoryId]) {
+      try {
+        const response = await apiClient.get(`/api/sub_categories/by_category/${categoryId}`);
+        setSubCategories(prev => ({ ...prev, [categoryId]: response.data }));
+      } catch (error) {
+        console.error(`Failed to fetch sub-categories for ${categoryId}:`, error);
+        setSubCategories(prev => ({ ...prev, [categoryId]: [] }));
+      }
     }
   };
 
-  const getDropdownPosition = (categoryIndex) => {
-    const baseLeft = 240;
-    const increment = 100;
-    return baseLeft + (categoryIndex * increment);
+  const handleMouseLeave = () => {
+    setActiveMenu(null);
   };
 
   return (
-    <div className="bg-gray-50 border-b border-gray-200 relative z-50">
-      <div className="container mx-auto px-4" ref={dropdownRef}>
-        <div className="flex items-center space-x-8 py-4 overflow-x-auto relative">
-          {menuCategories.map((category, index) => {
-            const hasSubcategories = category.subcategories.length > 0;
-            const isActive = category.id === "shop-all" 
-              ? !selectedCategory 
-              : selectedCategory?.id === category.id;
-
-            return (
-              <div 
-                key={category.id} 
-                className="relative"
-                onMouseEnter={() => hasSubcategories && setActiveDropdown(category.id)}
-                onMouseLeave={() => hasSubcategories && setActiveDropdown(null)}
-              >
-                {/* Category button */}
-                <button
-                  onClick={() => handleCategoryClick(category)}
-                  className={`flex items-center space-x-1 py-2 px-3 font-medium whitespace-nowrap transition-colors rounded ${
-                    isActive 
-                      ? 'text-[#C9A35D] bg-yellow-50' 
-                      : 'hover:text-[#C9A35D] hover:bg-gray-100'
-                  }`}
-                >
-                  <span>{category.name}</span>
-                  {hasSubcategories && (
-                    <ChevronDown 
-                      className={`w-4 h-4 transition-transform ${
-                        activeDropdown === category.id ? "rotate-180" : ""
-                      }`} 
-                    />
-                  )}
-                </button>
-
-                {/* Subcategory dropdown with fixed positioning */}
-                {activeDropdown === category.id && hasSubcategories && (
-                  <>
-                    {/* Backdrop to catch clicks outside */}
-                    <div 
-                      className="fixed inset-0 z-[9998]"
-                      onClick={() => setActiveDropdown(null)}
-                    />
-                    
-                    {/* Dropdown Menu */}
-                    <div 
-                      className="fixed w-48 bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col z-[9999]"
-                      style={{ 
-                        top: '120px',
-                        left: `${getDropdownPosition(index)}px`
-                      }}
-                    >
-                      {/* "All [Category]" option */}
-                      <button
-                        onClick={(e) => handleSubcategoryClick(category, null, e)}
-                        className={`w-full text-left px-4 py-3 text-sm font-semibold transition-colors border-b border-gray-100 ${
-                          selectedCategory?.id === category.id && !selectedSubcategory
-                            ? 'bg-[#C9A35D] text-white'
-                            : 'text-[#C9A35D] hover:bg-yellow-50'
-                        }`}
+    <nav className="bg-white shadow-md border-b border-gray-200">
+      <div className="container mx-auto flex justify-around items-center h-16">
+        <Link to="/products" className="font-semibold tracking-wider uppercase text-gray-700 hover:text-[#C9A35D] transition-colors">
+          Shop All
+        </Link>
+        {categories.map((category) => (
+          <div
+            key={category.id}
+            className="relative"
+            onMouseEnter={() => handleMouseEnter(category.id)}
+            onMouseLeave={handleMouseLeave}
+          >
+            <Link
+              to={`/products/category/${category.id}`}
+              className="font-semibold tracking-wider uppercase text-gray-700 hover:text-[#C9A35D] transition-colors p-4"
+            >
+              {category.category_name}
+            </Link>
+            {activeMenu === category.id && subCategories[category.id] && (
+              <div className="absolute top-full left-0 mt-1 w-56 bg-white shadow-lg rounded-md z-10">
+                <div className="p-2">
+                  {subCategories[category.id].length > 0 ? (
+                    subCategories[category.id].map(sub => (
+                      <Link
+                        key={sub.id}
+                        to={`/products/sub_category/${sub.id}`}
+                        className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
                       >
-                        All {category.name}
-                      </button>
-
-                      {/* Individual subcategories */}
-                      {category.subcategories.map(sub => (
-                        <button
-                          key={sub.id}
-                          onClick={(e) => handleSubcategoryClick(category, sub, e)}
-                          className={`w-full text-left px-4 py-3 text-sm transition-colors ${
-                            selectedSubcategory?.id === sub.id
-                              ? 'bg-[#C9A35D] text-white'
-                              : 'hover:bg-yellow-100 hover:text-[#C9A35D]'
-                          }`}
-                        >
-                          {sub.name}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
+                        {sub.sub_category_name}
+                      </Link>
+                    ))
+                  ) : (
+                    <span className="block px-4 py-2 text-gray-500">No sub-categories</span>
+                  )}
+                </div>
               </div>
-            );
-          })}
-        </div>
+            )}
+          </div>
+        ))}
       </div>
-    </div>
+    </nav>
   );
 };
 

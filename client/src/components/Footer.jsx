@@ -3,9 +3,9 @@ import { FaWhatsapp, FaInstagram, FaFacebookF, FaTwitter, FaYoutube } from 'reac
 
 const Footer = () => {
   return (
-    <footer className="bg-[#000000] text-gray-300 mt-16">
-      <div className="container mx-auto py-10 px-4">
-        <div className="flex justify-between items-center mb-8">
+    <footer className="bg-[#000000] text-gray-300 relative z-20">
+      <div className="h-30 flex flex-col justify-center px-4">
+        <div className="flex justify-between items-center">
             <div className="font-['Orbitron'] text-4xl font">
                 <a href="/">
                     <span className="text-white">PA</span>
@@ -29,7 +29,7 @@ const Footer = () => {
                <span className="font-semibold">+254 700 000 000</span>
              </div>
         </div>
-        <div className="border-t border-gray-700 pt-6 text-center text-sm text-gray-500">
+        <div className="border-t border-gray-00 pt-4 mt-4 text-center text-sm text-gray-500">
           <p>© 2025 Pambo. All rights reserved.</p>
         </div>
       </div>
