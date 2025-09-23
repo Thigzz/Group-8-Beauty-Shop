@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { changePassword } from '../../redux/features/auth/authSlice';
+//import { changePassword } from '../../redux/features/auth/authSlice';
 import { Eye, EyeOff } from 'lucide-react';
 
 const ChangePasswordModal = ({ onClose }) => {

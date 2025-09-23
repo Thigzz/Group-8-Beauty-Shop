@@ -1,225 +1,153 @@
-import { useState } from 'react'
+import React, { useEffect } from 'react';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate, Link } from 'react-router-dom';
+import { registerUser } from '../redux/features/auth/authSlice';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 
-function Register() {
-  const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
-    username: '',
-    email: '',
-    primary_phone_no: '',
-    password: '',
-    confirm_password: ''
-  })
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+const Register = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { isAuthenticated, status, error, user } = useSelector((state) => state.auth);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    setSuccess('')
-
-    // Validate passwords match
-    if (formData.password !== formData.confirm_password) {
-      setError('Passwords do not match')
-      setLoading(false)
-      return
-    }
-
-    try {
-      const response = await fetch('http://127.0.0.1:5000/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          username: formData.username,
-          email: formData.email,
-          primary_phone_no: formData.primary_phone_no,
-          password: formData.password
-        })
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        setSuccess('Registration successful! You can now login.')
-        // Clear form
-        setFormData({
-          first_name: '', last_name: '', username: '', email: '',
-          primary_phone_no: '', password: '', confirm_password: ''
-        })
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      // redirect logic same as login
+      if (user.role === 'admin') {
+        navigate('/admin/dashboard');
       } else {
-        setError(data.message || 'Registration failed')
+        navigate('/profile');
       }
-    } catch (err) {
-      setError('Network error. Please try again.')
-      console.error('Registration error:', err)
-    } finally {
-      setLoading(false)
     }
-  }
+  }, [isAuthenticated, user, navigate]);
+
+  const formik = useFormik({
+    initialValues: {
+      username: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+    },
+    validationSchema: Yup.object({
+      username: Yup.string().required('Username is required'),
+      email: Yup.string().email('Invalid email').required('Email is required'),
+      password: Yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
+      confirmPassword: Yup.string()
+        .oneOf([Yup.ref('password'), null], 'Passwords must match')
+        .required('Please confirm your password'),
+    }),
+    onSubmit: (values) => {
+      dispatch(registerUser(values));
+    },
+  });
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <div style={{ flex: 1, padding: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ width: '100%', maxWidth: '400px' }}>
-          <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Get Started Now</h1>
-          
-          {error && (
-            <div style={{ backgroundColor: '#fee', color: '#c33', padding: '0.75rem', borderRadius: '4px', marginBottom: '1rem' }}>
-              {error}
-            </div>
-          )}
-          
-          {success && (
-            <div style={{ backgroundColor: '#efe', color: '#3c3', padding: '0.75rem', borderRadius: '4px', marginBottom: '1rem' }}>
-              {success}
-            </div>
-          )}
-          
-          <form onSubmit={handleSubmit}>
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+    <div className="flex flex-col min-h-screen">
+      <Header />
+      <main className="flex-grow flex items-center justify-center bg-gray-50">
+        <div className="w-full max-w-md p-8 space-y-8 bg-white shadow-lg rounded-lg">
+          <h2 className="text-3xl font-bold text-center text-gray-900">
+            Create a New Account
+          </h2>
+          <form onSubmit={formik.handleSubmit} className="space-y-6">
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                Username
+              </label>
               <input
+                id="username"
+                name="username"
                 type="text"
-                name="first_name"
-                placeholder="First Name"
-                value={formData.first_name}
-                onChange={handleChange}
-                required
-                disabled={loading}
-                style={{ flex: 1, padding: '0.75rem', border: '1px solid #ddd', borderRadius: '4px' }}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                value={formik.values.username}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#C9A35D] focus:border-[#C9A35D]"
               />
-              <input
-                type="text"
-                name="last_name"
-                placeholder="Last Name"
-                value={formData.last_name}
-                onChange={handleChange}
-                required
-                disabled={loading}
-                style={{ flex: 1, padding: '0.75rem', border: '1px solid #ddd', borderRadius: '4px' }}
-              />
+              {formik.touched.username && formik.errors.username ? (
+                <div className="text-red-500 text-sm mt-1">{formik.errors.username}</div>
+              ) : null}
             </div>
 
-            <input
-              type="text"
-              name="username"
-              placeholder="Username"
-              value={formData.username}
-              onChange={handleChange}
-              required
-              disabled={loading}
-              style={{ width: '100%', padding: '0.75rem', border: '1px solid #ddd', borderRadius: '4px', marginBottom: '1rem' }}
-            />
-
-            <input
-              type="email"
-              name="email"
-              placeholder="Email address"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              disabled={loading}
-              style={{ width: '100%', padding: '0.75rem', border: '1px solid #ddd', borderRadius: '4px', marginBottom: '1rem' }}
-            />
-
-            <input
-              type="tel"
-              name="primary_phone_no"
-              placeholder="Phone Number"
-              value={formData.primary_phone_no}
-              onChange={handleChange}
-              required
-              disabled={loading}
-              style={{ width: '100%', padding: '0.75rem', border: '1px solid #ddd', borderRadius: '4px', marginBottom: '1rem' }}
-            />
-
-            <div style={{ position: 'relative', marginBottom: '1rem' }}>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email
+              </label>
               <input
-                type={showPassword ? 'text' : 'password'}
+                id="email"
+                name="email"
+                type="email"
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                value={formik.values.email}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#C9A35D] focus:border-[#C9A35D]"
+              />
+              {formik.touched.email && formik.errors.email ? (
+                <div className="text-red-500 text-sm mt-1">{formik.errors.email}</div>
+              ) : null}
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <input
+                id="password"
                 name="password"
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                disabled={loading}
-                style={{ width: '100%', padding: '0.75rem', border: '1px solid #ddd', borderRadius: '4px' }}
+                type="password"
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                value={formik.values.password}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#C9A35D] focus:border-[#C9A35D]"
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer' }}
-              >
-                {showPassword ? '🙈' : '👁️'}
-              </button>
+              {formik.touched.password && formik.errors.password ? (
+                <div className="text-red-500 text-sm mt-1">{formik.errors.password}</div>
+              ) : null}
             </div>
 
-            <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                Confirm Password
+              </label>
               <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                name="confirm_password"
-                placeholder="Confirm Password"
-                value={formData.confirm_password}
-                onChange={handleChange}
-                required
-                disabled={loading}
-                style={{ width: '100%', padding: '0.75rem', border: '1px solid #ddd', borderRadius: '4px' }}
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                value={formik.values.confirmPassword}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#C9A35D] focus:border-[#C9A35D]"
               />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer' }}
-              >
-                {showConfirmPassword ? '🙈' : '👁️'}
-              </button>
+              {formik.touched.confirmPassword && formik.errors.confirmPassword ? (
+                <div className="text-red-500 text-sm mt-1">{formik.errors.confirmPassword}</div>
+              ) : null}
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                backgroundColor: loading ? '#ccc' : '#8B7355',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                fontSize: '1rem',
-                cursor: loading ? 'not-allowed' : 'pointer'
-              }}
-            >
-              {loading ? 'Creating Account...' : 'Signup'}
-            </button>
+            {error && <div className="text-red-500 text-center">{error}</div>}
+
+            <div>
+              <button
+                type="submit"
+                disabled={status === 'loading'}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-black bg-[#C9A35D] hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#C9A35D] disabled:opacity-50"
+              >
+                {status === 'loading' ? 'Creating Account...' : 'Register'}
+              </button>
+            </div>
           </form>
 
-          <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <span>Have an account? </span>
-            <a href="/login" style={{ color: '#8B7355', textDecoration: 'none' }}>Sign In</a>
+          <div className="text-sm text-center">
+            Already have an account?{' '}
+            <Link to="/login" className="font-medium text-gray-600 hover:text-[#C9A35D]">
+              Sign In
+            </Link>
           </div>
         </div>
-      </div>
-
-      <div style={{ flex: 1, backgroundImage: 'linear-gradient(45deg, #f0e6d2, #e8dcc0)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center', color: '#8B7355' }}>
-          <h2>Join PAMBO</h2>
-          <p>Create your beauty journey</p>
-        </div>
-      </div>
+      </main>
+      <Footer />
     </div>
-  )
-}
+  );
+};
 
-export default Register
+export default Register;

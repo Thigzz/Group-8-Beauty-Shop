@@ -1,220 +1,70 @@
-import { useState, useEffect } from 'react'
+import React from 'react';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
+import { useDispatch, useSelector } from 'react-redux';
+import { saveSecurityQuestions } from '../redux/features/auth/authSlice';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 
-function SecurityQuestions() {
-  const [availableQuestions, setAvailableQuestions] = useState([])
-  const [selectedQuestions, setSelectedQuestions] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+const SecurityQuestions = () => {
+  const dispatch = useDispatch();
+  const { status, error } = useSelector((state) => state.auth);
 
-  useEffect(() => {
-    fetchAvailableQuestions()
-  }, [])
-
-  const fetchAvailableQuestions = async () => {
-    try {
-      const response = await fetch('http://127.0.0.1:5000/api/security-questions/available')
-      const data = await response.json()
-      
-      if (response.ok) {
-        setAvailableQuestions(data.questions)
-      } else {
-        setError('Failed to load security questions')
-      }
-    } catch (err) {
-      setError('Network error')
-    }
-  }
-
-  const addQuestion = () => {
-    if (selectedQuestions.length < 3) {
-      setSelectedQuestions([...selectedQuestions, { question_id: '', answer: '' }])
-    }
-  }
-
-  const removeQuestion = (index) => {
-    setSelectedQuestions(selectedQuestions.filter((_, i) => i !== index))
-  }
-
-  const updateQuestion = (index, field, value) => {
-    const updated = [...selectedQuestions]
-    updated[index] = { ...updated[index], [field]: value }
-    setSelectedQuestions(updated)
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    setSuccess('')
-
-    // Get user ID from token (in real app, you'd decode the JWT)
-    const token = localStorage.getItem('access_token')
-    if (!token) {
-      setError('Please login first')
-      setLoading(false)
-      return
-    }
-
-    // For demo purposes, using a placeholder user ID
-    // In production, you'd get this from the decoded JWT token
-    const userId = 'placeholder-user-id'
-
-    try {
-      const response = await fetch(`http://127.0.0.1:5000/api/security-questions/user/${userId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ questions: selectedQuestions })
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        setSuccess('Security questions saved successfully!')
-        setSelectedQuestions([])
-      } else {
-        setError(data.error || 'Failed to save security questions')
-      }
-    } catch (err) {
-      setError('Network error. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const formik = useFormik({
+    initialValues: {
+      question1: '',
+      answer1: '',
+      question2: '',
+      answer2: '',
+    },
+    validationSchema: Yup.object({
+      question1: Yup.string().required('Required'),
+      answer1: Yup.string().required('Required'),
+      question2: Yup.string().required('Required'),
+      answer2: Yup.string().required('Required'),
+    }),
+    onSubmit: (values) => {
+      dispatch(saveSecurityQuestions(values));
+    },
+  });
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <div style={{ flex: 1, padding: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ width: '100%', maxWidth: '500px' }}>
-          <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Security Questions</h1>
-          <p style={{ color: '#666', marginBottom: '2rem' }}>
-            Set up security questions to help recover your account if you forget your password.
-            You can set up to 3 questions.
-          </p>
-          
-          {error && (
-            <div style={{ backgroundColor: '#fee', color: '#c33', padding: '0.75rem', borderRadius: '4px', marginBottom: '1rem' }}>
-              {error}
-            </div>
-          )}
-          
-          {success && (
-            <div style={{ backgroundColor: '#efe', color: '#3c3', padding: '0.75rem', borderRadius: '4px', marginBottom: '1rem' }}>
-              {success}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit}>
-            {selectedQuestions.map((sq, index) => (
-              <div key={index} style={{ marginBottom: '1.5rem', padding: '1rem', border: '1px solid #ddd', borderRadius: '4px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <label style={{ fontWeight: 'bold' }}>Question {index + 1}</label>
-                  <button
-                    type="button"
-                    onClick={() => removeQuestion(index)}
-                    style={{ background: 'none', border: 'none', color: '#c33', cursor: 'pointer', fontSize: '1.2rem' }}
-                  >
-                    ✕
-                  </button>
-                </div>
-                
-                <select
-                  value={sq.question_id}
-                  onChange={(e) => updateQuestion(index, 'question_id', e.target.value)}
-                  required
-                  disabled={loading}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    marginBottom: '1rem'
-                  }}
-                >
-                  <option value="">Select a question...</option>
-                  {availableQuestions.map(q => (
-                    <option key={q.id} value={q.id}>
-                      {q.question}
-                    </option>
-                  ))}
-                </select>
-                
+    <div className="flex flex-col min-h-screen">
+      <Header />
+      <main className="flex-grow flex items-center justify-center bg-gray-50">
+        <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-lg">
+          <h2 className="text-2xl font-bold text-center text-gray-900">Set Security Questions</h2>
+          <form onSubmit={formik.handleSubmit} className="space-y-4">
+            {['question1', 'answer1', 'question2', 'answer2'].map((field, i) => (
+              <div key={i}>
+                <label className="block text-sm font-medium text-gray-700 capitalize">{field}</label>
                 <input
+                  name={field}
                   type="text"
-                  placeholder="Your answer"
-                  value={sq.answer}
-                  onChange={(e) => updateQuestion(index, 'answer', e.target.value)}
-                  required
-                  disabled={loading}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px'
-                  }}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  value={formik.values[field]}
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                 />
+                {formik.touched[field] && formik.errors[field] && (
+                  <div className="text-red-500 text-sm">{formik.errors[field]}</div>
+                )}
               </div>
             ))}
-
-            {selectedQuestions.length < 3 && (
-              <button
-                type="button"
-                onClick={addQuestion}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  backgroundColor: '#f8f8f8',
-                  color: '#666',
-                  border: '1px dashed #ddd',
-                  borderRadius: '4px',
-                  fontSize: '1rem',
-                  cursor: 'pointer',
-                  marginBottom: '1rem'
-                }}
-              >
-                + Add Security Question
-              </button>
-            )}
-
-            {selectedQuestions.length > 0 && (
-              <button
-                type="submit"
-                disabled={loading}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  backgroundColor: loading ? '#ccc' : '#8B7355',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  fontSize: '1rem',
-                  cursor: loading ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {loading ? 'Saving...' : 'Save Security Questions'}
-              </button>
-            )}
+            {error && <div className="text-red-500 text-center">{error}</div>}
+            <button
+              type="submit"
+              disabled={status === 'loading'}
+              className="w-full py-2 px-4 rounded-md bg-[#C9A35D] text-black"
+            >
+              {status === 'loading' ? 'Saving...' : 'Save Questions'}
+            </button>
           </form>
-
-          <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <a href="/login" style={{ color: '#666', textDecoration: 'none' }}>
-              Back to Login
-            </a>
-          </div>
         </div>
-      </div>
-
-      <div style={{ flex: 1, backgroundImage: 'linear-gradient(45deg, #f0e6d2, #e8dcc0)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center', color: '#8B7355' }}>
-          <h2>Account Security</h2>
-          <p>Protect your beauty journey</p>
-        </div>
-      </div>
+      </main>
+      <Footer />
     </div>
-  )
-}
+  );
+};
 
-export default SecurityQuestions
+export default SecurityQuestions;

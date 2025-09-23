@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { updateUserProfile } from '../../redux/features/auth/authSlice';
+//import { updateUserProfile } from '../../redux/features/auth/authSlice';
 import { UserCircle2 } from 'lucide-react';
 import Modal from '../../components/Modal';
 import ChangePasswordModal from '../../components/admin/ChangePasswordModal';
