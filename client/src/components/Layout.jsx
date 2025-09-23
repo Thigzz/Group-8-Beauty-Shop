@@ -4,13 +4,13 @@ import { useDispatch, useSelector } from "react-redux";
 import { Toaster } from "react-hot-toast";
 import apiClient from "./api/axios";
 
-import { setItems as setCategoriesItems, selectCategory, selectSubcategory, selectCategoryAndSubcategory } from "./redux/features/categories/categoriesSlice";
+import { setItems as setCategoriesItems, selectCategory, selectSubcategory } from "./redux/features/categories/categoriesSlice";
 import { selectProduct, fetchAllProducts } from "./redux/features/products/productsSlice";
 import { addItemToCart } from "./redux/features/cart/cartSlice";
 import { addItem as addToWishlist } from "./redux/features/wishlist/wishlistSlice";
 import { setProductModalOpen } from "./redux/features/ui/uiSlice";
 
-// Import the merged Navbar component
+// Import components
 import Header from "./components/Header";
 import Navbar from "./components/Navbar";
 import LandingPage from "./pages/LandingPage";
@@ -42,7 +42,6 @@ const CategoryPageWrapper = ({ showAllProducts }) => {
   const categories = useSelector(state => state.categories.items);
   
   useEffect(() => {
-    // When route parameters change, update Redux state
     if (categoryId && categoryId !== "undefined") {
       const category = categories.find(cat => cat.id.toString() === categoryId.toString());
       if (category) {
@@ -62,7 +61,6 @@ const CategoryPageWrapper = ({ showAllProducts }) => {
         }
       }
     } else {
-      // If no categoryId, clear selections (for /products route)
       dispatch(selectCategory(null));
       dispatch(selectSubcategory(null));
     }
@@ -177,16 +175,15 @@ function App() {
           }}
         />
         
-        {/* Wrap both Header and Navbar in a sticky container */}
-        <div className="sticky top-0 z-50">
+        {/* Unified Header Section */}
+        <header className="sticky top-0 z-50">
           <Header />
           <Navbar />
-        </div>
-        
-        {/* Add padding to main content to account for sticky header height */}
-        <div className="pt-0"> {/* Adjust this padding based on your header height */}
+        </header>
+
+        {/* Main Content */}
+        <main>
           <Routes>
-            {/* Main Routes */}
             <Route 
               path="/" 
               element={
@@ -197,69 +194,26 @@ function App() {
               } 
             />
 
-            <Route 
-              path="/products" 
-              element={<CategoryPageWrapper showAllProducts={true} />} 
-            />
-            
+            <Route path="/products" element={<CategoryPageWrapper showAllProducts={true} />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/cart" element={<CartPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
+            <Route path="/search" element={<SearchResultsPage onProductClick={handleProductClick} />} />
+            <Route path="/categories" element={<CategoryPageWrapper showAllProducts={true} />} />
+            <Route path="/products/category/:categoryId" element={<CategoryPageWrapper showAllProducts={false} />} />
+            <Route path="/products/category/:categoryId/subcategory/:subcategoryId" element={<CategoryPageWrapper showAllProducts={false} />} />
 
-            {/* Search Route */}
-            <Route 
-              path="/search" 
-              element={
-                <SearchResultsPage 
-                  onProductClick={handleProductClick} 
-                />
-              } 
-            />
+            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
-            {/* Category & Product Routes */}
-            <Route 
-              path="/categories" 
-              element={<CategoryPageWrapper showAllProducts={true} />} 
-            />
-            
-            <Route 
-              path="/products/category/:categoryId" 
-              element={<CategoryPageWrapper showAllProducts={false} />} 
-            />
-            
-            <Route 
-              path="/products/category/:categoryId/subcategory/:subcategoryId" 
-              element={<CategoryPageWrapper showAllProducts={false} />} 
-            />
-
-            {/* User Protected Routes */}
-            <Route 
-              path="/profile" 
-              element={
-                <ProtectedRoute>
-                  <ProfilePage />
-                </ProtectedRoute>
-              } 
-            />
-
-            {/* Admin Protected Routes */}
-            <Route 
-              path="/admin/*" 
-              element={
-                <ProtectedRoute adminOnly={true}>
-                  <AdminLayout />
-                </ProtectedRoute>
-              }
-            >
+            <Route path="/admin/*" element={<ProtectedRoute adminOnly={true}><AdminLayout /></ProtectedRoute>}>
               <Route path="dashboard" element={<DashboardPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route index element={<DashboardPage />} />
             </Route>
           </Routes>
-        </div>
+        </main>
 
-        {/* Global Modal */}
         <ProductDetailModal 
           product={selectedProduct} 
           isOpen={isProductModalOpen} 

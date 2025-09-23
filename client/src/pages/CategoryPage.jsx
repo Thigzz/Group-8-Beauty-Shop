@@ -1,8 +1,6 @@
 import React, { useMemo, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import Header from "../components/Header";
-import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import ProductGrid from "../components/Product/ProductGrid";
 import HeroSection from "../components/HeroSection";
@@ -37,7 +35,6 @@ const CategoryPage = ({
   const [filters, setFilters] = useState({
     priceRange: [0, 100000],
     brands: [],
-    ratings: 0,
   });
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -113,10 +110,6 @@ const CategoryPage = ({
         if (!filters.brands.includes(product.brand)) return false;
       }
 
-      if (filters.ratings > 0 && product.rating) {
-        if (product.rating < filters.ratings) return false;
-      }
-
       return true;
     });
   }, [productsArray, filters, productsState.loading, currentPage]);
@@ -130,9 +123,17 @@ const CategoryPage = ({
       case 'Price (High → Low)':
         return sorted.sort((a, b) => (b.price || 0) - (a.price || 0));
       case 'Name (A-Z)':
-        return sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        return sorted.sort((a, b) => {
+          const nameA = (a.name || a.product_name || '').toLowerCase();
+          const nameB = (b.name || b.product_name || '').toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
       case 'Name (Z-A)':
-        return sorted.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
+        return sorted.sort((a, b) => {
+          const nameA = (a.name || a.product_name || '').toLowerCase();
+          const nameB = (b.name || b.product_name || '').toLowerCase();
+          return nameB.localeCompare(nameA);
+        });
       default:
         return sorted.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
     }
@@ -160,15 +161,10 @@ const CategoryPage = ({
     }));
   };
 
-  const handleRatingChange = (rating) => {
-    setFilters(prev => ({ ...prev, ratings: rating }));
-  };
-
   const clearFilters = () => {
     setFilters({
       priceRange: [0, 100000],
       brands: [],
-      ratings: 0,
     });
     if (showAllProducts) {
       onCategorySelect({ id: 'shop-all', name: 'SHOP ALL', subcategories: [] });
@@ -189,23 +185,6 @@ const CategoryPage = ({
 
   const handleLoadMore = () => {
     setCurrentPage(prev => prev + 1);
-  };
-
-  const getResultsText = () => {
-    if (showAllProducts && (!selectedCategory || selectedCategory.id === 'shop-all')) {
-      return 'All Products';
-    }
-    if (showAllProducts && selectedCategory && selectedCategory.id !== 'shop-all') {
-      const categoryName = selectedCategory.category_name || selectedCategory.name || 'Products';
-      const subcategoryText = selectedSubcategory ? ` - ${selectedSubcategory.name}` : '';
-      return `${categoryName}${subcategoryText}`;
-    }
-    if (category) {
-      const categoryName = category.category_name || category.name || 'Products';
-      const subcategoryText = subcategory ? ` - ${subcategory.name}` : '';
-      return `${categoryName}${subcategoryText}`;
-    }
-    return 'Products';
   };
 
   const getProductCountText = () => {
@@ -231,32 +210,32 @@ const CategoryPage = ({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
-      <Navbar
-        categories={categories}
-        selectedCategory={selectedCategory}
-        onCategorySelect={handleCategorySelect}
-        selectedSubcategory={selectedSubcategory}
-        onSubcategorySelect={handleSubcategorySelect}
-      />
       <HeroSection category={displayCategory || category} />
 
       <div className="container mx-auto px-4 py-6">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6">
-          <div className="mb-4 lg:mb-0">
+        {/* Breadcrumb and Info Section */}
+        <div className="mb-6">
+          <div className="mb-4">
             <Breadcrumb 
               selectedCategory={displayCategory || category}
               selectedSubcategory={selectedSubcategory || subcategory}
               showAllProducts={showAllProducts}
+              className="text-lg font-medium"
             />
-            <h1 className="text-2xl font-bold text-gray-900 mt-2">{getResultsText()}</h1>
-            <p className="text-gray-600">
+          </div>
+          <div className="flex justify-between items-center">
+            <p className="text-gray-600 text-sm">
               {productsState.loading && currentPage === 1 ? 'Loading...' : getProductCountText()}
             </p>
             {productsState.error && (
-              <p className="text-red-600 text-sm mt-1">Error: {productsState.error}</p>
+              <p className="text-red-600 text-sm">Error: {productsState.error}</p>
             )}
           </div>
+        </div>
+
+        {/* Sort and Filter Controls */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 bg-white rounded-lg shadow-sm p-4">
+          <div></div>
           
           <div className="flex items-center space-x-4">
             <button
@@ -388,31 +367,6 @@ const CategoryPage = ({
                   </div>
                 </div>
               )}
-
-              {/* Ratings filter */}
-              <div>
-                <h4 className="font-medium text-gray-900 mb-3">Minimum Rating</h4>
-                <div className="space-y-2">
-                  {[4, 3, 2, 1].map((rating) => (
-                    <button
-                      key={rating}
-                      onClick={() => handleRatingChange(rating)}
-                      className={`w-full text-left px-3 py-2 rounded text-sm transition-colors flex items-center ${
-                        filters.ratings === rating
-                          ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
-                          : 'text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex text-yellow-400 mr-2">
-                        {[...Array(5)].map((_, i) => (
-                          <span key={i} className={i < rating ? 'text-yellow-400' : 'text-gray-300'}>★</span>
-                        ))}
-                      </div>
-                      <span>& Up</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
           </div>
 

@@ -1,13 +1,12 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import apiClient from '../../../api/axios';
 
-// ================== Async Thunks ==================
 
 // Fetch all products with optional page
 export const fetchAllProducts = createAsyncThunk(
   'products/fetchAll',
   async ({ page = 1 } = {}) => {
-    const response = await apiClient.get(`/products/?page=${page}`);
+    const response = await apiClient.get(`api/products/?page=${page}`);
     return response.data;
   }
 );
@@ -16,7 +15,7 @@ export const fetchAllProducts = createAsyncThunk(
 export const fetchProductsByCategory = createAsyncThunk(
   'products/fetchByCategory',
   async ({ categoryId, page = 1 }) => {
-    const response = await apiClient.get(`/products/?category_id=${categoryId}&page=${page}`);
+    const response = await apiClient.get(`api/products/?category_id=${categoryId}&page=${page}`);
     return response.data;
   }
 );
@@ -25,7 +24,7 @@ export const fetchProductsByCategory = createAsyncThunk(
 export const fetchProductsBySubcategory = createAsyncThunk(
   'products/fetchBySubcategory',
   async ({ subcategoryId, page = 1 }) => {
-    const response = await apiClient.get(`/products/?sub_category_id=${subcategoryId}&page=${page}`);
+    const response = await apiClient.get(`api/products/?sub_category_id=${subcategoryId}&page=${page}`);
     return response.data;
   }
 );
@@ -35,7 +34,7 @@ export const fetchProductsByCategoryAndSubcategory = createAsyncThunk(
   'products/fetchByCategoryAndSubcategory',
   async ({ categoryId, subcategoryId, page = 1 }) => {
     const response = await apiClient.get(
-      `/products/?category_id=${categoryId}&sub_category_id=${subcategoryId}&page=${page}`
+      `api/products/?category_id=${categoryId}&sub_category_id=${subcategoryId}&page=${page}`
     );
     return response.data;
   }
@@ -45,12 +44,10 @@ export const fetchProductsByCategoryAndSubcategory = createAsyncThunk(
 export const fetchProductById = createAsyncThunk(
   'products/fetchById',
   async ({ productId }) => {
-    const response = await apiClient.get(`/products/${productId}`);
+    const response = await apiClient.get(`api/products/${productId}`);
     return response.data;
   }
 );
-
-// ================== Initial State ==================
 
 const initialState = {
   items: [],
@@ -64,8 +61,6 @@ const initialState = {
     currentPage: 1
   }
 };
-
-// ================== Slice ==================
 
 const productsSlice = createSlice({
   name: 'products',

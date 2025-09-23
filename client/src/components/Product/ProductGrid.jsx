@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ProductCard from './ProductCard';
 
-const ProductGrid = ({ products, sortBy, onProductClick, onAddToCart, onAddToWishlist }) => {
+const ProductGrid = ({ products, sortBy, onProductClick, onAddToCart, onAddToWishlist, columns = 4 }) => {
   const [sortedProducts, setSortedProducts] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -13,16 +13,16 @@ const ProductGrid = ({ products, sortBy, onProductClick, onAddToCart, onAddToWis
       
       switch (sortBy) {
         case 'Price (Low → High)':
-          sorted.sort((a, b) => a.price - b.price);
+          sorted.sort((a, b) => (a.price || 0) - (b.price || 0));
           break;
         case 'Price (High → Low)':
-          sorted.sort((a, b) => b.price - a.price);
+          sorted.sort((a, b) => (b.price || 0) - (a.price || 0));
           break;
         case 'Name (A → Z)':
-          sorted.sort((a, b) => a.name - b.name);
+          sorted.sort((a, b) => (a.name || a.product_name || '').localeCompare(b.name || b.product_name || ''));
           break;
         case 'Name (Z → A)':
-          sorted.sort((a, b) => b.name - a.name);
+          sorted.sort((a, b) => (b.name || b.product_name || '').localeCompare(a.name || a.product_name || ''));
           break;
         case 'Newest':
         default:
@@ -38,8 +38,8 @@ const ProductGrid = ({ products, sortBy, onProductClick, onAddToCart, onAddToWis
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[...Array(8)].map((_, index) => (
+      <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-${columns} gap-6`}>
+        {[...Array(columns * 2)].map((_, index) => (
           <div key={index} className="animate-pulse">
             <div className="aspect-square bg-gray-300 rounded-lg mb-4"></div>
             <div className="h-4 bg-gray-300 rounded mb-2"></div>
@@ -60,7 +60,7 @@ const ProductGrid = ({ products, sortBy, onProductClick, onAddToCart, onAddToWis
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-${columns} gap-6`}>
       {sortedProducts.map((product) => (
         <ProductCard 
           key={product.id} 
