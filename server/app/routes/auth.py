@@ -172,3 +172,26 @@ def update_profile():
 @admin_required()
 def admin_dashboard():
     return jsonify({"message": "Welcome to the admin dashboard!"}), 200
+
+@auth_bp.route('/change-password', methods=['PUT'])
+@jwt_required()
+def change_password():
+    """
+    Allows a currently logged-in user to change their password.
+    """
+    data = request.get_json()
+    current_password = data.get('current_password')
+    new_password = data.get('new_password')
+    confirm_password = data.get('confirm_password')
+
+    user = current_user
+    if not user.check_password(current_password):
+        return jsonify({"message": "Current password is incorrect"}), 401
+    if new_password != confirm_password:
+        return jsonify({"message": "New passwords do not match"}), 400
+    if len(new_password) < 8:
+        return jsonify({"message": "Password must be at least 8 characters long"}), 400
+    user.set_password(new_password)
+    db.session.commit()
+
+    return jsonify({"message": "Password updated successfully"}), 200

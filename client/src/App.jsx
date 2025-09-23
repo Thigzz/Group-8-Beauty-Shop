@@ -5,6 +5,10 @@ import LandingPage from './pages/LandingPage';
 import SearchResultsPage from './pages/SearchResultsPage';
 import ProfilePage from './pages/ProfilePage';
 import LoginPage from './pages/LoginPage';
+import AdminLayout from './layouts/AdminLayout';
+import DashboardPage from './pages/admin/DashboardPage';
+import SettingsPage from './pages/admin/SettingsPage';
+import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
 function App() {
@@ -33,11 +37,31 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/search" element={<SearchResultsPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
+
+          {/* User Protected Routes */}
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            } 
+          />
+          {/* Admin Protected Routes */}
+          <Route 
+            path="/admin" 
+            element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+          </Route>
         </Routes>
       </div>
     </Router>
   );
 }
-
 export default App;

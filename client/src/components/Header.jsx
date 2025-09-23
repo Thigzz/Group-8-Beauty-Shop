@@ -16,17 +16,15 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-[#000000] text-gray-300 p-4 shadow-md">
-      <div className="container mx-auto flex justify-between items-center">
-        {/* Logo */}
-        <div className="font-['Orbitron'] text-4xl font-bold">
+    <header className="bg-[#000000] text-gray-300 p-4 shadow-md relative z-20">
+      <div className="flex justify-between items-center">
+        <div className="font-['Orbitron'] text-4xl font">
           <a href="/" data-testid="pambo-logo">
             <span className="text-white">PA</span>
             <span className="text-[#C9A35D]">M</span>
             <span className="text-white">BO</span>
           </a>
         </div>
-        {/* Search Form */}
         <form onSubmit={handleSearch} className="w-full max-w-xl">
           <input
             type="text"

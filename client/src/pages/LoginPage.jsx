@@ -10,14 +10,21 @@ import Footer from '../components/Footer';
 const LoginPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { isAuthenticated, status, error } = useSelector((state) => state.auth);
+  // Get the user object from the Redux state as well
+  const { isAuthenticated, status, error, user } = useSelector((state) => state.auth);
 
   useEffect(() => {
-    // If user is already authenticated, redirect to profile
-    if (isAuthenticated) {
-      navigate('/profile');
+    // This effect runs when the user's authentication status or user data changes
+    if (isAuthenticated && user) {
+      // 1. Check if the logged-in user is an admin
+      if (user.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        // 2. Otherwise, redirect to the regular user profile
+        navigate('/profile');
+      }
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, user, navigate]);
 
   const formik = useFormik({
     initialValues: {

@@ -1,14 +1,14 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import apiClient from '../../../api/axios';
+import toast from 'react-hot-toast';
 
-// Async thunk to LOG IN a user
+// Async to LOG IN a user
 export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async (userData, { dispatch, rejectWithValue }) => {
     try {
       const response = await apiClient.post('/auth/login', userData);
       const { access_token } = response.data;
-      // Store token and fetch user profile
       dispatch(setToken(access_token));
       dispatch(fetchUserProfile());
       return { token: access_token };
@@ -18,7 +18,7 @@ export const loginUser = createAsyncThunk(
   }
 );
 
-// Async thunk to fetch user profile (remains the same)
+// Async fetch user profile
 export const fetchUserProfile = createAsyncThunk(
   'auth/fetchUserProfile',
   async (_, { getState, rejectWithValue }) => {
@@ -35,11 +35,55 @@ export const fetchUserProfile = createAsyncThunk(
   }
 );
 
+// Asyncto update user profile
+export const updateUserProfile = createAsyncThunk(
+  'auth/updateUserProfile',
+  async (profileData, { getState, dispatch, rejectWithValue }) => {
+    try {
+      const { auth: { token } } = getState();
+      if (!token) return rejectWithValue('No token found');
+
+      const response = await apiClient.put('/auth/profile', profileData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      dispatch(fetchUserProfile());
+      toast.success('Profile updated successfully!');
+      return response.data;
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to update profile';
+      toast.error(message);
+      return rejectWithValue(message);
+    }
+  }
+);
+
+export const changePassword = createAsyncThunk(
+  'auth/changePassword',
+  async (passwordData, { getState, rejectWithValue }) => {
+    try {
+      const { auth: { token } } = getState();
+      if (!token) return rejectWithValue('No token found');
+
+      const response = await apiClient.put('/auth/change-password', passwordData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      toast.success(response.data.message || 'Password updated successfully!');
+      return response.data;
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to change password';
+      toast.error(message);
+      return rejectWithValue(message);
+    }
+  }
+);
+
 const initialState = {
   user: null,
   isAuthenticated: !!localStorage.getItem('token'),
   token: localStorage.getItem('token'),
-  status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
+  status: 'idle',
   error: null,
 };
 
@@ -75,7 +119,7 @@ export const authSlice = createSlice({
         state.isAuthenticated = false;
         state.error = action.payload;
       })
-      // Fetch User Profile cases (remains the same)
+      // Fetch User Profile cases
       .addCase(fetchUserProfile.pending, (state) => {
         state.status = 'loading';
       })
@@ -89,6 +133,28 @@ export const authSlice = createSlice({
         state.error = action.payload;
         state.isAuthenticated = false;
         state.user = null;
+      })
+    // addCase for updateUserProfile
+      .addCase(updateUserProfile.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(updateUserProfile.fulfilled, (state) => {
+        state.status = 'succeeded';
+      })
+      .addCase(updateUserProfile.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+      .addCase(changePassword.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(changePassword.fulfilled, (state) => {
+        state.status = 'succeeded';
+      })
+      .addCase(changePassword.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
       });
   },
 });
