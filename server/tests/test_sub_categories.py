@@ -115,12 +115,11 @@ def test_get_sub_categories_by_category(test_client, test_category):
     WHEN the '/api/sub_categories/by_category/<category_id>' endpoint is requested
     THEN check that it returns only the sub-categories for that category
     """
-    # Create another category to ensure we are filtering correctly
     other_category = Category(category_name="Skincare")
     db.session.add(other_category)
     db.session.commit()
 
-    # Create sub-categories for both
+
     sub1 = SubCategory(category_id=test_category.id, sub_category_name="Lipstick")
     sub2 = SubCategory(category_id=test_category.id, sub_category_name="Mascara")
     sub3 = SubCategory(category_id=other_category.id, sub_category_name="Moisturizer")

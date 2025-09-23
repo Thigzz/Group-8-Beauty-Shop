@@ -96,7 +96,7 @@ def update_order_status(order_id):
         "status": order.status.value
     })
 
-# 4. ADD THIS NEW ROUTE TO THE END OF THE FILE
+# ------order history-------
 @orders_bp.route("/history", methods=["GET"])
 @jwt_required()
 def get_user_order_history():

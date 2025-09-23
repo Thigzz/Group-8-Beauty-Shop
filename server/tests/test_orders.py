@@ -6,7 +6,7 @@ from server.app.models.users import User, UserRole
 from server.app.extensions import db
 from server.app.models.carts import Cart
 
-# (Keep the admin_token and user_token fixtures as they were in the last step)
+
 @pytest.fixture
 def admin_token(test_client, new_admin):
     test_client.post('/auth/register', data=json.dumps({
@@ -97,7 +97,6 @@ def user_with_orders(test_client, new_user):
         db.session.add_all([order1, order2])
         db.session.commit()
 
-        # Log in user and return token
         login_res = test_client.post('/auth/login', data=json.dumps({
             "login_identifier": new_user.username, "password": "password123"
         }), content_type='application/json')

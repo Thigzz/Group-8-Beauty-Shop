@@ -109,7 +109,7 @@ def test_change_password(test_client, new_user):
     WHEN the '/auth/change-password' endpoint is called with correct data
     THEN check that the password is changed successfully
     """
-    # Register and log in the user to get a token
+
     test_client.post('/auth/register', data=json.dumps({
         "username": new_user.username, "email": new_user.email, "password": "password123", "confirm_password": "password123",
         "first_name": "Test", "last_name": "User", "primary_phone_no": "123"
@@ -126,12 +126,11 @@ def test_change_password(test_client, new_user):
         "confirm_password": "new_password_456"
     }
 
-    # Change the password
+
     response = test_client.put('/auth/change-password', headers=headers, data=json.dumps(change_password_data), content_type='application/json')
     assert response.status_code == 200
     assert response.get_json()['message'] == 'Password updated successfully'
 
-    # Try to log in with the new password
     login_with_new_pass_res = test_client.post('/auth/login', data=json.dumps({
         "login_identifier": new_user.username, "password": "new_password_456"
     }), content_type='application/json')
