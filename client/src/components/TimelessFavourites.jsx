@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../api/axios';
-import ProductCard from './ProductCard';
+import ProductCard from './Product/ProductCard';
 
 const TimelessFavourites = () => {
   const [products, setProducts] = useState([]);
@@ -9,7 +9,7 @@ const TimelessFavourites = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await apiClient.get('/api/products/', {
+        const response = await apiClient.get('/products/', {
           params: { page: 1, per_page: 6 }
         });
         setProducts(response.data.products);
