@@ -3,6 +3,12 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import LandingPage from './pages/LandingPage';
 import SearchResultsPage from './pages/SearchResultsPage';
+import ProfilePage from './pages/ProfilePage';
+import LoginPage from './pages/LoginPage';
+import AdminLayout from './layouts/AdminLayout';
+import DashboardPage from './pages/admin/DashboardPage';
+import SettingsPage from './pages/admin/SettingsPage';
+import ProtectedRoute from './components/ProtectedRoute';
 import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrderConfirmationPage from './pages/OrderConfirmationPage';
@@ -32,10 +38,33 @@ function App() {
       <div className="App">
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/search" element={<SearchResultsPage />} />
           <Route path="/cart" element={<CartPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
+
+          {/* User Protected Routes */}
+          <Route 
+            path="/profile" {/*Might Have to change this to fit*/}
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            } 
+          />
           <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+          {/* Admin Protected Routes */}
+          <Route 
+            path="/admin" 
+            element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+          </Route>
         </Routes>
       </div>
     </Router>

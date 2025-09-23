@@ -2,13 +2,17 @@ import React from 'react';
 import Header from '../components/Header';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import LipLibraryImage from '../assets/liplibrary.webp';
 import TimelessFavourites from '../components/TimelessFavourites';
 import { Brush, SprayCan, Sparkles, Scissors, ShoppingBag } from 'lucide-react';
 
 const HeroSection = () => (
-  <div className="container mx-auto my-8 py-24 px-8 bg-gray-100 rounded-lg shadow-lg"> 
-    <h1 className="text-5xl font-bold">VISIT THE LIP LIBRARY</h1>
-    <p className="text-xl my-4">Your go-to destination for all things lip at Fenty Beauty.</p>
+  <div 
+    className="container mx-auto my-8 p-16 rounded-lg shadow-lg text-white bg-cover bg-center"
+    style={{ backgroundImage: `url(${LipLibraryImage})` }}
+  > 
+    {/* <h1 className="text-5xl font-bold">VISIT THE LIP LIBRARY</h1> */}
+    {/* <p className="text-xl my-4">Your go-to destination for all things lip at Fenty Beauty.</p> */}
     <button className="bg-white text-black font-bold py-3 px-8 rounded-md hover:bg-pink-200">Shop Now</button>
   </div>
 );
