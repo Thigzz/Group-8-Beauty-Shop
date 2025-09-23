@@ -20,3 +20,6 @@ const AdminLayout = () => {
 };
 
 export default AdminLayout;
+
+// This is a reusable wrapper for all our admin pages that will auto add the main structure, including the navigation sidebar, so you don't have to add it to every page manually. 
+// To use it, just make sure that your page's route is nested within the AdminLayout route in App.jsx.

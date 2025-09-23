@@ -7,7 +7,7 @@ const Navbar = () => {
   const [subCategories, setSubCategories] = useState({});
   const [activeMenu, setActiveMenu] = useState(null);
 
-  // Fetch main categories on component mount
+  // Fetch main categories on component
   useEffect(() => {
     const fetchCategories = async () => {
       try {

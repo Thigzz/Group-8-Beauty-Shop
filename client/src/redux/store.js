@@ -5,6 +5,6 @@ import authReducer from './features/auth/authSlice';
 export const store = configureStore({
   reducer: {
     cart: cartReducer,
-    auth: authReducer, // 2. Add auth reducer to the store
+    auth: authReducer,
   },
 });

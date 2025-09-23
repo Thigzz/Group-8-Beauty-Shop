@@ -13,9 +13,8 @@ const LoginPage = () => {
   const { isAuthenticated, status, error, user } = useSelector((state) => state.auth);
 
   useEffect(() => {
-    // Note.. for a unified login button. This effect runs when the user's authentication status or user data changes
     if (isAuthenticated && user) {
-      // 1. Check if the logged-in user is an admin and redirects to admin dash
+      // 1. Should check if the logged-in user is an admin and redirects to admin dash
       if (user.role === 'admin') {
         navigate('/admin/dashboard');
       } else {
