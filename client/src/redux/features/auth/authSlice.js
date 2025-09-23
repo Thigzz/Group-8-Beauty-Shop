@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import apiClient from '../../../api/axios';
 import toast from 'react-hot-toast';
 
-// Async to LOG IN a user
+// Async to log in a user
 export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async (userData, { dispatch, rejectWithValue }) => {

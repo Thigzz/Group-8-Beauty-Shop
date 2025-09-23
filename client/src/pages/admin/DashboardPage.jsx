@@ -34,7 +34,7 @@ const DashboardPage = () => {
     }
   }, [token]);
 
-  // Updated function to get the correct color classes for each status
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'delivered':
@@ -42,7 +42,7 @@ const DashboardPage = () => {
       case 'paid':
         return 'bg-blue-100 text-blue-800';
       case 'shipped':
-        return 'bg-purple-100 text-purple-800'; // Using purple for shipped
+        return 'bg-purple-100 text-purple-800';
       case 'cancelled':
         return 'bg-red-100 text-red-800';
       case 'pending':

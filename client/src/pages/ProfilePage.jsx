@@ -6,7 +6,6 @@ import apiClient from '../api/axios';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { UserCircle2 } from 'lucide-react';
-// We are no longer importing Modal.jsx
 
 const ProfilePage = () => {
   const dispatch = useDispatch();
@@ -68,7 +67,6 @@ const ProfilePage = () => {
   }
 
   return (
-    // Apply the full-height flex column layout to ensure consistent behavior
     <div className="flex flex-col min-h-screen bg-gray-50">
       <Header />
       <main className="container mx-auto py-12 px-4 flex-grow">
@@ -116,7 +114,6 @@ const ProfilePage = () => {
       </main>
       <Footer />
 
-      {/* Self-Contained & Self-Sufficient Modals */}
       {isEditProfileOpen && (
         <div className="fixed inset-121 z-10 flex items-center justify-center bg-black bg-opacity-15" onClick={() => setEditProfileOpen(false)}>
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>

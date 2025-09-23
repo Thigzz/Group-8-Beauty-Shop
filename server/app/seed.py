@@ -69,9 +69,8 @@ def seed_data():
 
         # ---------- Users ----------
         users = []
-        used_usernames = set() # Keep track of usernames to ensure uniqueness
+        used_usernames = set()
         for _ in range(100):
-            # Loop until a unique username is found
             while True:
                 username = fake.user_name()
                 if username not in used_usernames and not User.query.filter_by(username=username).first():
@@ -85,7 +84,7 @@ def seed_data():
                 email=fake.unique.email(),
                 primary_phone_no=fake.phone_number(),
                 secondary_phone_no=fake.phone_number(),
-                role=random.choice(list(UserRole)), # Use the Enum for roles
+                role=random.choice(list(UserRole)),
                 is_active=True,
             )
             user.set_password("password123")

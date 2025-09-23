@@ -29,7 +29,6 @@ def create_app():
     jwt.init_app(app)
     bcrypt.init_app(app)
     
-    # CORRECTED: Apply CORS to all routes ("/*") to include /auth, /api, etc.
     CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "https://pambo.onrender.com"]}}, supports_credentials=True)
     
     from server.app.models.users import User

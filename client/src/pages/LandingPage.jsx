@@ -7,8 +7,6 @@ import TimelessFavourites from '../components/TimelessFavourites';
 import { Brush, SprayCan, Sparkles, Scissors, ShoppingBag } from 'lucide-react';
 
 const HeroSection = () => (
-  // 2. Apply the imported image as a background using inline styles
-  //    and add Tailwind classes to control how the background behaves.
   <div 
     className="container mx-auto my-8 p-16 rounded-lg shadow-lg text-white bg-cover bg-center"
     style={{ backgroundImage: `url(${LipLibraryImage})` }}
