@@ -46,3 +46,6 @@ get-pip.py
 
 # Alembic / migrations cache (optional)
 __pycache__/
+
+__pycache__/
+*.pyc
