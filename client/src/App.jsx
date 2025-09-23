@@ -9,6 +9,9 @@ import AdminLayout from './layouts/AdminLayout';
 import DashboardPage from './pages/admin/DashboardPage';
 import SettingsPage from './pages/admin/SettingsPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import CartPage from './pages/CartPage';
+import CheckoutPage from './pages/CheckoutPage';
+import OrderConfirmationPage from './pages/OrderConfirmationPage';
 import './App.css';
 
 function App() {
@@ -37,16 +40,19 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/search" element={<SearchResultsPage />} />
+          <Route path="/cart" element={<CartPage />} />
 
           {/* User Protected Routes */}
           <Route 
-            path="/profile" 
+            path="/profile" {/*Might Have to change this to fit*/}
             element={
               <ProtectedRoute>
                 <ProfilePage />
               </ProtectedRoute>
             } 
           />
+          <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
           {/* Admin Protected Routes */}
           <Route 
             path="/admin" 
@@ -64,4 +70,5 @@ function App() {
     </Router>
   );
 }
+
 export default App;
