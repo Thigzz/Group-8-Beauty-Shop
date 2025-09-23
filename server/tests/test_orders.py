@@ -4,6 +4,7 @@ from uuid import uuid4
 from server.app.models.orders import Order, OrderStatus
 from server.app.models.users import User, UserRole
 from server.app.extensions import db
+from server.app.models.carts import Cart
 
 # (Keep the admin_token and user_token fixtures as they were in the last step)
 @pytest.fixture
@@ -74,3 +75,43 @@ def test_update_order_status_invalid(test_client, sample_order, admin_token):
             json={"status": "shipped"}
         )
         assert response.status_code == 400
+
+@pytest.fixture
+def user_with_orders(test_client, new_user):
+    """Fixture to create a user and some orders for them."""
+    with test_client.application.app_context():
+        # Create user
+        test_client.post('/auth/register', data=json.dumps({
+            "username": new_user.username, "email": new_user.email, "password": "password123", "confirm_password": "password123",
+            "first_name": "Test", "last_name": "User", "primary_phone_no": "123"
+        }), content_type='application/json')
+        user = User.query.filter_by(username=new_user.username).first()
+
+        # Create orders for this user
+        cart1 = Cart(user_id=user.id)
+        cart2 = Cart(user_id=user.id)
+        db.session.add_all([cart1, cart2])
+        db.session.commit()
+        order1 = Order(cart_id=cart1.id, total_amount=100)
+        order2 = Order(cart_id=cart2.id, total_amount=200)
+        db.session.add_all([order1, order2])
+        db.session.commit()
+
+        # Log in user and return token
+        login_res = test_client.post('/auth/login', data=json.dumps({
+            "login_identifier": new_user.username, "password": "password123"
+        }), content_type='application/json')
+        return json.loads(login_res.data)['access_token']
+
+
+def test_get_user_order_history(test_client, user_with_orders):
+    """
+    GIVEN a logged-in user with orders
+    WHEN the '/api/orders/history' endpoint is requested
+    THEN check that it returns only that user's orders
+    """
+    headers = {"Authorization": f"Bearer {user_with_orders}"}
+    response = test_client.get("/api/orders/history", headers=headers)
+    assert response.status_code == 200
+    data = response.get_json()
+    assert len(data) == 2

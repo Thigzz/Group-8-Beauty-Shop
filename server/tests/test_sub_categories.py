@@ -10,27 +10,17 @@ def admin_token(test_client, new_admin):
     """Fixture to register and log in an admin user, returning an access token."""
     # Register admin
     test_client.post('/auth/register', data=json.dumps({
-        "username": new_admin.username,
-        "email": new_admin.email,
-        "password": "password123", "confirm_password": "password123",
-        "first_name": "Admin",
-        "last_name": "User",
-        "primary_phone_no": "456"
+        "username": new_admin.username, "email": new_admin.email, "password": "password123", "confirm_password": "password123",
+        "first_name": "Admin", "last_name": "User", "primary_phone_no": "456"
     }), content_type='application/json')
-
-    # Set user role to admin in the database
     with test_client.application.app_context():
         admin_user = User.query.filter_by(username=new_admin.username).first()
         admin_user.role = UserRole.admin
         db.session.commit()
-
-    # Log in to get token
     login_res = test_client.post('/auth/login', data=json.dumps({
-        "login_identifier": new_admin.username,
-        "password": "password123"
+        "login_identifier": new_admin.username, "password": "password123"
     }), content_type='application/json')
     return json.loads(login_res.data)['access_token']
-
 
 @pytest.fixture
 def test_category():
@@ -117,3 +107,32 @@ def test_delete_sub_category(test_client, admin_token, test_category):
     assert response.status_code == 200
     assert response.json["message"] == "SubCategory deleted"
     assert SubCategory.query.get(sub_category.id) is None
+
+
+def test_get_sub_categories_by_category(test_client, test_category):
+    """
+    GIVEN a category with sub-categories
+    WHEN the '/api/sub_categories/by_category/<category_id>' endpoint is requested
+    THEN check that it returns only the sub-categories for that category
+    """
+    # Create another category to ensure we are filtering correctly
+    other_category = Category(category_name="Skincare")
+    db.session.add(other_category)
+    db.session.commit()
+
+    # Create sub-categories for both
+    sub1 = SubCategory(category_id=test_category.id, sub_category_name="Lipstick")
+    sub2 = SubCategory(category_id=test_category.id, sub_category_name="Mascara")
+    sub3 = SubCategory(category_id=other_category.id, sub_category_name="Moisturizer")
+    db.session.add_all([sub1, sub2, sub3])
+    db.session.commit()
+
+    response = test_client.get(f"/api/sub_categories/by_category/{test_category.id}")
+    assert response.status_code == 200
+    data = response.get_json()
+    
+    assert len(data) == 2
+    sub_category_names = [sc['sub_category_name'] for sc in data]
+    assert "Lipstick" in sub_category_names
+    assert "Mascara" in sub_category_names
+    assert "Moisturizer" not in sub_category_names

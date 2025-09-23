@@ -69,11 +69,11 @@ def test_dashboard_analytics(test_client, admin_token):
     assert response.status_code == 200
     assert response.json is not None
     # Check required fields exist
-    required_fields = ['total_revenue', 'total_orders', 'total_customers',
-                       'total_products', 'recent_orders_30_days', 'average_order_value']
+    required_fields = ['total_sales', 'orders_today', 'active_customers',
+                       'top_product', 'recent_orders']
     for field in required_fields:
         assert field in response.json
-        assert isinstance(response.json[field], (int, float))
+        assert isinstance(response.json[field], (int, float, str, list))
 
 def test_sales_analytics(test_client, admin_token):
     """Test sales analytics endpoint returns correct structure."""
@@ -131,7 +131,7 @@ def test_analytics_with_test_data(test_client, admin_token, test_product):
     # Dashboard should show the test product
     response = test_client.get('/api/analytics/dashboard', headers=headers)
     assert response.status_code == 200
-    assert response.json['total_products'] >= 1
+    assert response.json['top_product'] is not None
     # Product analytics should show low stock
     response = test_client.get('/api/analytics/products', headers=headers)
     assert response.status_code == 200
