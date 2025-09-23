@@ -24,12 +24,46 @@ export const cartSlice = createSlice({
         existingItem.quantity++;
       }
     },
-    // Justin please add the removeItemFromCart, clearCart and such items
+
+    // Remove an item (decrease quantity or delete entirely)
+    removeItemFromCart: (state, action) => {
+      const id = action.payload;
+      const existingItem = state.items.find(item => item.id === id);
+
+      if (existingItem) {
+        state.totalQuantity--;
+        if (existingItem.quantity === 1) {
+          state.items = state.items.filter(item => item.id !== id);
+        } else {
+          existingItem.quantity--;
+        }
+      }
+    },
+
+    // Remove all quantities of a specific item
+    removeAllOfItem: (state, action) => {
+      const id = action.payload;
+      const existingItem = state.items.find(item => item.id === id);
+
+      if (existingItem) {
+        state.totalQuantity -= existingItem.quantity;
+        state.items = state.items.filter(item => item.id !== id);
+      }
+    },
+
+    // Clear entire cart
+    clearCart: (state) => {
+      state.items = [];
+      state.totalQuantity = 0;
+    },
   },
 });
 
-
-export const { addItemToCart } = cartSlice.actions;
-
+export const { 
+  addItemToCart, 
+  removeItemFromCart, 
+  removeAllOfItem, 
+  clearCart 
+} = cartSlice.actions;
 
 export default cartSlice.reducer;
