@@ -35,15 +35,14 @@ const STATIC_CATEGORIES = [
   { id: 5, name: "SHOP ALL", subcategories: [] },
 ];
 
-// Create a wrapper component to handle route parameters
 const CategoryPageWrapper = ({ showAllProducts }) => {
-  const { categoryId, subcategoryId } = useParams();
+  const { categoryId, subcategoryId, categoryName, subcategoryName } = useParams(); 
   const dispatch = useDispatch();
   const categories = useSelector(state => state.categories.items);
   
   useEffect(() => {
-    // When route parameters change, update Redux state
     if (categoryId && categoryId !== "undefined") {
+      // Handle ID-based routes
       const category = categories.find(cat => cat.id.toString() === categoryId.toString());
       if (category) {
         dispatch(selectCategory(category));
@@ -61,12 +60,38 @@ const CategoryPageWrapper = ({ showAllProducts }) => {
           dispatch(selectSubcategory(null));
         }
       }
+    } else if (categoryName) {
+      // Handle slug-based routes (e.g., /category/makeup, /category/makeup/lipstick)
+      const category = categories.find(cat => {
+        const catName = (cat.category_name || cat.name || "").toLowerCase();
+        return catName === categoryName.toLowerCase();
+      });
+      
+      if (category) {
+        dispatch(selectCategory(category));
+        
+        if (subcategoryName) {
+          const subcategory = category.subcategories?.find(
+            sub => {
+              const subName = (sub.sub_category_name || sub.name || "").toLowerCase();
+              return subName === subcategoryName.toLowerCase();
+            }
+          );
+          dispatch(selectSubcategory(subcategory || null));
+        } else {
+          dispatch(selectSubcategory(null));
+        }
+      } else {
+        // Category not found, clear selections
+        dispatch(selectCategory(null));
+        dispatch(selectSubcategory(null));
+      }
     } else {
-      // If no categoryId, clear selections (for /products route)
+      // If no category parameters, clear selections (for /products route)
       dispatch(selectCategory(null));
       dispatch(selectSubcategory(null));
     }
-  }, [categoryId, subcategoryId, categories, dispatch]);
+  }, [categoryId, subcategoryId, categoryName, subcategoryName, categories, dispatch]);
 
   const selectedCategory = useSelector(state => state.categories.selected);
   const selectedSubcategory = useSelector(state => state.categories.selectedSubcategory);
@@ -177,14 +202,12 @@ function App() {
           }}
         />
         
-        {/* Wrap both Header and Navbar in a sticky container */}
         <div className="sticky top-0 z-50">
           <Header />
           <Navbar />
         </div>
         
-        {/* Add padding to main content to account for sticky header height */}
-        <div className="pt-0"> {/* Adjust this padding based on your header height */}
+        <div className="pt-0">
           <Routes>
             {/* Main Routes */}
             <Route 
@@ -223,6 +246,7 @@ function App() {
               element={<CategoryPageWrapper showAllProducts={true} />} 
             />
             
+            {/* ID-based category routes */}
             <Route 
               path="/products/category/:categoryId" 
               element={<CategoryPageWrapper showAllProducts={false} />} 
@@ -230,6 +254,17 @@ function App() {
             
             <Route 
               path="/products/category/:categoryId/subcategory/:subcategoryId" 
+              element={<CategoryPageWrapper showAllProducts={false} />} 
+            />
+
+            {/* Slug-based category routes */}
+            <Route 
+              path="/category/:categoryName" 
+              element={<CategoryPageWrapper showAllProducts={false} />} 
+            />
+            
+            <Route 
+              path="/category/:categoryName/:subcategoryName" 
               element={<CategoryPageWrapper showAllProducts={false} />} 
             />
 
@@ -256,8 +291,27 @@ function App() {
               <Route path="settings" element={<SettingsPage />} />
               <Route index element={<DashboardPage />} />
             </Route>
+
+              <Route path="/shop-all" element={<CategoryPageWrapper showAllProducts={true} />} />
+              <Route path="/makeup" element={<CategoryPageWrapper showAllProducts={false} />} />
+              <Route path="/skincare" element={<CategoryPageWrapper showAllProducts={false} />} />
+              <Route path="/fragrance" element={<CategoryPageWrapper showAllProducts={false} />} />
+              <Route path="/accessories" element={<CategoryPageWrapper showAllProducts={false} />} />
+
+              {/* Slug-based category routes */}
+            <Route 
+              path="/category/:categoryName" 
+              element={<CategoryPageWrapper showAllProducts={false} />} 
+            />
+
+            <Route 
+              path="/category/:categoryName/:subcategoryName" 
+              element={<CategoryPageWrapper showAllProducts={false} />} 
+            />
+
           </Routes>
         </div>
+
 
         {/* Global Modal */}
         <ProductDetailModal 

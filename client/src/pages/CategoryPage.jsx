@@ -1,7 +1,8 @@
 import React, { useMemo, useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import Footer from "../components/Footer";
+import ProductDetailModal from "../components/Product/ProductDetailModal";
 import ProductGrid from "../components/Product/ProductGrid";
 import HeroSection from "../components/HeroSection";
 import Breadcrumb from "../components/Breadcrumb";
@@ -24,9 +25,10 @@ const CategoryPage = ({
   onAddToWishlist,
   showAllProducts = false,
 }) => {
-  const { categoryId, subcategoryId } = useParams();
+  const { categoryId, subcategoryId, categoryName, subcategoryName } = useParams();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const productsState = useSelector(state => state.products);
   const productsArray = Array.isArray(productsState.items) ? productsState.items : [];
@@ -39,27 +41,48 @@ const CategoryPage = ({
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const category = useMemo(
-    () => categories.find((c) => c.id.toString() === categoryId),
-    [categories, categoryId]
-  );
+   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const subcategory = useMemo(
-    () =>
-      category?.subcategories?.find((s) => s.id.toString() === subcategoryId) || null,
-    [category, subcategoryId]
-  );
+  const createSlug = (name) => {
+    return name
+      ?.toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '') || '';
+  };
 
-  // Reset page and fetch data when category/subcategory changes
+  const category = useMemo(() => {
+    if (categoryId && categoryId !== "undefined") {
+      return categories.find(cat => cat.id.toString() === categoryId.toString());
+    } else if (categoryName) {
+      return categories.find((cat) => {
+        const categorySlug = createSlug(cat.category_name || cat.name);
+        return categorySlug === categoryName.toLowerCase();
+      });
+    }
+    return null;
+  }, [categories, categoryId, categoryName]);
+
+  const subcategory = useMemo(() => {
+    if (!category) return null;
+    
+    if (subcategoryId && subcategoryId !== "undefined") {
+      return category.subcategories?.find(sub => sub.id.toString() === subcategoryId.toString());
+    } else if (subcategoryName) {
+      return category.subcategories?.find((sub) => {
+        const subcategorySlug = createSlug(sub.sub_category_name || sub.name);
+        return subcategorySlug === subcategoryName.toLowerCase();
+      });
+    }
+    return null;
+  }, [category, subcategoryId, subcategoryName]);
+
+  const effectiveCategory = showAllProducts ? selectedCategory : category;
+  const effectiveSubcategory = showAllProducts ? selectedSubcategory : subcategory;
+
   useEffect(() => {
     setCurrentPage(1);
     
-    if ((categoryId || subcategoryId) && window.location.pathname === '/categories') {
-      navigate('/categories', { replace: true });
-      return;
-    }
-
-    // Fetch initial data
     if (showAllProducts) {
       if (!selectedCategory || selectedCategory.id === 'shop-all') {
         dispatch(fetchAllProducts({ page: 1 }));
@@ -68,37 +91,73 @@ const CategoryPage = ({
       } else {
         dispatch(fetchProductsByCategory({ categoryId: selectedCategory.id, page: 1 }));
       }
-    } else if (categoryId) {
-      if (subcategoryId) {
-        dispatch(fetchProductsByCategoryAndSubcategory({ categoryId, subcategoryId, page: 1 }));
-      } else {
-        dispatch(fetchProductsByCategory({ categoryId, page: 1 }));
+    } else {
+      if (category) {
+        if (subcategory) {
+          dispatch(fetchProductsByCategoryAndSubcategory({ 
+            categoryId: category.id, 
+            subcategoryId: subcategory.id, 
+            page: 1 
+          }));
+        } else {
+          dispatch(fetchProductsByCategory({ categoryId: category.id, page: 1 }));
+        }
+      } else if (!categoryId && !categoryName) {
+        dispatch(fetchAllProducts({ page: 1 }));
       }
     }
-  }, [categoryId, subcategoryId, showAllProducts, selectedCategory?.id, selectedSubcategory?.id, dispatch, navigate]);
+  }, [
+    categoryId, 
+    subcategoryId, 
+    categoryName, 
+    subcategoryName, 
+    category, 
+    subcategory, 
+    showAllProducts, 
+    selectedCategory, 
+    selectedSubcategory, 
+    dispatch
+  ]);
 
-  // Load more products when page changes (but not on initial load)
   useEffect(() => {
     if (currentPage > 1) {
       if (showAllProducts) {
         if (!selectedCategory || selectedCategory.id === 'shop-all') {
           dispatch(fetchAllProducts({ page: currentPage, append: true }));
         } else if (selectedSubcategory) {
-          dispatch(fetchProductsBySubcategory({ subcategoryId: selectedSubcategory.id, page: currentPage, append: true }));
+          dispatch(fetchProductsBySubcategory({ 
+            subcategoryId: selectedSubcategory.id, 
+            page: currentPage, 
+            append: true 
+          }));
         } else {
-          dispatch(fetchProductsByCategory({ categoryId: selectedCategory.id, page: currentPage, append: true }));
+          dispatch(fetchProductsByCategory({ 
+            categoryId: selectedCategory.id, 
+            page: currentPage, 
+            append: true 
+          }));
         }
-      } else if (categoryId) {
-        if (subcategoryId) {
-          dispatch(fetchProductsByCategoryAndSubcategory({ categoryId, subcategoryId, page: currentPage, append: true }));
-        } else {
-          dispatch(fetchProductsByCategory({ categoryId, page: currentPage, append: true }));
+      } else {
+        if (category) {
+          if (subcategory) {
+            dispatch(fetchProductsByCategoryAndSubcategory({ 
+              categoryId: category.id, 
+              subcategoryId: subcategory.id, 
+              page: currentPage, 
+              append: true 
+            }));
+          } else {
+            dispatch(fetchProductsByCategory({ 
+              categoryId: category.id, 
+              page: currentPage, 
+              append: true 
+            }));
+          }
         }
       }
     }
   }, [currentPage]);
 
-  // Apply filters to products
   const filteredProducts = useMemo(() => {
     if (productsState.loading && currentPage === 1) return [];
 
@@ -114,7 +173,6 @@ const CategoryPage = ({
     });
   }, [productsArray, filters, productsState.loading, currentPage]);
 
-  // Sort filtered products
   const sortedProducts = useMemo(() => {
     const sorted = [...filteredProducts];
     switch (sortBy) {
@@ -139,12 +197,9 @@ const CategoryPage = ({
     }
   }, [filteredProducts, sortBy]);
 
-  // Get unique brands for filter
   const availableBrands = useMemo(() => {
     return [...new Set(productsArray.map(p => p.brand).filter(Boolean))].sort();
   }, [productsArray]);
-
-  const displayCategory = showAllProducts ? selectedCategory : category;
 
   const handleSortChange = (newSortBy) => setSortBy(newSortBy);
 
@@ -174,13 +229,23 @@ const CategoryPage = ({
 
   const handleCategorySelect = (cat) => {
     onCategorySelect(cat);
-    onSubcategorySelect(null); // Reset subcategory when changing category
-    setCurrentPage(1);
+    onSubcategorySelect(null);
+
+    if (!showAllProducts) {
+      const slug = createSlug(cat.category_name || cat.name);
+      navigate(`/category/${slug}`);
+    }
   };
 
   const handleSubcategorySelect = (subcat) => {
     onSubcategorySelect(subcat);
     setCurrentPage(1);
+    
+    if (!showAllProducts && effectiveCategory) {
+      const categorySlug = createSlug(effectiveCategory.category_name || effectiveCategory.name);
+      const subcategorySlug = createSlug(subcat.sub_category_name || subcat.name);
+      navigate(`/category/${categorySlug}/${subcategorySlug}`);
+    }
   };
 
   const handleLoadMore = () => {
@@ -210,15 +275,15 @@ const CategoryPage = ({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <HeroSection category={displayCategory || category} />
+      <HeroSection category={effectiveCategory} />
 
       <div className="container mx-auto px-4 py-6">
         {/* Breadcrumb and Info Section */}
         <div className="mb-6">
           <div className="mb-4">
             <Breadcrumb 
-              selectedCategory={displayCategory || category}
-              selectedSubcategory={selectedSubcategory || subcategory}
+              selectedCategory={effectiveCategory}
+              selectedSubcategory={effectiveSubcategory}
               showAllProducts={showAllProducts}
               className="text-lg font-medium"
             />
@@ -292,7 +357,7 @@ const CategoryPage = ({
               )}
 
               {/* Subcategories - Only show if we have a category context */}
-              {displayCategory?.subcategories && displayCategory.subcategories.length > 0 && (
+              {effectiveCategory?.subcategories && effectiveCategory.subcategories.length > 0 && (
                 <div className="mb-6">
                   <h4 className="font-medium text-gray-900 mb-3">
                     {showAllProducts && (!selectedCategory || selectedCategory.id === 'shop-all') 
@@ -302,26 +367,26 @@ const CategoryPage = ({
                   </h4>
                   <div className="space-y-2">
                     <button
-                      onClick={() => handleSubcategorySelect(null)}
+                      onClick={() => onSubcategorySelect(null)}
                       className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                        !(selectedSubcategory || subcategory) 
+                        !effectiveSubcategory 
                           ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' 
                           : 'text-gray-600 hover:bg-gray-50'
                       }`}
                     >
-                      All {displayCategory.category_name || displayCategory.name}
+                      All {effectiveCategory.category_name || effectiveCategory.name}
                     </button>
-                    {displayCategory.subcategories.map((subcat) => (
+                    {effectiveCategory.subcategories.map((subcat) => (
                       <button
                         key={subcat.id}
                         onClick={() => handleSubcategorySelect(subcat)}
                         className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                          (selectedSubcategory?.id === subcat.id || subcategory?.id === subcat.id) 
+                          effectiveSubcategory?.id === subcat.id
                             ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' 
                             : 'text-gray-600 hover:bg-gray-50'
                         }`}
                       >
-                        {subcat.name}
+                        {subcat.sub_category_name || subcat.name}
                       </button>
                     ))}
                   </div>
@@ -390,6 +455,14 @@ const CategoryPage = ({
                   products={sortedProducts} 
                   onProductClick={onProductClick}
                   onAddToCart={onAddToCart}
+                  onAddToWishlist={onAddToWishlist}
+                />
+
+                 {/* Modal */}
+                <ProductDetailModal
+                  product={selectedProduct}
+                  isOpen={isModalOpen}
+                  onClose={() => setIsModalOpen(false)}
                   onAddToWishlist={onAddToWishlist}
                 />
                 

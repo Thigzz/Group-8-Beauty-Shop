@@ -77,13 +77,14 @@ const ProductDetailModal = ({ product, isOpen, onClose, onAddToWishlist }) => {
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-start justify-center bg-gray-200 bg-opacity-50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white rounded-2xl w-full max-w-5xl h-[90vh] flex overflow-hidden shadow-2xl relative">
+      <div className="bg-white rounded-2xl w-full max-w-5xl h-[90vh] flex overflow-hidden shadow-2xl relative mt-10">
 
         {/* Close Button */}
         <button 
+          aria-label="Close modal"
           onClick={onClose}
           className="absolute top-4 right-4 z-10 p-3 rounded-full bg-white/90 hover:bg-white shadow-lg border border-gray-200"
         >
@@ -103,6 +104,7 @@ const ProductDetailModal = ({ product, isOpen, onClose, onAddToWishlist }) => {
             {productImages.length > 1 && (
               <>
                 <button 
+                  aria-label="Previous image"
                   onClick={prevImage}
                   className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-white/90 rounded-full shadow hover:bg-white"
                 >
@@ -110,6 +112,7 @@ const ProductDetailModal = ({ product, isOpen, onClose, onAddToWishlist }) => {
                 </button>
                 
                 <button 
+                  aria-label="Next image"
                   onClick={nextImage}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white/90 rounded-full shadow hover:bg-white"
                 >
@@ -125,6 +128,7 @@ const ProductDetailModal = ({ product, isOpen, onClose, onAddToWishlist }) => {
               {productImages.map((img, index) => (
                 <button
                   key={index}
+                  aria-label={`View ${productName} thumbnail ${index + 1}`}
                   onClick={() => setSelectedImage(index)}
                   className={`w-20 h-20 flex-shrink-0 rounded-lg border-2 overflow-hidden ${
                     selectedImage === index ? 'border-yellow-500' : 'border-transparent'
@@ -147,6 +151,7 @@ const ProductDetailModal = ({ product, isOpen, onClose, onAddToWishlist }) => {
             <div className="flex justify-between items-start mb-6">
               <h2 className="text-2xl font-bold text-gray-900 pr-12">{productName}</h2>
               <button 
+                aria-label={isLiked ? "Remove from wishlist" : "Add to wishlist"}
                 onClick={handleAddToWishlist}
                 className={`p-3 rounded-full border transition-colors flex-shrink-0 ${
                   isLiked ? 'bg-pink-100 border-pink-200 text-pink-600' 
@@ -179,6 +184,7 @@ const ProductDetailModal = ({ product, isOpen, onClose, onAddToWishlist }) => {
               <span className="text-sm font-medium text-gray-700">Quantity:</span>
               <div className="flex items-center border rounded-lg">
                 <button 
+                  aria-label="Decrease quantity"
                   onClick={() => handleQuantityChange(-1)}
                   className="p-2 hover:bg-gray-50"
                 >
@@ -186,6 +192,7 @@ const ProductDetailModal = ({ product, isOpen, onClose, onAddToWishlist }) => {
                 </button>
                 <span className="px-4 py-2 font-medium">{quantity}</span>
                 <button 
+                  aria-label="Increase quantity"
                   onClick={() => handleQuantityChange(1)}
                   className="p-2 hover:bg-gray-50"
                 >
@@ -210,6 +217,7 @@ const ProductDetailModal = ({ product, isOpen, onClose, onAddToWishlist }) => {
               {['details'].map(tab => (
                 <button
                   key={tab}
+                  aria-label={`View ${tab}`}
                   onClick={() => setActiveTab(tab)}
                   className={`pb-3 text-xl font-medium capitalize ${
                     activeTab === tab 

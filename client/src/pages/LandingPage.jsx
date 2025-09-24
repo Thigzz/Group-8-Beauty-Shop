@@ -1,15 +1,21 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import Footer from "../components/Footer";
 import LipLibraryImage from '../assets/liplibrary.webp';
 import TimelessFavourites from "../components/TimelessFavourites";
 import { Brush, SprayCan, Sparkles, Scissors, ShoppingBag } from "lucide-react";
 
-const HeroSection = () => (
+const HeroSection = ({ onShopNow }) => (
   <div 
     className="container mx-auto my-8 p-16 rounded-lg shadow-lg text-white bg-cover bg-center"
     style={{ backgroundImage: `url(${LipLibraryImage})` }}
   > 
-    <button className="bg-white text-black font-bold py-3 px-8 rounded-md hover:bg-pink-200">Shop Now</button>
+    <button 
+      onClick={onShopNow}
+      className="bg-white text-black font-bold py-3 px-8 rounded-md hover:bg-pink-200 transition-colors duration-300"
+    >
+      Shop Now
+    </button>
   </div>
 );
 
@@ -21,7 +27,13 @@ const fallbackCategories = [
   { id: 5, category_name: "ACCESSORIES" },
 ];
 
-const ShopByCategory = ({ categories = fallbackCategories, selectedCategory, onCategorySelect, onSubcategorySelect }) => {
+const ShopByCategory = ({ 
+  categories = fallbackCategories, 
+  selectedCategory, 
+  onCategorySelect, 
+  onSubcategorySelect,
+  onCategoryNavigate 
+}) => {
   const categoryIcons = {
     MAKEUP: <Brush size={36} className="text-white" />,
     HAIRCARE: <Scissors size={36} className="text-white" />,
@@ -31,8 +43,12 @@ const ShopByCategory = ({ categories = fallbackCategories, selectedCategory, onC
   };
 
   const handleClick = (category) => {
-    onCategorySelect(category);
-    onSubcategorySelect(null);
+    if (onCategoryNavigate) {
+      onCategoryNavigate(category);
+    } else {
+      onCategorySelect(category);
+      onSubcategorySelect(null);
+    }
   };
 
   return (
@@ -49,10 +65,12 @@ const ShopByCategory = ({ categories = fallbackCategories, selectedCategory, onC
                 selectedCategory?.id === cat.id ? "scale-105" : ""
               }`}
             >
-              <div className="w-24 h-24 bg-[#C9A35D] rounded-full mb-2 flex items-center justify-center">
+              <div className="w-24 h-24 bg-[#C9A35D] rounded-full mb-2 flex items-center justify-center group-hover:bg-[#b8934a] transition-colors duration-300">
                 {categoryIcons[(cat.category_name || "").toUpperCase()] || null}
               </div>
-              <span className="font-semibold text-sm text-[#C9A35D]">{cat.category_name}</span>
+              <span className="font-semibold text-sm text-[#C9A35D] group-hover:text-[#b8934a] transition-colors duration-300">
+                {cat.category_name}
+              </span>
             </button>
           ))}
       </div>
@@ -69,6 +87,7 @@ const LandingPage = ({
   onSubcategorySelect,
   onProductClick,
 }) => {
+  const navigate = useNavigate();
   const finalCategories = categories && categories.length > 0 ? categories : fallbackCategories;
 
   const filteredProducts = (Array.isArray(products) ? products : []).filter((product) => {
@@ -80,19 +99,28 @@ const LandingPage = ({
     return matchesCategory && matchesSubcategory;
   });
 
+  const handleCategoryNavigation = (category) => {
+    const categoryName = (category.category_name || "").toLowerCase();
+    navigate(`/category/${categoryName}`, { state: { categoryId: category.id } });
+  };
+
+  const handleShopNow = () => {
+    navigate("/category/shopall");
+  };
+
   return (
     <div>
       <main>
-        <HeroSection />
+        <HeroSection onShopNow={handleShopNow} />
         <ShopByCategory
           categories={finalCategories}
           selectedCategory={selectedCategory}
           onCategorySelect={onCategorySelect}
           onSubcategorySelect={onSubcategorySelect}
+          onCategoryNavigate={handleCategoryNavigation}
         />
-        <TimelessFavourites products={filteredProducts} onProductClick={onProductClick} />
+        <TimelessFavourites />
       </main>
-
       <Footer />
     </div>
   );
