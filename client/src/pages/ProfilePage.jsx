@@ -1,11 +1,13 @@
+// pages/ProfilePage.js
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { fetchUserProfile, logout } from '../redux/features/auth/authSlice';
 import apiClient from '../api/axios';
-import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { UserCircle2 } from 'lucide-react';
+import EditProfileModal from '../components/EditProfileModal';
+import Toast from '../components/Toast';
 
 const ProfilePage = () => {
   const dispatch = useDispatch();
@@ -17,6 +19,9 @@ const ProfilePage = () => {
   const [isChangePasswordOpen, setChangePasswordOpen] = useState(false);
   const [isAddressesOpen, setAddressesOpen] = useState(false);
   const [isSecurityOpen, setSecurityOpen] = useState(false);
+  
+  // Toast state
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
   useEffect(() => {
     if (token) {
@@ -42,9 +47,29 @@ const ProfilePage = () => {
     fetchOrders();
   }, [token]);
 
+
+  useEffect(() => {
+  }, [user]);
+
   const handleLogout = () => {
     dispatch(logout());
     navigate('/');
+  };
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+  };
+
+  const hideToast = () => {
+    setToast({ show: false, message: '', type: 'success' });
+  };
+
+  const handleEditProfileSuccess = (message) => {
+    showToast(message, 'success');
+    
+    setTimeout(() => {
+      dispatch(fetchUserProfile());
+    }, 500);
   };
 
   const getStatusColor = (status) => {
@@ -63,12 +88,27 @@ const ProfilePage = () => {
   };
 
   if (status === 'loading' || !user) {
-    return <div>Loading profile...</div>;
+    return (
+      <div className="flex flex-col min-h-screen bg-gray-50">
+        <main className="container mx-auto py-12 px-4 flex-grow flex items-center justify-center">
+          <div className="text-lg">Loading profile...</div>
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      <Header />
+      {/* Toast Component - Moved outside main content */}
+      {toast.show && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={hideToast} 
+        />
+      )}
+      
       <main className="container mx-auto py-12 px-4 flex-grow">
         <section className="bg-white p-6 rounded-lg shadow-md mb-8 flex items-center space-x-6">
           <UserCircle2 size={64} className="text-gray-400" />
@@ -76,6 +116,9 @@ const ProfilePage = () => {
             <h1 className="text-2xl font-bold">{user.first_name} {user.last_name}</h1>
             <p className="text-gray-600">{user.email}</p>
             <p className="text-gray-600">{user.primary_phone_no}</p>
+            {user.secondary_phone_no && (
+              <p className="text-gray-600">Secondary: {user.secondary_phone_no}</p>
+            )}
           </div>
         </section>
 
@@ -96,17 +139,37 @@ const ProfilePage = () => {
         <section className="bg-white p-6 rounded-lg shadow-md mb-8">
           <h2 className="text-xl font-bold mb-4">Account Settings</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button onClick={() => setEditProfileOpen(true)} className="text-left text-gray-700 hover:text-[#C9A35D]">Edit Profile</button>
-            <button onClick={() => setChangePasswordOpen(true)} className="text-left text-gray-700 hover:text-[#C9A35D]">Change Password</button>
-            <button onClick={() => setAddressesOpen(true)} className="text-left text-gray-700 hover:text-[#C9A35D]">Saved Addresses</button>
-            <button onClick={() => setSecurityOpen(true)} className="text-left text-gray-700 hover:text-[#C9A35D]">Security Questions</button>
+            <button 
+              onClick={() => setEditProfileOpen(true)} 
+              className="text-left text-gray-700 hover:text-[#C9A35D] transition-colors p-3 rounded-lg hover:bg-gray-50"
+            >
+              Edit Profile
+            </button>
+            <button 
+              onClick={() => setChangePasswordOpen(true)} 
+              className="text-left text-gray-700 hover:text-[#C9A35D] transition-colors p-3 rounded-lg hover:bg-gray-50"
+            >
+              Change Password
+            </button>
+            <button 
+              onClick={() => setAddressesOpen(true)} 
+              className="text-left text-gray-700 hover:text-[#C9A35D] transition-colors p-3 rounded-lg hover:bg-gray-50"
+            >
+              Saved Addresses
+            </button>
+            <button 
+              onClick={() => setSecurityOpen(true)} 
+              className="text-left text-gray-700 hover:text-[#C9A35D] transition-colors p-3 rounded-lg hover:bg-gray-50"
+            >
+              Security Questions
+            </button>
           </div>
         </section>
 
         <div className="text-center">
           <button
             onClick={handleLogout}
-            className="bg-[#C9A35D] text-black font-bold py-3 px-12 rounded-md hover:opacity-90"
+            className="bg-[#C9A35D] text-black font-bold py-3 px-12 rounded-md hover:opacity-90 transition-opacity"
           >
             Log Out
           </button>
@@ -114,19 +177,32 @@ const ProfilePage = () => {
       </main>
       <Footer />
 
-      {isEditProfileOpen && (
-        <div className="fixed inset-121 z-10 flex items-center justify-center bg-black bg-opacity-15" onClick={() => setEditProfileOpen(false)}>
+      {/* Edit Profile Modal */}
+      <EditProfileModal 
+        isOpen={isEditProfileOpen}
+        onClose={() => setEditProfileOpen(false)}
+        onSuccess={handleEditProfileSuccess}
+      />
+
+      {/* Change Password Modal */}
+      {isChangePasswordOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" onClick={() => setChangePasswordOpen(false)}>
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-2xl font-semibold border-b pb-3">Edit Profile</h3>
-            <div className="mt-4"><p>Edit profile form will go here.</p></div>
-          </div>
-        </div>
-      )}
-       {isChangePasswordOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75" onClick={() => setChangePasswordOpen(false)}>
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-2xl font-semibold border-b pb-3">Change Password</h3>
-            <div className="mt-4"><p>Change password form will go here.</p></div>
+            <h3 className="text-2xl font-semibold border-b pb-3 mb-4">Change Password</h3>
+            <div className="mt-4">
+              <p>Change password form will go here.</p>
+              <div className="flex space-x-3 mt-6">
+                <button
+                  onClick={() => setChangePasswordOpen(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button className="flex-1 px-4 py-2 bg-[#C9A35D] text-black font-bold rounded-lg hover:opacity-90">
+                  Update Password
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
