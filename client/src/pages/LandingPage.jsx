@@ -1,16 +1,18 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { useSelector } from "react-redux";
 import Footer from "../components/Footer";
-import LipLibraryImage from '../assets/liplibrary.webp';
 import TimelessFavourites from "../components/TimelessFavourites";
+import LipLibraryImage from '../assets/liplibrary.webp';
 import { Brush, SprayCan, Sparkles, Scissors, ShoppingBag } from "lucide-react";
 
+
 const HeroSection = ({ onShopNow }) => (
-  <div 
+  <div
     className="container mx-auto my-8 p-16 rounded-lg shadow-lg text-white bg-cover bg-center"
     style={{ backgroundImage: `url(${LipLibraryImage})` }}
-  > 
-    <button 
+  >
+    <button
       onClick={onShopNow}
       className="bg-white text-black font-bold py-3 px-8 rounded-md hover:bg-pink-200 transition-colors duration-300"
     >
@@ -27,12 +29,12 @@ const fallbackCategories = [
   { id: 5, category_name: "ACCESSORIES" },
 ];
 
-const ShopByCategory = ({ 
-  categories = fallbackCategories, 
-  selectedCategory, 
-  onCategorySelect, 
+const ShopByCategory = ({
+  categories = fallbackCategories,
+  selectedCategory,
+  onCategorySelect,
   onSubcategorySelect,
-  onCategoryNavigate 
+  onCategoryNavigate
 }) => {
   const categoryIcons = {
     MAKEUP: <Brush size={36} className="text-white" />,
@@ -80,7 +82,7 @@ const ShopByCategory = ({
 
 const LandingPage = ({
   categories,
-  products = [], 
+  products = [],
   selectedCategory,
   selectedSubcategory,
   onCategorySelect,

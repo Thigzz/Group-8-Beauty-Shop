@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchUserProfile } from '../redux/features/auth/authSlice';
-import apiClient from '../api/axios';
+import { updateUserProfile } from '../redux/features/auth/authSlice';
 
 const EditProfileModal = ({ isOpen, onClose, onSuccess }) => {
   const dispatch = useDispatch();
-  const { user, token } = useSelector((state) => state.auth);
-  
+  const { user } = useSelector((state) => state.auth);
+
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -14,14 +13,15 @@ const EditProfileModal = ({ isOpen, onClose, onSuccess }) => {
     primary_phone_no: '',
     secondary_phone_no: ''
   });
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [localSuccess, setLocalSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Prefill form with latest user data whenever modal opens
   useEffect(() => {
-    if (user && isOpen) {
-      console.log('User data:', user);
+    if (isOpen && user) {
       setFormData({
         first_name: user.first_name || '',
         last_name: user.last_name || '',
@@ -29,50 +29,39 @@ const EditProfileModal = ({ isOpen, onClose, onSuccess }) => {
         primary_phone_no: user.primary_phone_no || '',
         secondary_phone_no: user.secondary_phone_no || ''
       });
-    }
-  
-    if (isOpen) {
       setError('');
       setLocalSuccess(false);
     }
-  }, [user, isOpen]);
+  }, [isOpen, user]);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
     if (error) setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     setLoading(true);
+    setIsSubmitting(true);
     setError('');
 
     try {
-      const response = await apiClient.put('/auth/profile', formData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      setLocalSuccess(true);
-      
-      if (onSuccess) {
-        onSuccess('Profile updated successfully!');
+      const resultAction = await dispatch(updateUserProfile(formData));
+
+      if (updateUserProfile.fulfilled.match(resultAction)) {
+        setLocalSuccess(true);
+        onSuccess?.('Profile updated successfully!');
+        setTimeout(onClose, 500);
+      } else {
+        setError(resultAction.payload || 'Failed to update profile');
       }
-      
-      dispatch(fetchUserProfile());
-      
-      setTimeout(() => {
-        onClose();
-      }, 1000);
-      
-    } catch (error) {
-      console.error('Update error:', error);
-      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to update profile';
-      setError(errorMessage);
+    } catch (err) {
+      setError('Failed to update profile');
     } finally {
       setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -85,8 +74,14 @@ const EditProfileModal = ({ isOpen, onClose, onSuccess }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" onClick={handleClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-slide-in" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+      onClick={handleClose}
+    >
+      <div
+        className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-slide-in"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-8 border-b border-gray-200 bg-gray-50">
           <h3 className="text-3xl font-bold text-gray-900">
@@ -128,84 +123,30 @@ const EditProfileModal = ({ isOpen, onClose, onSuccess }) => {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
+              {/* Form fields */}
+              {['first_name', 'last_name', 'email', 'primary_phone_no', 'secondary_phone_no'].map((field) => (
+                <div key={field}>
                   <label className="block text-lg font-semibold text-gray-800 mb-3">
-                    First Name *
+                    {field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}{field !== 'secondary_phone_no' ? ' *' : ''}
                   </label>
                   <input
-                    type="text"
-                    name="first_name"
-                    value={formData.first_name}
+                    type={field.includes('email') ? 'email' : 'text'}
+                    name={field}
+                    value={formData[field]}
                     onChange={handleChange}
                     className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#C9A35D] focus:border-transparent transition-all duration-200"
-                    required
+                    placeholder={field === 'secondary_phone_no' ? 'Optional' : ''}
+                    required={field !== 'secondary_phone_no'}
                   />
                 </div>
-
-                <div>
-                  <label className="block text-lg font-semibold text-gray-800 mb-3">
-                    Last Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="last_name"
-                    value={formData.last_name}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#C9A35D] focus:border-transparent transition-all duration-200"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-lg font-semibold text-gray-800 mb-3">
-                  Email Address *
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#C9A35D] focus:border-transparent transition-all duration-200"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-lg font-semibold text-gray-800 mb-3">
-                  Primary Phone Number *
-                </label>
-                <input
-                  type="tel"
-                  name="primary_phone_no"
-                  value={formData.primary_phone_no}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#C9A35D] focus:border-transparent transition-all duration-200"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-lg font-semibold text-gray-800 mb-3">
-                  Secondary Phone Number (Optional)
-                </label>
-                <input
-                  type="tel"
-                  name="secondary_phone_no"
-                  value={formData.secondary_phone_no}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#C9A35D] focus:border-transparent transition-all duration-200"
-                  placeholder="Enter secondary phone number (optional)"
-                />
-              </div>
+              ))}
 
               {/* Buttons */}
               <div className="flex space-x-4 pt-6">
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="flex-1 px-6 py-4 border-2 border-gray-300 text-gray-700 text-lg font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200 hover:border-gray-400"
+                  className="flex-1 px-6 py-4 border-2 border-gray-300 text-gray-700 text-lg font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200"
                   disabled={loading}
                 >
                   Cancel
@@ -215,17 +156,7 @@ const EditProfileModal = ({ isOpen, onClose, onSuccess }) => {
                   disabled={loading}
                   className="flex-1 px-6 py-4 bg-[#C9A35D] text-black text-lg font-bold rounded-xl hover:opacity-90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
                 >
-                  {loading ? (
-                    <div className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Saving...
-                    </div>
-                  ) : (
-                    'Save Changes'
-                  )}
+                  {loading ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>

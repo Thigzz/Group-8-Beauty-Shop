@@ -26,6 +26,8 @@ import CheckoutPage from './pages/CheckoutPage';
 import OrderConfirmationPage from './pages/OrderConfirmationPage';
 import CategoryPage from "./pages/CategoryPage";
 import ProductDetailModal from "./components/Product/ProductDetailModal";
+import { fetchUserProfile } from './redux/features/auth/authSlice';
+
 
 const STATIC_CATEGORIES = [
   { id: 1, name: "FRAGRANCE", subcategories: [] },
@@ -125,12 +127,14 @@ function App() {
   
   const selectedProduct = useSelector(state => state.products.selected);
   const isProductModalOpen = useSelector(state => state.ui.isProductModalOpen);
+  const token = useSelector(state => state.auth.token);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        
+
+        // Fetch categories, subcategories, and products
         const [catRes, subRes] = await Promise.all([
           apiClient.get("api/categories/"),
           apiClient.get("api/sub_categories/"),
@@ -149,6 +153,12 @@ function App() {
         }));
 
         dispatch(setCategoriesItems(mergedCategories));
+
+        // Fetch user if token exists
+        if (token) {
+          await dispatch(fetchUserProfile());
+        }
+
         setIsLoading(false);
       } catch (err) {
         console.error("Error loading data:", err);
@@ -156,8 +166,10 @@ function App() {
         setIsLoading(false);
       }
     };
+
     fetchData();
-  }, [dispatch]);
+  }, [dispatch, token]);
+
 
   const handleProductClick = product => { 
     dispatch(selectProduct(product)); 

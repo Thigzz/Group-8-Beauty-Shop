@@ -13,7 +13,7 @@ export const loginUser = createAsyncThunk(
       dispatch(fetchUserProfile());
       return { token: access_token };
     } catch (error) {
-      return rejectWithValue(error.response.data.message || 'Login failed');
+      return rejectWithValue(error.response?.data?.message || 'Login failed');
     }
   }
 );
@@ -30,12 +30,12 @@ export const fetchUserProfile = createAsyncThunk(
       });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response?.data);
     }
   }
 );
 
-// Asyncto update user profile
+// Async to update user profile
 export const updateUserProfile = createAsyncThunk(
   'auth/updateUserProfile',
   async (profileData, { getState, dispatch, rejectWithValue }) => {
@@ -47,7 +47,10 @@ export const updateUserProfile = createAsyncThunk(
         headers: { Authorization: `Bearer ${token}` },
       });
       
+      // Fetch latest full profile (optional)
       dispatch(fetchUserProfile());
+
+      // Show toast once
       toast.success('Profile updated successfully!');
       return response.data;
     } catch (error) {
@@ -119,6 +122,7 @@ export const authSlice = createSlice({
         state.isAuthenticated = false;
         state.error = action.payload;
       })
+
       // Fetch User Profile cases
       .addCase(fetchUserProfile.pending, (state) => {
         state.status = 'loading';
@@ -134,17 +138,23 @@ export const authSlice = createSlice({
         state.isAuthenticated = false;
         state.user = null;
       })
-    // addCase for updateUserProfile
+
+      // Update User Profile cases
       .addCase(updateUserProfile.pending, (state) => {
         state.status = 'loading';
       })
-      .addCase(updateUserProfile.fulfilled, (state) => {
+      .addCase(updateUserProfile.fulfilled, (state, action) => {
         state.status = 'succeeded';
+        // Merge updated fields into existing user state
+        state.user = { ...state.user, ...action.payload };
+        state.error = null;
       })
       .addCase(updateUserProfile.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
       })
+
+      // Change Password cases
       .addCase(changePassword.pending, (state) => {
         state.status = 'loading';
         state.error = null;
