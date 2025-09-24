@@ -98,6 +98,11 @@ const LoginPage = () => {
                 Forgot your password?
             </Link>
           </div>
+          <div className="text-sm text-center">
+            <p className="text-gray-600">Not a member?{' '}
+              <Link to="/register" className="font-medium text-[#C9A35D] hover:text-opacity-90">Sign up</Link>
+            </p>
+          </div>
         </div>
       </main>
       <Footer />

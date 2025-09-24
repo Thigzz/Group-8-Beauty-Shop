@@ -13,17 +13,30 @@ import { setProductModalOpen } from "./redux/features/ui/uiSlice";
 // Import the merged Navbar component
 import Header from "./components/Header";
 import Navbar from "./components/Navbar";
+
+// Auth pages
+// import LoginPage from './pages/LoginPage';
+import Register from './pages/register';
+import ForgotPassword from './pages/forgot-password';
+import SecurityQuestions from './pages/security-questions';
+
+// Main pages
 import LandingPage from "./pages/LandingPage";
 import SearchResultsPage from "./pages/SearchResultsPage";
 import ProfilePage from './pages/ProfilePage';
 import LoginPage from './pages/LoginPage';
-import AdminLayout from './layouts/AdminLayout';
-import DashboardPage from './pages/admin/DashboardPage';
-import SettingsPage from './pages/admin/SettingsPage';
-import ProtectedRoute from './components/ProtectedRoute';
 import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrderConfirmationPage from './pages/OrderConfirmationPage';
+
+// Admin
+import AdminLayout from './layouts/AdminLayout';
+import DashboardPage from './pages/admin/DashboardPage';
+import SettingsPage from './pages/admin/SettingsPage';
+
+// Components
+import ProtectedRoute from './components/ProtectedRoute';
+
 import CategoryPage from "./pages/CategoryPage";
 import ProductDetailModal from "./components/Product/ProductDetailModal";
 import { fetchUserProfile } from './redux/features/auth/authSlice';
