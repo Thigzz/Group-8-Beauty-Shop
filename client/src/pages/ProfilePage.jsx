@@ -3,7 +3,6 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { fetchUserProfile, logout } from '../redux/features/auth/authSlice';
 import apiClient from '../api/axios';
-import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { UserCircle2 } from 'lucide-react';
 
@@ -68,7 +67,6 @@ const ProfilePage = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      <Header />
       <main className="container mx-auto py-12 px-4 flex-grow">
         <section className="bg-white p-6 rounded-lg shadow-md mb-8 flex items-center space-x-6">
           <UserCircle2 size={64} className="text-gray-400" />

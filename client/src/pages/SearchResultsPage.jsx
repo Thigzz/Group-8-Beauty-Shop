@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import apiClient from '../api/axios';
-import Header from '../components/Header';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ProductCard from '../components/Product/ProductCard';
@@ -43,7 +42,6 @@ const SearchResultsPage = () => {
 
   return (
     <div>
-      <Header />
       <Navbar />
       <main className="container mx-auto py-12 px-4 min-h-[60vh]">
         {/* Back Button */}

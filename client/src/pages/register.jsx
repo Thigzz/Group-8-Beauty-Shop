@@ -4,7 +4,6 @@ import * as Yup from 'yup';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { registerUser } from '../redux/features/auth/authSlice';
-import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 const Register = () => {
@@ -59,7 +58,6 @@ const Register = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
       <main className="flex-grow flex items-center justify-center bg-gray-50">
         <div className="w-full max-w-md p-8 space-y-8 bg-white shadow-lg rounded-lg">
           <h2 className="text-3xl font-bold text-center text-gray-900">

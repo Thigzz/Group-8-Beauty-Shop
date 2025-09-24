@@ -40,6 +40,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import CategoryPage from "./pages/CategoryPage";
 import ProductDetailModal from "./components/Product/ProductDetailModal";
 
+import './App.css';
+
 const STATIC_CATEGORIES = [
   { id: 1, name: "FRAGRANCE", subcategories: [] },
   { id: 2, name: "HAIR CARE", subcategories: [] },
@@ -242,6 +244,12 @@ function App() {
             <Route path="/cart" element={<CartPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/security-questions" element={<SecurityQuestions />} />
+            <Route path="/search" element={<SearchResultsPage />} />
+    
+  
 
             {/* Search Route */}
             <Route 
