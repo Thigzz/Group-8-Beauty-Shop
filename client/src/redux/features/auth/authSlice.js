@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import apiClient from '../../../api/axios';
 import toast from 'react-hot-toast';
 
-// Async to log in a user
+// LOGIN
 export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async (userData, { dispatch, rejectWithValue }) => {
@@ -13,12 +13,57 @@ export const loginUser = createAsyncThunk(
       dispatch(fetchUserProfile());
       return { token: access_token };
     } catch (error) {
-      return rejectWithValue(error.response.data.message || 'Login failed');
+      return rejectWithValue(error.response?.data?.message || 'Login failed');
     }
   }
 );
 
-// Async fetch user profile
+// REGISTER
+export const registerUser = createAsyncThunk(
+  'auth/registerUser',
+  async (userData, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.post('/auth/register', userData);
+      toast.success('Registration successful! Please log in.');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Registration failed');
+    }
+  }
+);
+
+// SAVE SECURITY QUESTIONS
+export const saveSecurityQuestions = createAsyncThunk(
+  'auth/saveSecurityQuestions',
+  async (questions, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const response = await apiClient.post('/auth/security-questions', questions, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success('Security questions saved!');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to save security questions');
+    }
+  }
+);
+
+// RESET PASSWORD WITH SECURITY QUESTIONS
+export const resetPasswordWithSecurity = createAsyncThunk(
+  'auth/resetPasswordWithSecurity',
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.post('/auth/reset-password', data);
+      toast.success('Password reset successful, please log in.');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Password reset failed');
+    }
+  }
+);
+
+// FETCH PROFILE
 export const fetchUserProfile = createAsyncThunk(
   'auth/fetchUserProfile',
   async (_, { getState, rejectWithValue }) => {
@@ -30,24 +75,22 @@ export const fetchUserProfile = createAsyncThunk(
       });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch profile');
     }
   }
 );
 
-// Asyncto update user profile
+// UPDATE PROFILE
 export const updateUserProfile = createAsyncThunk(
   'auth/updateUserProfile',
   async (profileData, { getState, dispatch, rejectWithValue }) => {
     try {
-      const { auth: { token } } = getState();
+      const token = getState().auth.token;
       if (!token) return rejectWithValue('No token found');
-
       const response = await apiClient.put('/auth/profile', profileData, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
-      dispatch(fetchUserProfile());
+      dispatch(fetchUserProfile()); // refresh profile after update
       toast.success('Profile updated successfully!');
       return response.data;
     } catch (error) {
@@ -58,17 +101,16 @@ export const updateUserProfile = createAsyncThunk(
   }
 );
 
+// CHANGE PASSWORD
 export const changePassword = createAsyncThunk(
   'auth/changePassword',
   async (passwordData, { getState, rejectWithValue }) => {
     try {
-      const { auth: { token } } = getState();
+      const token = getState().auth.token;
       if (!token) return rejectWithValue('No token found');
-
       const response = await apiClient.put('/auth/change-password', passwordData, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
       toast.success(response.data.message || 'Password updated successfully!');
       return response.data;
     } catch (error) {
@@ -101,40 +143,66 @@ export const authSlice = createSlice({
       state.token = action.payload;
       state.isAuthenticated = true;
       localStorage.setItem('token', action.payload);
-    }
+    },
   },
   extraReducers: (builder) => {
     builder
-      // Login User cases
+      // LOGIN
       .addCase(loginUser.pending, (state) => {
         state.status = 'loading';
         state.error = null;
       })
       .addCase(loginUser.fulfilled, (state) => {
         state.status = 'succeeded';
-        state.isAuthenticated = true;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.status = 'failed';
-        state.isAuthenticated = false;
         state.error = action.payload;
       })
-      // Fetch User Profile cases
-      .addCase(fetchUserProfile.pending, (state) => {
+
+      // REGISTER
+      .addCase(registerUser.pending, (state) => {
         state.status = 'loading';
       })
-      .addCase(fetchUserProfile.fulfilled, (state, action) => {
+      .addCase(registerUser.fulfilled, (state) => {
         state.status = 'succeeded';
+      })
+      .addCase(registerUser.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+
+      // SECURITY QUESTIONS
+      .addCase(saveSecurityQuestions.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(saveSecurityQuestions.fulfilled, (state) => {
+        state.status = 'succeeded';
+      })
+      .addCase(saveSecurityQuestions.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+
+      // RESET PASSWORD
+      .addCase(resetPasswordWithSecurity.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(resetPasswordWithSecurity.fulfilled, (state) => {
+        state.status = 'succeeded';
+      })
+      .addCase(resetPasswordWithSecurity.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+
+      // FETCH PROFILE
+      .addCase(fetchUserProfile.fulfilled, (state, action) => {
         state.user = action.payload;
         state.isAuthenticated = true;
       })
-      .addCase(fetchUserProfile.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.payload;
-        state.isAuthenticated = false;
-        state.user = null;
-      })
-    // addCase for updateUserProfile
+
+      // UPDATE PROFILE
       .addCase(updateUserProfile.pending, (state) => {
         state.status = 'loading';
       })
@@ -145,9 +213,10 @@ export const authSlice = createSlice({
         state.status = 'failed';
         state.error = action.payload;
       })
+
+      // CHANGE PASSWORD
       .addCase(changePassword.pending, (state) => {
         state.status = 'loading';
-        state.error = null;
       })
       .addCase(changePassword.fulfilled, (state) => {
         state.status = 'succeeded';
