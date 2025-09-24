@@ -14,7 +14,6 @@ const Register = () => {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      // redirect logic same as login
       if (user.role === 'admin') {
         navigate('/admin/dashboard');
       } else {
@@ -25,21 +24,36 @@ const Register = () => {
 
   const formik = useFormik({
     initialValues: {
+      firstName: '',
+      lastName: '',
       username: '',
       email: '',
+      primaryPhoneNo: '',
       password: '',
       confirmPassword: '',
     },
     validationSchema: Yup.object({
+      firstName: Yup.string().required('First name is required'),
+      lastName: Yup.string().required('Last name is required'),
       username: Yup.string().required('Username is required'),
       email: Yup.string().email('Invalid email').required('Email is required'),
+      primaryPhoneNo: Yup.string().required('Primary phone number is required'),
       password: Yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
       confirmPassword: Yup.string()
         .oneOf([Yup.ref('password'), null], 'Passwords must match')
         .required('Please confirm your password'),
     }),
     onSubmit: (values) => {
-      dispatch(registerUser(values));
+      const userData = {
+        first_name: values.firstName,
+        last_name: values.lastName,
+        username: values.username,
+        email: values.email,
+        primary_phone_no: values.primaryPhoneNo,
+        password: values.password,
+        confirm_password: values.confirmPassword,
+      };
+      dispatch(registerUser(userData));
     },
   });
 
@@ -52,6 +66,41 @@ const Register = () => {
             Create a New Account
           </h2>
           <form onSubmit={formik.handleSubmit} className="space-y-6">
+            <div>
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+                First Name
+              </label>
+              <input
+                id="firstName"
+                name="firstName"
+                type="text"
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                value={formik.values.firstName}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#C9A35D] focus:border-[#C9A35D]"
+              />
+              {formik.touched.firstName && formik.errors.firstName ? (
+                <div className="text-red-500 text-sm mt-1">{formik.errors.firstName}</div>
+              ) : null}
+            </div>
+
+            <div>
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+                Last Name
+              </label>
+              <input
+                id="lastName"
+                name="lastName"
+                type="text"
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                value={formik.values.lastName}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#C9A35D] focus:border-[#C9A35D]"
+              />
+              {formik.touched.lastName && formik.errors.lastName ? (
+                <div className="text-red-500 text-sm mt-1">{formik.errors.lastName}</div>
+              ) : null}
+            </div>
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700">
                 Username
@@ -85,6 +134,24 @@ const Register = () => {
               />
               {formik.touched.email && formik.errors.email ? (
                 <div className="text-red-500 text-sm mt-1">{formik.errors.email}</div>
+              ) : null}
+            </div>
+
+            <div>
+              <label htmlFor="primaryPhoneNo" className="block text-sm font-medium text-gray-700">
+                Primary Phone Number
+              </label>
+              <input
+                id="primaryPhoneNo"
+                name="primaryPhoneNo"
+                type="text"
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                value={formik.values.primaryPhoneNo}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#C9A35D] focus:border-[#C9A35D]"
+              />
+              {formik.touched.primaryPhoneNo && formik.errors.primaryPhoneNo ? (
+                <div className="text-red-500 text-sm mt-1">{formik.errors.primaryPhoneNo}</div>
               ) : null}
             </div>
 
