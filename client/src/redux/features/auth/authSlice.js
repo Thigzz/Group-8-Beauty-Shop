@@ -14,7 +14,6 @@ export const loginUser = createAsyncThunk(
       return { token: access_token };
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Login failed');
-      return rejectWithValue(error.response?.data?.message || 'Login failed');
     }
   }
 );
@@ -96,7 +95,7 @@ export const updateUserProfile = createAsyncThunk(
       dispatch(fetchUserProfile());
 
       // Show toast once
-      toast.success('Profile updated successfully!');
+      // toast.success('Profile updated successfully!');
       return response.data;
     } catch (error) {
       const message = error.response?.data?.message || 'Failed to update profile';
@@ -193,6 +192,21 @@ export const authSlice = createSlice({
       .addCase(fetchUserProfile.pending, (state) => {
         state.status = 'loading';
       })
+      .addCase(fetchUserProfile.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.user = action.payload; 
+        state.isAuthenticated = true; 
+      })
+      .addCase(fetchUserProfile.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+        // Optional: logout if profile fetch fails
+        state.user = null;
+        state.isAuthenticated = false;
+        state.token = null;
+        localStorage.removeItem('token');
+      })
+
       .addCase(resetPasswordWithSecurity.fulfilled, (state) => {
         state.status = 'succeeded';
       })

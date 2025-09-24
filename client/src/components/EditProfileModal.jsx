@@ -16,7 +16,6 @@ const EditProfileModal = ({ isOpen, onClose, onSuccess }) => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [localSuccess, setLocalSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Prefill form with latest user data whenever modal opens
@@ -30,7 +29,6 @@ const EditProfileModal = ({ isOpen, onClose, onSuccess }) => {
         secondary_phone_no: user.secondary_phone_no || ''
       });
       setError('');
-      setLocalSuccess(false);
     }
   }, [isOpen, user]);
 
@@ -51,9 +49,9 @@ const EditProfileModal = ({ isOpen, onClose, onSuccess }) => {
       const resultAction = await dispatch(updateUserProfile(formData));
 
       if (updateUserProfile.fulfilled.match(resultAction)) {
-        setLocalSuccess(true);
+        // Only call onSuccess - no duplicate toast in thunk anymore
         onSuccess?.('Profile updated successfully!');
-        setTimeout(onClose, 500);
+        onClose(); // Close modal immediately
       } else {
         setError(resultAction.payload || 'Failed to update profile');
       }
@@ -67,7 +65,6 @@ const EditProfileModal = ({ isOpen, onClose, onSuccess }) => {
 
   const handleClose = () => {
     setError('');
-    setLocalSuccess(false);
     onClose();
   };
 
@@ -84,9 +81,7 @@ const EditProfileModal = ({ isOpen, onClose, onSuccess }) => {
       >
         {/* Header */}
         <div className="flex items-center justify-between p-8 border-b border-gray-200 bg-gray-50">
-          <h3 className="text-3xl font-bold text-gray-900">
-            {localSuccess ? 'Success!' : 'Edit Profile'}
-          </h3>
+          <h3 className="text-3xl font-bold text-gray-900">Edit Profile</h3>
           <button
             onClick={handleClose}
             className="text-gray-500 hover:text-gray-700 transition-colors p-2 rounded-full hover:bg-gray-200"
@@ -100,67 +95,55 @@ const EditProfileModal = ({ isOpen, onClose, onSuccess }) => {
 
         {/* Form */}
         <div className="overflow-y-auto max-h-[calc(90vh-140px)]">
-          {localSuccess ? (
-            <div className="p-8 text-center">
-              <div className="bg-green-50 border border-green-200 text-green-700 px-6 py-8 rounded-lg">
-                <svg className="w-16 h-16 mx-auto mb-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                <h4 className="text-2xl font-bold mb-2">Profile Updated Successfully!</h4>
-                <p className="text-lg">Your changes have been saved.</p>
+          <form onSubmit={handleSubmit} className="p-8 space-y-6">
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg text-base">
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {error}
+                </div>
               </div>
+            )}
+
+            {/* Form fields */}
+            {['first_name', 'last_name', 'email', 'primary_phone_no', 'secondary_phone_no'].map((field) => (
+              <div key={field}>
+                <label className="block text-lg font-semibold text-gray-800 mb-3">
+                  {field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}{field !== 'secondary_phone_no' ? ' *' : ''}
+                </label>
+                <input
+                  type={field.includes('email') ? 'email' : 'text'}
+                  name={field}
+                  value={formData[field]}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#C9A35D] focus:border-transparent transition-all duration-200"
+                  placeholder={field === 'secondary_phone_no' ? 'Optional' : ''}
+                  required={field !== 'secondary_phone_no'}
+                />
+              </div>
+            ))}
+
+            {/* Buttons */}
+            <div className="flex space-x-4 pt-6">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="flex-1 px-6 py-4 border-2 border-gray-300 text-gray-700 text-lg font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200"
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 px-6 py-4 bg-[#C9A35D] text-black text-lg font-bold rounded-xl hover:opacity-90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
+              >
+                {loading ? 'Saving...' : 'Save Changes'}
+              </button>
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="p-8 space-y-6">
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg text-base">
-                  <div className="flex items-center">
-                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                    {error}
-                  </div>
-                </div>
-              )}
-
-              {/* Form fields */}
-              {['first_name', 'last_name', 'email', 'primary_phone_no', 'secondary_phone_no'].map((field) => (
-                <div key={field}>
-                  <label className="block text-lg font-semibold text-gray-800 mb-3">
-                    {field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}{field !== 'secondary_phone_no' ? ' *' : ''}
-                  </label>
-                  <input
-                    type={field.includes('email') ? 'email' : 'text'}
-                    name={field}
-                    value={formData[field]}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#C9A35D] focus:border-transparent transition-all duration-200"
-                    placeholder={field === 'secondary_phone_no' ? 'Optional' : ''}
-                    required={field !== 'secondary_phone_no'}
-                  />
-                </div>
-              ))}
-
-              {/* Buttons */}
-              <div className="flex space-x-4 pt-6">
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="flex-1 px-6 py-4 border-2 border-gray-300 text-gray-700 text-lg font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200"
-                  disabled={loading}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 px-6 py-4 bg-[#C9A35D] text-black text-lg font-bold rounded-xl hover:opacity-90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
-                >
-                  {loading ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-            </form>
-          )}
+          </form>
         </div>
       </div>
     </div>

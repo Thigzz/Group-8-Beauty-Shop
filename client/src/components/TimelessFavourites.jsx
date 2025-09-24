@@ -58,7 +58,7 @@ const TimelessFavourites = () => {
         product={selectedProduct} 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        onAddToWishlist={(id) => console.log("wishlist:", id)}
+        onAddToWishlist={(id) => ("wishlist:", id)}
       />
     </section>
   );

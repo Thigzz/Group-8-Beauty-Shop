@@ -3,7 +3,6 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { useDispatch, useSelector } from 'react-redux';
 import { saveSecurityQuestions } from '../redux/features/auth/authSlice';
-import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 const SecurityQuestions = () => {
@@ -30,7 +29,6 @@ const SecurityQuestions = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
       <main className="flex-grow flex items-center justify-center bg-gray-50">
         <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-lg">
           <h2 className="text-2xl font-bold text-center text-gray-900">Set Security Questions</h2>

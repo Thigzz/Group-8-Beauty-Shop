@@ -4,7 +4,6 @@ import * as Yup from 'yup';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { resetPasswordWithSecurity } from '../redux/features/auth/authSlice';
-import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 const ForgotPassword = () => {
@@ -42,7 +41,6 @@ const ForgotPassword = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
       <main className="flex-grow flex items-center justify-center bg-gray-50">
         <div className="w-full max-w-md p-8 bg-white shadow-lg rounded-lg">
           <h2 className="text-2xl font-bold text-center">Reset Password</h2>

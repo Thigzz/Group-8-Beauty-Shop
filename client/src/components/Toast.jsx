@@ -1,17 +1,12 @@
-// components/Toast.js
 import { useEffect } from 'react';
 
 const Toast = ({ message, type = 'success', onClose, duration = 4000 }) => {
   useEffect(() => {
-    console.log('Toast mounted with message:', message); // Debug log
-    
     const timer = setTimeout(() => {
-      console.log('Toast timer expired'); // Debug log
       onClose();
     }, duration);
 
     return () => {
-      console.log('Toast cleanup'); // Debug log
       clearTimeout(timer);
     };
   }, [onClose, duration, message]);
