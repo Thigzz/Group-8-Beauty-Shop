@@ -6,10 +6,19 @@ import { configureStore } from '@reduxjs/toolkit';
 import SearchResultsPage from '../../src/pages/SearchResultsPage';
 import apiClient from '../../src/api/axios';
 import cartReducer from '../../src/redux/features/cart/cartSlice';
+import authReducer from '../../src/redux/features/auth/authSlice';
 
 jest.mock('../../src/api/axios');
 
-const store = configureStore({ reducer: { cart: cartReducer } });
+const store = configureStore({
+    reducer: {
+        cart: cartReducer,
+        auth: authReducer
+    },
+    preloadedState: {
+        auth: { isAuthenticated: true }
+    }
+});
 
 const renderWithProviders = (ui, { route = '/' } = {}) => {
   window.history.pushState({}, 'Test page', route);

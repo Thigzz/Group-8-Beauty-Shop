@@ -3,8 +3,11 @@ from server.app.extensions import db
 from server.app.models.orders import Order
 from server.app.models.order_items import OrderItem
 from server.app.models.enums import OrderStatus
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity # 1. ADD get_jwt_identity
 from server.app.decorators import admin_required
+from server.app.models.users import User # 2. ADD User import
+from server.app.models.carts import Cart # 3. ADD Cart import
+
 
 orders_bp = Blueprint("orders", __name__, url_prefix="/api/orders")
 
@@ -92,3 +95,23 @@ def update_order_status(order_id):
         "order_id": str(order.id),
         "status": order.status.value
     })
+
+# ------order history-------
+@orders_bp.route("/history", methods=["GET"])
+@jwt_required()
+def get_user_order_history():
+    """
+    Get the order history for the currently logged-in user.
+    """
+    current_user_username = get_jwt_identity()
+    user = User.query.filter_by(username=current_user_username).first_or_404()
+
+    # Find orders linked to the user's carts
+    orders = Order.query.join(Cart).filter(Cart.user_id == user.id).order_by(Order.created_at.desc()).all()
+
+    return jsonify([{
+        "id": str(o.id),
+        "status": o.status.value,
+        "total_amount": float(o.total_amount),
+        "created_at": o.created_at.isoformat() if o.created_at else None
+    } for o in orders])
