@@ -1,4 +1,3 @@
-// pages/ProfilePage.js
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +7,10 @@ import Footer from '../components/Footer';
 import { UserCircle2 } from 'lucide-react';
 import EditProfileModal from '../components/EditProfileModal';
 import Toast from '../components/Toast';
+import ChangePassword from '../components/ChangePassword';
+import SavedAddresses from '../components/SavedAddresses';
+import AddressForm from '../components/AddressForm';
+import MySecurityQuestions from '../components/MySecurityQuestions';
 
 const ProfilePage = () => {
   const dispatch = useDispatch();
@@ -19,6 +22,9 @@ const ProfilePage = () => {
   const [isChangePasswordOpen, setChangePasswordOpen] = useState(false);
   const [isAddressesOpen, setAddressesOpen] = useState(false);
   const [isSecurityOpen, setSecurityOpen] = useState(false);
+  const [isAddAddressOpen, setAddAddressOpen] = useState(false);
+  const [isEditAddressOpen, setEditAddressOpen] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState(null);
   
   // Toast state
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
@@ -47,10 +53,6 @@ const ProfilePage = () => {
     fetchOrders();
   }, [token]);
 
-
-  useEffect(() => {
-  }, [user]);
-
   const handleLogout = () => {
     dispatch(logout());
     navigate('/');
@@ -66,10 +68,31 @@ const ProfilePage = () => {
 
   const handleEditProfileSuccess = (message) => {
     showToast(message, 'success');
-    
     setTimeout(() => {
       dispatch(fetchUserProfile());
     }, 500);
+  };
+
+  const handleAddressAction = (action, address = null) => {
+    if (action === 'add') {
+      setAddAddressOpen(true);
+      setAddressesOpen(false);
+    } else if (action === 'edit' && address) {
+      setSelectedAddress(address);
+      setEditAddressOpen(true);
+      setAddressesOpen(false);
+    }
+  };
+
+  const handlePasswordChangeSuccess = () => {
+    setChangePasswordOpen(false);
+    showToast('Password updated successfully!', 'success');
+  };
+
+  const handleAddressSuccess = () => {
+    setAddAddressOpen(false);
+    setEditAddressOpen(false);
+    showToast('Address saved successfully!', 'success');
   };
 
   const getStatusColor = (status) => {
@@ -100,7 +123,7 @@ const ProfilePage = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      {/* Toast Component - Moved outside main content */}
+      {/* Toast Component */}
       {toast.show && (
         <Toast 
           message={toast.message} 
@@ -141,27 +164,34 @@ const ProfilePage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button 
               onClick={() => setEditProfileOpen(true)} 
-              className="text-left text-gray-700 hover:text-[#C9A35D] transition-colors p-3 rounded-lg hover:bg-gray-50"
+              className="text-left text-gray-700 hover:text-[#C9A35D] transition-colors p-3 rounded-lg hover:bg-gray-50 border border-gray-200"
             >
-              Edit Profile
+              <div className="font-medium">Edit Profile</div>
+              <div className="text-sm text-gray-500">Update your personal information</div>
             </button>
+            
             <button 
               onClick={() => setChangePasswordOpen(true)} 
-              className="text-left text-gray-700 hover:text-[#C9A35D] transition-colors p-3 rounded-lg hover:bg-gray-50"
+              className="text-left text-gray-700 hover:text-[#C9A35D] transition-colors p-3 rounded-lg hover:bg-gray-50 border border-gray-200"
             >
-              Change Password
+              <div className="font-medium">Change Password</div>
+              <div className="text-sm text-gray-500">Update your password</div>
             </button>
+            
             <button 
               onClick={() => setAddressesOpen(true)} 
-              className="text-left text-gray-700 hover:text-[#C9A35D] transition-colors p-3 rounded-lg hover:bg-gray-50"
+              className="text-left text-gray-700 hover:text-[#C9A35D] transition-colors p-3 rounded-lg hover:bg-gray-50 border border-gray-200"
             >
-              Saved Addresses
+              <div className="font-medium">Saved Addresses</div>
+              <div className="text-sm text-gray-500">Manage your delivery addresses</div>
             </button>
+            
             <button 
               onClick={() => setSecurityOpen(true)} 
-              className="text-left text-gray-700 hover:text-[#C9A35D] transition-colors p-3 rounded-lg hover:bg-gray-50"
+              className="text-left text-gray-700 hover:text-[#C9A35D] transition-colors p-3 rounded-lg hover:bg-gray-50 border border-gray-200"
             >
-              Security Questions
+              <div className="font-medium">Security Questions</div>
+              <div className="text-sm text-gray-500">Add security questions</div>
             </button>
           </div>
         </section>
@@ -186,26 +216,111 @@ const ProfilePage = () => {
 
       {/* Change Password Modal */}
       {isChangePasswordOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" onClick={() => setChangePasswordOpen(false)}>
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-2xl font-semibold border-b pb-3 mb-4">Change Password</h3>
-            <div className="mt-4">
-              <p>Change password form will go here.</p>
-              <div className="flex space-x-3 mt-6">
-                <button
-                  onClick={() => setChangePasswordOpen(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button className="flex-1 px-4 py-2 bg-[#C9A35D] text-black font-bold rounded-lg hover:opacity-90">
-                  Update Password
-                </button>
-              </div>
-            </div>
+        <Modal 
+          isOpen={isChangePasswordOpen}
+          onClose={() => setChangePasswordOpen(false)}
+          title="Change Password"
+        >
+          <ChangePassword 
+            onSuccess={handlePasswordChangeSuccess}
+            onCancel={() => setChangePasswordOpen(false)}
+          />
+        </Modal>
+      )}
+
+      {/* Saved Addresses Modal */}
+      {isAddressesOpen && (
+        <Modal 
+          isOpen={isAddressesOpen}
+          onClose={() => setAddressesOpen(false)}
+          title="Saved Addresses"
+          size="large"
+        >
+          <SavedAddresses onAction={handleAddressAction} />
+        </Modal>
+      )}
+
+      {/* Add Address Modal */}
+      {isAddAddressOpen && (
+        <Modal 
+          isOpen={isAddAddressOpen}
+          onClose={() => setAddAddressOpen(false)}
+          title="Add New Address"
+          size="large"
+        >
+          <AddressForm 
+            mode="add"
+            onSuccess={handleAddressSuccess}
+            onCancel={() => setAddAddressOpen(false)}
+          />
+        </Modal>
+      )}
+
+      {/* Edit Address Modal */}
+      {isEditAddressOpen && (
+        <Modal 
+          isOpen={isEditAddressOpen}
+          onClose={() => setEditAddressOpen(false)}
+          title="Edit Address"
+          size="large"
+        >
+          <AddressForm 
+            mode="edit"
+            address={selectedAddress}
+            onSuccess={handleAddressSuccess}
+            onCancel={() => setEditAddressOpen(false)}
+          />
+        </Modal>
+      )}
+
+      {/* Security Questions Modal */}
+      {isSecurityOpen && (
+        <Modal 
+          isOpen={isSecurityOpen}
+          onClose={() => setSecurityOpen(false)}
+          title="Security Questions"
+          size="large"
+        >
+          <MySecurityQuestions onClose={() => setSecurityOpen(false)} />
+        </Modal>
+      )}
+    </div>
+  );
+};
+
+// Modal Component
+const Modal = ({ isOpen, onClose, title, children, size = 'medium' }) => {
+  if (!isOpen) return null;
+
+  const sizeClasses = {
+    medium: 'max-w-md',
+    large: 'max-w-2xl',
+    xlarge: 'max-w-4xl'
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div 
+        className={`bg-white rounded-lg shadow-xl w-full ${sizeClasses[size]} max-h-[90vh] overflow-y-auto`} 
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-2xl font-semibold">{title}</h3>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         </div>
-      )}
+        <div className="p-6">
+          {children}
+        </div>
+      </div>
     </div>
   );
 };
