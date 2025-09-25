@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import apiClient from '../api/axios';
 import { selectCategory, selectSubcategory, selectCategoryAndSubcategory } from '../redux/features/categories/categoriesSlice';
@@ -9,9 +9,13 @@ const Navbar = () => {
   const [allSubCategories, setAllSubCategories] = useState([]);
   const [activeMenu, setActiveMenu] = useState(null);
   const dispatch = useDispatch();
+  const location = useLocation();
 
-  // Fetch main categories and all subcategories on component mount
+  const isAdminRoute = location.pathname.startsWith('/admin');
+
   useEffect(() => {
+    if (isAdminRoute) return;
+
     const fetchData = async () => {
       try {
         const [categoriesResponse, subCategoriesResponse] = await Promise.all([
@@ -26,38 +30,38 @@ const Navbar = () => {
       }
     };
     fetchData();
-  }, []);
-
-  // Function to handle hovering over a category
+  }, [isAdminRoute]); 
   const handleMouseEnter = (categoryId) => {
+    if (isAdminRoute) return;
     setActiveMenu(categoryId);
   };
 
   const handleMouseLeave = () => {
+    if (isAdminRoute) return;
     setActiveMenu(null);
   };
 
   // Get subcategories for a specific category
   const getSubCategoriesForCategory = (categoryId) => {
+    if (isAdminRoute) return [];
     return allSubCategories.filter(sub => sub.category_id === categoryId);
   };
 
   // Handle category click (for main category links)
   const handleCategoryClick = (category) => {
+    if (isAdminRoute) return;
     setActiveMenu(null);
     if (category.id === "shop-all") {
-      // For "SHOP ALL", clear category selection
       dispatch(selectCategory(null));
     } else {
-      // For regular categories, select the category
       dispatch(selectCategory(category));
     }
   };
 
   // Handle subcategory click
   const handleSubcategoryClick = (category, subcategory) => {
+    if (isAdminRoute) return;
     setActiveMenu(null);
-    // Use the unified action to select both category and subcategory
     dispatch(selectCategoryAndSubcategory({ 
       category: category, 
       subcategory: subcategory 
@@ -66,19 +70,22 @@ const Navbar = () => {
 
   // Handle "All [Category]" click
   const handleAllCategoryClick = (category) => {
+    if (isAdminRoute) return;
     setActiveMenu(null);
     dispatch(selectCategory(category));
     dispatch(selectSubcategory(null));
   };
 
-  // Normalize categories for rendering
+  if (isAdminRoute) {
+    return null;
+  }
+
   const normalizedCategories = categories.map(cat => ({
     id: cat.id,
     name: cat.category_name || "Unnamed",
     ...cat
   }));
 
-  // Add "SHOP ALL" as first menu item
   const menuCategories = [{ id: "shop-all", name: "SHOP ALL" }, ...normalizedCategories];
 
   return (
