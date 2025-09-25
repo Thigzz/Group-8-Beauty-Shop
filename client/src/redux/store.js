@@ -7,6 +7,7 @@ import wishlistReducer from './features/wishlist/wishlistSlice';
 import uiReducer from './features/ui/uiSlice';
 import searchReducer from './features/search/searchSlice';
 import profileReducer from './features/profile/profileSlice';
+import  addressReducer  from './features/address/addressSlice';
 
 export const store = configureStore({
   reducer: {
@@ -17,6 +18,7 @@ export const store = configureStore({
     products: productsReducer,
     wishlist: wishlistReducer,
     ui: uiReducer,
-    search: searchReducer
+    search: searchReducer,
+    address:addressReducer
   },
 });
