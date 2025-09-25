@@ -20,7 +20,7 @@ import CategoryPageWrapper from "./components/CategoryPageWrapper";
 // Pages
 import LandingPage from "./pages/LandingPage";
 import SearchResultsPage from "./pages/SearchResultsPage";
-import ProfilePage from './pages/ProfilePage';ƒ
+import ProfilePage from './pages/ProfilePage';
 import LoginPage from './pages/LoginPage';
 import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
