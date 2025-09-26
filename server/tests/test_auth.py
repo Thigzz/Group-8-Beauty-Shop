@@ -53,6 +53,7 @@ def test_access_protected_route(test_client, new_user):
     test_client.post(
         '/auth/register',
         data=json.dumps({
+            "id":  new_user.id,
             "username": new_user.username,
             "email": new_user.email,
             "password": "password123",
