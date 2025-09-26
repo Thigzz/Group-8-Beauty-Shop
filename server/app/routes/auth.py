@@ -3,14 +3,12 @@ from sqlalchemy import or_
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt, current_user
 
-
 from server.app.models.users import User
 from server.app.extensions import db, bcrypt
 from server.app.decorators import admin_required
 from server.app.utils.cart_utils import merge_guest_cart
 
 auth_bp = Blueprint('auth_bp', __name__, url_prefix='/auth')
-
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
@@ -33,7 +31,8 @@ def register():
         last_name=data.get('last_name'),
         username=data.get('username'),
         email=data.get('email'),
-        primary_phone_no=data.get('primary_phone_no')
+        primary_phone_no=data.get('primary_phone_no'),
+        secondary_phone_no=data.get('secondary_phone_no'),
     )
     new_user.set_password(password)
 
@@ -143,11 +142,14 @@ def reset_password():
 @jwt_required()
 def profile():
     return jsonify({
+        "id": str(current_user.id),
         "first_name": current_user.first_name,
         "last_name": current_user.last_name,
         "username": current_user.username,
         "email": current_user.email,
-        "role": current_user.role.name
+        "role": current_user.role.name,
+        "primary_phone_no": current_user.primary_phone_no,
+        "secondary_phone_no": current_user.secondary_phone_no
     }), 200
 
 
