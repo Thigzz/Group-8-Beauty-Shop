@@ -1,11 +1,19 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { saveSecurityQuestions, fetchUserProfile, fetchSecurityQuestions, fetchUserSecurityQuestions } from '../redux/features/auth/authSlice';
 import toast from 'react-hot-toast';
 
 const MySecurityQuestions = () => {
   const dispatch = useDispatch();
-  const { user, securityQuestions, userSecurityQuestions, status, error } = useSelector((state) => state.auth);
+  const { 
+    user, 
+    securityQuestions, 
+    userSecurityQuestions, 
+    profileLoading,
+    securityQuestionsLoading,
+    savingSecurityQuestions,
+    error 
+  } = useSelector((state) => state.auth);
 
   const [questions, setQuestions] = useState([
     { question_id: '', question: '', answer: '' },
@@ -16,88 +24,35 @@ const MySecurityQuestions = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [existingQuestions, setExistingQuestions] = useState([]);
   const [showAnswers, setShowAnswers] = useState({});
-  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
-  const [hasLoaded, setHasLoaded] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
-  // Use refs to track if we've already fetched data
-  const profileFetched = useRef(false);
-  const questionsFetched = useRef(false);
-
-  // Fetch user profile on mount - only once
+  // Initialize - fetch profile once
   useEffect(() => {
-    console.log('Profile useEffect running', { profileFetched: profileFetched.current, user: !!user });
-    if (!profileFetched.current && !user) {
-      console.log('Fetching user profile...');
-      profileFetched.current = true;
-      dispatch(fetchUserProfile()).finally(() => {
-        setHasLoaded(true);
-      });
-    } else if (user) {
-      console.log('User already exists, setting hasLoaded to true');
-      setHasLoaded(true);
+    if (!user && !profileLoading && !initialized) {
+      dispatch(fetchUserProfile());
+      setInitialized(true);
     }
-  }, [dispatch]); // Only depend on dispatch
+  }, [dispatch, user, profileLoading, initialized]);
 
-  // Handle user data changes - now using userSecurityQuestions
+  // Once user is loaded, fetch security questions
   useEffect(() => {
-    console.log('User data useEffect running', { user: !!user, userSecurityQuestions });
+    if (user?.id && securityQuestions.length === 0 && !securityQuestionsLoading) {
+      dispatch(fetchSecurityQuestions());
+      dispatch(fetchUserSecurityQuestions());
+    }
+  }, [dispatch, user?.id, securityQuestions.length, securityQuestionsLoading]);
+
+  // Handle existing user questions
+  useEffect(() => {
     if (userSecurityQuestions && userSecurityQuestions.length > 0) {
       setExistingQuestions(userSecurityQuestions);
-
-      // Initialize showAnswers state to false for all questions
       const initialShowAnswers = {};
       userSecurityQuestions.forEach((_, index) => {
         initialShowAnswers[index] = false;
       });
       setShowAnswers(initialShowAnswers);
     }
-  }, [userSecurityQuestions]); // Depend on userSecurityQuestions instead
-
-  // Fetch security questions and user questions when user is available
-  useEffect(() => {
-    console.log('Security questions useEffect running', { 
-      userId: user?.id, 
-      questionsFetched: questionsFetched.current, 
-      isLoadingQuestions,
-      securityQuestionsLength: securityQuestions.length 
-    });
-    
-    const fetchQuestions = async () => {
-      // Only fetch if we have a user, haven't fetched yet, and not currently loading
-      if (user?.id && !questionsFetched.current && !isLoadingQuestions) {
-        console.log('Fetching security questions for user:', user.id);
-        questionsFetched.current = true;
-        setIsLoadingQuestions(true);
-        try {
-          // Fetch available questions
-          const result = await dispatch(fetchSecurityQuestions()).unwrap();
-          console.log('Available security questions fetched:', result);
-          
-          // Also fetch user's existing security questions
-          try {
-            await dispatch(fetchUserSecurityQuestions()).unwrap();
-            console.log('User security questions fetched');
-          } catch (userQuestionsError) {
-            console.log('No existing user security questions found:', userQuestionsError);
-          }
-          
-        } catch (error) {
-          console.error('Failed to fetch security questions:', error);
-          toast.error('Failed to load security questions');
-          questionsFetched.current = false; // Reset on error
-        } finally {
-          setIsLoadingQuestions(false);
-        }
-      }
-    };
-
-    if (user?.id) {
-      console.log('User ID exists, calling fetchQuestions');
-      fetchQuestions();
-    } else {
-      console.log('No user ID available yet');
-    }
-  }, [user?.id, dispatch]);
+  }, [userSecurityQuestions]);
 
   const toggleAnswerVisibility = (index) => {
     setShowAnswers((prev) => ({
@@ -106,10 +61,18 @@ const MySecurityQuestions = () => {
     }));
   };
 
+  // Get available questions for dropdown (exclude already selected ones)
+  const getAvailableQuestions = (currentIndex) => {
+    const selectedQuestionIds = questions
+      .map((q, index) => index === currentIndex ? '' : q.question_id)
+      .filter(id => id !== '');
+    
+    return securityQuestions.filter(q => !selectedQuestionIds.includes(q.id));
+  };
+
   const handleQuestionChange = (index, field, value) => {
     const updatedQuestions = [...questions];
     if (field === 'question') {
-      // Find the selected question object
       const selectedQuestion = securityQuestions.find(q => q.question === value);
       updatedQuestions[index] = {
         ...updatedQuestions[index],
@@ -138,33 +101,31 @@ const MySecurityQuestions = () => {
   const handleSave = async (e) => {
     e.preventDefault();
 
-    console.log('Save button clicked');
-    console.log('Current user:', user);
-    console.log('Current token exists:', !!localStorage.getItem('token'));
-    console.log('Questions to save:', questions);
-
-    // Validate questions
-    const invalidQuestions = questions.filter(
-      (q) => !q.question_id.trim() || !q.answer.trim()
+    // Count existing questions when editing
+    const existingCount = isEditing ? existingQuestions.length : 0;
+    const validQuestions = questions.filter(
+      (q) => q.question_id.trim() && q.answer.trim()
     );
-    if (invalidQuestions.length > 0) {
-      toast.error('Please fill in all questions and answers');
+    
+    // Check if total questions (existing + new) meet minimum requirement
+    const totalQuestions = isEditing ? existingCount + validQuestions.length : validQuestions.length;
+    
+    if (totalQuestions < 2) {
+      toast.error('Please set up at least 2 security questions for better account security');
       return;
     }
 
     // Check for duplicate questions
-    const questionIds = questions.map((q) => q.question_id.trim());
+    const questionIds = validQuestions.map((q) => q.question_id.trim());
     const uniqueQuestions = new Set(questionIds);
-    if (uniqueQuestions.size !== questions.length) {
+    if (uniqueQuestions.size !== validQuestions.length) {
       toast.error('Please select unique questions for each entry');
       return;
     }
 
     try {
-      console.log('Dispatching saveSecurityQuestions...');
-      await dispatch(saveSecurityQuestions(questions)).unwrap();
-      console.log('Save successful, fetching user questions...');
-      // Refresh user's security questions after saving
+      // Only save valid questions
+      await dispatch(saveSecurityQuestions(validQuestions)).unwrap();
       await dispatch(fetchUserSecurityQuestions()).unwrap();
       setIsEditing(false);
       setQuestions([
@@ -174,18 +135,16 @@ const MySecurityQuestions = () => {
       ]);
       toast.success('Security questions updated successfully!');
     } catch (error) {
-      console.error('Save failed:', error);
       toast.error(error || 'Failed to save security questions');
     }
   };
 
   const handleEdit = () => {
     if (existingQuestions.length > 0) {
-      // Convert existing questions to the format expected by the form
       const formattedQuestions = existingQuestions.map(eq => ({
         question_id: eq.question_id,
         question: eq.question,
-        answer: '' // Don't pre-fill answers for security
+        answer: ''
       }));
       setQuestions(formattedQuestions);
     }
@@ -210,32 +169,12 @@ const MySecurityQuestions = () => {
     setIsEditing(true);
   };
 
-  const handleManualFetchQuestions = async () => {
-    console.log('Manual fetch triggered');
-    questionsFetched.current = false; // Reset the ref
-    setIsLoadingQuestions(true);
-    try {
-      const result = await dispatch(fetchSecurityQuestions()).unwrap();
-      console.log('Manual fetch result:', result);
-      toast.success('Security questions loaded successfully');
-    } catch (error) {
-      console.error('Manual fetch error:', error);
-      toast.error('Failed to load security questions');
-    } finally {
-      setIsLoadingQuestions(false);
-    }
+  const handleManualFetch = () => {
+    dispatch(fetchSecurityQuestions());
   };
 
-  const handleRetry = () => {
-    profileFetched.current = false;
-    setHasLoaded(false);
-    dispatch(fetchUserProfile()).finally(() => {
-      setHasLoaded(true);
-    });
-  };
-
-  // Show loading only when initially loading and no user data yet
-  if (status === 'loading' && !hasLoaded && !user) {
+  // Show loading while profile is being fetched
+  if (profileLoading || (!user && initialized)) {
     return (
       <div className="max-w-2xl mx-auto p-6">
         <div className="animate-pulse">
@@ -253,14 +192,14 @@ const MySecurityQuestions = () => {
     );
   }
 
-  // If there's an error and no user data, show error
-  if (status === 'failed' && !user && hasLoaded) {
+  // Show error if profile failed to load
+  if (error && !user) {
     return (
       <div className="max-w-2xl mx-auto p-6">
         <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">
           <p>Failed to load profile: {error}</p>
           <button 
-            onClick={handleRetry}
+            onClick={() => dispatch(fetchUserProfile())}
             className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
             Retry
@@ -277,12 +216,22 @@ const MySecurityQuestions = () => {
         {!isEditing && (
           <div className="flex gap-2">
             {existingQuestions.length > 0 ? (
-              <button
-                onClick={handleEdit}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Edit Questions
-              </button>
+              <>
+                <button
+                  onClick={handleEdit}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Edit Questions
+                </button>
+                {existingQuestions.length < 5 && (
+                  <button
+                    onClick={handleAddNew}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Add More
+                  </button>
+                )}
+              </>
             ) : (
               <button
                 onClick={handleAddNew}
@@ -295,16 +244,19 @@ const MySecurityQuestions = () => {
         )}
       </div>
 
-      {error && status !== 'loading' && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-          {error}
-        </div>
-      )}
-
       {!isEditing && existingQuestions.length > 0 ? (
         <div className="space-y-4">
+          {existingQuestions.length < 2 && (
+            <div className="p-3 bg-amber-100 border border-amber-400 text-amber-700 rounded">
+              <p className="font-medium">⚠️ Security Alert</p>
+              <p className="text-sm mt-1">
+                You only have {existingQuestions.length} security question{existingQuestions.length === 1 ? '' : 's'} set up. 
+                For better account security, we recommend having at least 2 security questions.
+              </p>
+            </div>
+          )}
           <p className="text-gray-600 mb-4">
-            Your security questions are set up. You can edit them if needed.
+            Your security questions are set up. You can edit them or add more if needed.
           </p>
           {existingQuestions.map((q, index) => (
             <div key={index} className="p-4 border border-gray-200 rounded-lg">
@@ -314,9 +266,11 @@ const MySecurityQuestions = () => {
                   <p className="text-gray-600 mt-1">{q.question}</p>
                   <div className="mt-2 flex items-center gap-2">
                     <span className="text-gray-700 text-sm">Answer:</span>
-                    <span className="font-mono text-sm">
-                      {showAnswers[index] ? '(Hidden for security)' : '••••••••'}
-                    </span>
+                    {showAnswers[index] ? (
+                      <span className="font-medium text-sm">{q.answer}</span>
+                    ) : (
+                      <span className="font-mono text-sm">••••••••</span>
+                    )}
                     <button
                       type="button"
                       onClick={() => toggleAnswerVisibility(index)}
@@ -350,7 +304,7 @@ const MySecurityQuestions = () => {
                   )}
                 </div>
 
-                {isLoadingQuestions ? (
+                {securityQuestionsLoading ? (
                   <div className="animate-pulse">
                     <div className="h-10 bg-gray-200 rounded w-full mb-3"></div>
                   </div>
@@ -364,7 +318,7 @@ const MySecurityQuestions = () => {
                     </select>
                     <button
                       type="button"
-                      onClick={handleManualFetchQuestions}
+                      onClick={handleManualFetch}
                       className="text-sm text-blue-600 hover:text-blue-800 underline"
                     >
                       Try loading questions again
@@ -380,7 +334,7 @@ const MySecurityQuestions = () => {
                     required
                   >
                     <option value="">Select a security question</option>
-                    {securityQuestions.map((questionOption) => (
+                    {getAvailableQuestions(index).map((questionOption) => (
                       <option key={questionOption.id} value={questionOption.question}>
                         {questionOption.question}
                       </option>
@@ -415,10 +369,10 @@ const MySecurityQuestions = () => {
           <div className="flex gap-4 pt-4">
             <button
               type="submit"
-              disabled={status === 'loading' || isLoadingQuestions}
+              disabled={savingSecurityQuestions}
               className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
-              {status === 'loading' ? 'Saving...' : 'Save Questions'}
+              {savingSecurityQuestions ? 'Saving...' : 'Save Questions'}
             </button>
 
             {isEditing && (
@@ -431,6 +385,15 @@ const MySecurityQuestions = () => {
               </button>
             )}
           </div>
+          
+          {/* Validation helper */}
+          <div className="mt-2 text-sm text-gray-600">
+            <p>
+              📋 Complete at least 2 questions to save. 
+              Current: {questions.filter(q => q.question_id && q.answer.trim()).length} of {questions.length}
+              {isEditing && existingQuestions.length > 0 && ` (You already have ${existingQuestions.length} question${existingQuestions.length === 1 ? '' : 's'})`}
+            </p>
+          </div>
         </form>
       )}
 
@@ -439,42 +402,11 @@ const MySecurityQuestions = () => {
         <ul className="text-yellow-700 text-sm space-y-1">
           <li>• Security answers are case-sensitive</li>
           <li>• Choose questions that are memorable but not easily guessable</li>
-          <li>• You need at least 3 questions for security purposes</li>
+          <li>• You need at least 2 questions for account security (minimum requirement)</li>
+          <li>• We recommend having 3-5 questions for maximum security</li>
           <li>• These questions will be used for password recovery</li>
         </ul>
       </div>
-
-      {/* Debug info - remove this in production */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-4 p-4 bg-gray-100 border rounded-lg">
-          <h4 className="font-semibold mb-2">Debug Info:</h4>
-          <p>User ID: {user?.id || 'Not available'}</p>
-          <p>User Object: {user ? 'Available' : 'Not available'}</p>
-          <p>Token in localStorage: {localStorage.getItem('token') ? 'Available' : 'Not available'}</p>
-          <p>Is Authenticated: {user ? 'true' : 'false'}</p>
-          <p>Available Questions Count: {securityQuestions?.length || 0}</p>
-          <p>User Questions Count: {userSecurityQuestions?.length || 0}</p>
-          <p>Is Loading Questions: {isLoadingQuestions.toString()}</p>
-          <p>Questions Fetched: {questionsFetched.current.toString()}</p>
-          <p>Status: {status}</p>
-          <p>Current Form Questions:</p>
-          <pre className="text-xs mt-1 p-2 bg-gray-50 rounded overflow-auto">
-            {JSON.stringify(questions, null, 2)}
-          </pre>
-          <details className="mt-2">
-            <summary className="cursor-pointer font-medium">Available Questions</summary>
-            <pre className="text-xs mt-1 p-2 bg-gray-50 rounded overflow-auto">
-              {JSON.stringify(securityQuestions, null, 2)}
-            </pre>
-          </details>
-          <details className="mt-2">
-            <summary className="cursor-pointer font-medium">User Questions</summary>
-            <pre className="text-xs mt-1 p-2 bg-gray-50 rounded overflow-auto">
-              {JSON.stringify(userSecurityQuestions, null, 2)}
-            </pre>
-          </details>
-        </div>
-      )}
     </div>
   );
 };

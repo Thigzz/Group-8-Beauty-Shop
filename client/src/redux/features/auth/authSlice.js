@@ -46,18 +46,6 @@ export const saveSecurityQuestions = createAsyncThunk(
   async (questions, { getState, rejectWithValue }) => {
     try {
       const { token, user } = getState().auth;
-      console.log('Full user object:', JSON.stringify(user, null, 2));
-      console.log('User object keys:', Object.keys(user || {}));
-      console.log('Auth state for saving:', { 
-        token: !!token, 
-        user: !!user, 
-        userId: user?.id,
-        user_id: user?.user_id,
-        _id: user?._id,
-        uuid: user?.uuid,
-        pk: user?.pk,
-        user_uuid: user?.user_uuid
-      });
       
       if (!token) {
         return rejectWithValue('No authentication token found');
@@ -81,10 +69,6 @@ export const saveSecurityQuestions = createAsyncThunk(
         answer: q.answer
       }));
 
-      console.log('Using userId:', userId);
-      console.log('Saving questions:', transformedQuestions);
-      console.log('Request URL:', `/api/security-questions/user/${userId}`);
-
       const response = await apiClient.post(
         `/api/security-questions/user/${userId}`, 
         { questions: transformedQuestions },
@@ -95,8 +79,6 @@ export const saveSecurityQuestions = createAsyncThunk(
       toast.success('Security questions saved!');
       return response.data;
     } catch (error) {
-      console.error('Save security questions error:', error.response?.data);
-      console.error('Full error:', error);
       const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to save security questions';
       toast.error(errorMessage);
       return rejectWithValue(errorMessage);
@@ -235,8 +217,6 @@ export const changePassword = createAsyncThunk(
         confirm_password: passwordData.confirmPassword 
       };
       
-      console.log('Sending change password request:', requestData);
-      
       const response = await apiClient.put('/auth/change-password', requestData, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -249,8 +229,6 @@ export const changePassword = createAsyncThunk(
       return response.data;
       
     } catch (error) {
-      console.error('Change password error:', error.response?.data);
-      
       const message = error.response?.data?.message || 'Failed to change password';
       toast.error(message);
       return rejectWithValue(message);
@@ -279,9 +257,13 @@ const initialState = {
   isAuthenticated: !!localStorage.getItem('token'),
   token: localStorage.getItem('token'),
   status: 'idle',
+  profileLoading: false,
+  securityQuestionsLoading: false,
+  userSecurityQuestionsLoading: false,
+  savingSecurityQuestions: false,
   error: null,
-  securityQuestions: [], // Available security questions from backend
-  userSecurityQuestions: [], // User's assigned security questions
+  securityQuestions: [], 
+  userSecurityQuestions: [],
 };
 
 export const authSlice = createSlice({
@@ -293,6 +275,10 @@ export const authSlice = createSlice({
       state.isAuthenticated = false;
       state.token = null;
       state.status = 'idle';
+      state.profileLoading = false;
+      state.securityQuestionsLoading = false;
+      state.userSecurityQuestionsLoading = false;
+      state.savingSecurityQuestions = false;
       state.error = null;
       localStorage.removeItem('token');
     },
@@ -334,40 +320,39 @@ export const authSlice = createSlice({
 
       // SECURITY QUESTIONS - SAVE
       .addCase(saveSecurityQuestions.pending, (state) => {
-        state.status = 'loading';
+        state.savingSecurityQuestions = true;
       })
       .addCase(saveSecurityQuestions.fulfilled, (state) => {
-        state.status = 'succeeded';
+        state.savingSecurityQuestions = false;
       })
       .addCase(saveSecurityQuestions.rejected, (state, action) => {
-        state.status = 'failed';
+        state.savingSecurityQuestions = false;
         state.error = action.payload;
       })
 
       // AVAILABLE SECURITY QUESTIONS - FETCH
       .addCase(fetchSecurityQuestions.pending, (state) => {
-        state.status = 'loading';
+        state.securityQuestionsLoading = true;
       })
       .addCase(fetchSecurityQuestions.fulfilled, (state, action) => {
-        state.status = 'succeeded';
+        state.securityQuestionsLoading = false;
         state.securityQuestions = action.payload.questions || [];
       })
       .addCase(fetchSecurityQuestions.rejected, (state, action) => {
-        state.status = 'failed';
+        state.securityQuestionsLoading = false;
         state.error = action.payload;
       })
 
       // USER SECURITY QUESTIONS - FETCH
       .addCase(fetchUserSecurityQuestions.pending, (state) => {
-        state.status = 'loading';
+        state.userSecurityQuestionsLoading = true;
       })
       .addCase(fetchUserSecurityQuestions.fulfilled, (state, action) => {
-        state.status = 'succeeded';
+        state.userSecurityQuestionsLoading = false;
         state.userSecurityQuestions = action.payload.questions || [];
       })
       .addCase(fetchUserSecurityQuestions.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.payload;
+        state.userSecurityQuestionsLoading = false;
       })
 
       // VERIFY SECURITY ANSWERS
@@ -384,15 +369,15 @@ export const authSlice = createSlice({
 
       // Fetch User Profile cases
       .addCase(fetchUserProfile.pending, (state) => {
-        state.status = 'loading';
+        state.profileLoading = true;
       })
       .addCase(fetchUserProfile.fulfilled, (state, action) => {
-        state.status = 'succeeded';
+        state.profileLoading = false;
         state.user = action.payload; 
         state.isAuthenticated = true; 
       })
       .addCase(fetchUserProfile.rejected, (state, action) => {
-        state.status = 'failed';
+        state.profileLoading = false;
         state.error = action.payload;
         state.user = null;
         state.isAuthenticated = false;
