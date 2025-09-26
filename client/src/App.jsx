@@ -43,8 +43,9 @@ function App() {
           <Route path="/cart" element={<CartPage />} />
 
           {/* User Protected Routes */}
+          {/*Might Have to change this to fit*/}
           <Route 
-            path="/profile" {/*Might Have to change this to fit*/}
+            path="/profile" 
             element={
               <ProtectedRoute>
                 <ProfilePage />
