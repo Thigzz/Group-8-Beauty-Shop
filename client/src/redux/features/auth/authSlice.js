@@ -45,16 +45,101 @@ export const saveSecurityQuestions = createAsyncThunk(
   'auth/saveSecurityQuestions',
   async (questions, { getState, rejectWithValue }) => {
     try {
-      const { token } = getState().auth;
-      const response = await apiClient.post('/auth/security-questions', questions, {
-        headers: { Authorization: `Bearer ${token}` },
+      const { token, user } = getState().auth;
+      console.log('Full user object:', JSON.stringify(user, null, 2));
+      console.log('User object keys:', Object.keys(user || {}));
+      console.log('Auth state for saving:', { 
+        token: !!token, 
+        user: !!user, 
+        userId: user?.id,
+        user_id: user?.user_id,
+        _id: user?._id,
+        uuid: user?.uuid,
+        pk: user?.pk,
+        user_uuid: user?.user_uuid
       });
+      
+      if (!token) {
+        return rejectWithValue('No authentication token found');
+      }
+      
+      if (!user) {
+        return rejectWithValue('User object not found in state');
+      }
+
+      // Try different possible user ID fields
+      const userId = user.id || user.user_id || user._id || user.uuid || user.pk || user.user_uuid;
+      
+      if (!userId) {
+        console.error('User object:', user);
+        return rejectWithValue(`User ID not found in user object. Available keys: ${Object.keys(user).join(', ')}`);
+      }
+
+      // Transform questions to match backend format
+      const transformedQuestions = questions.map(q => ({
+        question_id: q.question_id,
+        answer: q.answer
+      }));
+
+      console.log('Using userId:', userId);
+      console.log('Saving questions:', transformedQuestions);
+      console.log('Request URL:', `/api/security-questions/user/${userId}`);
+
+      const response = await apiClient.post(
+        `/api/security-questions/user/${userId}`, 
+        { questions: transformedQuestions },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       toast.success('Security questions saved!');
       return response.data;
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Failed to save security questions';
+      console.error('Save security questions error:', error.response?.data);
+      console.error('Full error:', error);
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to save security questions';
       toast.error(errorMessage);
       return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+// FETCH AVAILABLE SECURITY QUESTIONS
+export const fetchSecurityQuestions = createAsyncThunk(
+  'auth/fetchSecurityQuestions',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+      if (!token) return rejectWithValue('No token found');
+      
+      const response = await apiClient.get('/api/security-questions/available', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch security questions'
+      );
+    }
+  }
+);
+
+// FETCH USER'S SECURITY QUESTIONS
+export const fetchUserSecurityQuestions = createAsyncThunk(
+  'auth/fetchUserSecurityQuestions',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const { token, user } = getState().auth;
+      if (!token || !user?.id) return rejectWithValue('User not authenticated');
+      
+      const response = await apiClient.get(`/api/security-questions/user/${user.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch user security questions'
+      );
     }
   }
 );
@@ -69,6 +154,23 @@ export const resetPasswordWithSecurity = createAsyncThunk(
       return response.data;
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Password reset failed';
+      toast.error(errorMessage);
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+// VERIFY SECURITY ANSWERS
+export const verifySecurityAnswers = createAsyncThunk(
+  'auth/verifySecurityAnswers',
+  async ({ userId, answers }, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.post(`/api/security-questions/verify/${userId}`, {
+        answers
+      });
+      return response.data;
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Verification failed';
       toast.error(errorMessage);
       return rejectWithValue(errorMessage);
     }
@@ -178,6 +280,8 @@ const initialState = {
   token: localStorage.getItem('token'),
   status: 'idle',
   error: null,
+  securityQuestions: [], // Available security questions from backend
+  userSecurityQuestions: [], // User's assigned security questions
 };
 
 export const authSlice = createSlice({
@@ -228,7 +332,7 @@ export const authSlice = createSlice({
         state.error = action.payload;
       })
 
-      // SECURITY QUESTIONS
+      // SECURITY QUESTIONS - SAVE
       .addCase(saveSecurityQuestions.pending, (state) => {
         state.status = 'loading';
       })
@@ -236,6 +340,44 @@ export const authSlice = createSlice({
         state.status = 'succeeded';
       })
       .addCase(saveSecurityQuestions.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+
+      // AVAILABLE SECURITY QUESTIONS - FETCH
+      .addCase(fetchSecurityQuestions.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(fetchSecurityQuestions.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.securityQuestions = action.payload.questions || [];
+      })
+      .addCase(fetchSecurityQuestions.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+
+      // USER SECURITY QUESTIONS - FETCH
+      .addCase(fetchUserSecurityQuestions.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(fetchUserSecurityQuestions.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.userSecurityQuestions = action.payload.questions || [];
+      })
+      .addCase(fetchUserSecurityQuestions.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+
+      // VERIFY SECURITY ANSWERS
+      .addCase(verifySecurityAnswers.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(verifySecurityAnswers.fulfilled, (state) => {
+        state.status = 'succeeded';
+      })
+      .addCase(verifySecurityAnswers.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
       })
