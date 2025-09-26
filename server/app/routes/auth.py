@@ -142,6 +142,7 @@ def reset_password():
 @jwt_required()
 def profile():
     return jsonify({
+        "id": str(current_user.id),
         "first_name": current_user.first_name,
         "last_name": current_user.last_name,
         "username": current_user.username,
