@@ -16,7 +16,7 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-[#000000] text-gray-300 p-4 shadow-md relative z-20">
+    <header className="bg-[#000000] text-gray-300 p-4 shadow-md relative z-40">
       <div className="flex justify-between items-center">
         <div className="font-['Orbitron'] text-4xl font">
           <a href="/" data-testid="pambo-logo">
