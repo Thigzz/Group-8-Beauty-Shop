@@ -187,3 +187,160 @@ def test_get_products_by_category_and_subcategory(test_client, sample_product_da
         prod['category_id'] == category_id and prod['sub_category_id'] == sub_category_id
         for prod in data['products']
     )
+
+def test_update_product_status(test_client, admin_token, sample_product_data):
+    """
+    GIVEN a Flask app and logged-in admin
+    WHEN a product status is updated
+    THEN it should reflect the new status in DB
+    """
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    # Create product
+    post_response = test_client.post(
+        '/api/products/', 
+        headers=headers, 
+        data=json.dumps(sample_product_data), 
+        content_type='application/json'
+    )
+    product_id = json.loads(post_response.data)['id']
+
+    # Update status -> inactive
+    update_data = {"status": "inactive"}
+    response = test_client.put(
+        f'/api/products/{product_id}',
+        headers=headers,
+        data=json.dumps(update_data),
+        content_type='application/json'
+    )
+    assert response.status_code == 200
+    data = json.loads(response.data)
+    assert data['status'] == "inactive"
+
+    # Update status -> active again
+    update_data = {"status": "active"}
+    response = test_client.put(
+        f'/api/products/{product_id}',
+        headers=headers,
+        data=json.dumps(update_data),
+        content_type='application/json'
+    )
+    assert response.status_code == 200
+    data = json.loads(response.data)
+    assert data['status'] == "active"
+
+
+def test_update_product_details_and_status(test_client, admin_token, sample_product_data):
+    """
+    GIVEN a Flask app and logged-in admin
+    WHEN product details + status are updated together
+    THEN check both updates persist
+    """
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    # Create product
+    post_response = test_client.post(
+        '/api/products/',
+        headers=headers,
+        data=json.dumps(sample_product_data),
+        content_type='application/json'
+    )
+    product_id = json.loads(post_response.data)['id']
+
+    # Update name + price + status
+    update_data = {
+        "product_name": "Updated Product Name",
+        "price": 99.99,
+        "status": "inactive"
+    }
+    response = test_client.put(
+        f'/api/products/{product_id}',
+        headers=headers,
+        data=json.dumps(update_data),
+        content_type='application/json'
+    )
+    assert response.status_code == 200
+    data = json.loads(response.data)
+
+    assert data['product_name'] == "Updated Product Name"
+    assert data['price'] == 99.99
+    assert data['status'] == "inactive"
+
+def test_deleted_products_not_listed(test_client, admin_token, sample_product_data):
+    """
+    GIVEN a Flask app and logged-in admin
+    WHEN a product is soft deleted
+    THEN it should not appear in the GET /api/products/ results
+    """
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    # Create product
+    post_response = test_client.post(
+        '/api/products/',
+        headers=headers,
+        data=json.dumps(sample_product_data),
+        content_type='application/json'
+    )
+    product_id = json.loads(post_response.data)['id']
+
+    # Soft delete product
+    delete_response = test_client.delete(
+        f'/api/products/{product_id}',
+        headers=headers
+    )
+    assert delete_response.status_code == 200
+    delete_data = json.loads(delete_response.data)
+    assert delete_data['message'] == 'Product deleted successfully'
+
+    # Fetch all products -> deleted one should not appear
+    response = test_client.get('/api/products/')
+    assert response.status_code == 200
+    data = json.loads(response.data)
+    assert all(prod['id'] != product_id for prod in data['products'])
+
+@pytest.fixture
+def user_token(test_client):
+    """Fixture to register and log in a normal user, returning an access token."""
+    username = "testuser"
+    email = "testuser@example.com"
+
+    # Register normal user
+    test_client.post(
+        "/auth/register",
+        data=json.dumps({
+            "username": username,
+            "email": email,
+            "password": "password123",
+            "confirm_password": "password123",
+            "first_name": "Test",
+            "last_name": "User",
+            "primary_phone_no": "123456789"
+        }),
+        content_type="application/json"
+    )
+
+    # Ensure role is set to customer (normal user)
+    with test_client.application.app_context():
+        user = User.query.filter_by(username=username).first()
+        user.role = UserRole.customer   # 👈 adjust to match your enum
+        db.session.commit()
+
+    # Log in to get token
+    login_res = test_client.post(
+        "/auth/login",
+        data=json.dumps({
+            "login_identifier": username,
+            "password": "password123"
+        }),
+        content_type="application/json"
+    )
+
+    return json.loads(login_res.data)["access_token"]
+
+def test_get_products_normal_user(test_client, user_token, sample_product_data):
+    """Normal user should only see active products"""
+    headers = {"Authorization": f"Bearer {user_token}"}
+
+    res = test_client.get("/api/products/", headers=headers)
+    assert res.status_code == 200
+    data = res.get_json()["products"]
+
+    # Regular users should never see inactive/deleted products
+    assert all(p["status"] == "active" for p in data)

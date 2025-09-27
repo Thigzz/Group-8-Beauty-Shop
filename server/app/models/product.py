@@ -14,6 +14,8 @@ class Product(Base):
     price = Column(Numeric(10, 2), nullable=False)
     stock_qty = Column(Integer, nullable=False)
     image_url = Column(String(255))
+    status = Column(Boolean, default=True, nullable=False)
+
 
     # Foreign keys
     category_id = Column(GUID(),
@@ -42,5 +44,6 @@ class Product(Base):
             'image_url': self.image_url,
             'category_id': str(self.category_id),
             'sub_category_id': str(self.sub_category_id),
+            'status': self.status,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
