@@ -278,22 +278,22 @@ const CategoryPage = ({
       <HeroSection category={effectiveCategory} />
 
       <div className="container mx-auto px-4 py-6">
-        {/* Breadcrumb and Info Section */}
-        <div className="mb-6">
+        {/* ENHANCED: Breadcrumb and Info Section - Made bigger and more prominent */}
+        <div className="mb-8 bg-white rounded-xl shadow-sm p-6">
           <div className="mb-4">
             <Breadcrumb 
               selectedCategory={effectiveCategory}
               selectedSubcategory={effectiveSubcategory}
               showAllProducts={showAllProducts}
-              className="text-lg font-medium"
+              className="text-xl font-semibold" // Made text bigger and bolder
             />
           </div>
           <div className="flex justify-between items-center">
-            <p className="text-gray-600 text-sm">
+            <p className="text-gray-800 text-lg font-medium"> {/* Made text bigger and bolder */}
               {productsState.loading && currentPage === 1 ? 'Loading...' : getProductCountText()}
             </p>
             {productsState.error && (
-              <p className="text-red-600 text-sm">Error: {productsState.error}</p>
+              <p className="text-red-600 text-base font-medium">Error: {productsState.error}</p> 
             )}
           </div>
         </div>
