@@ -6,6 +6,8 @@ import { addItemToCart } from '../redux/features/cart/cartSlice';
 import { addItem as addToWishlist } from '../redux/features/wishlist/wishlistSlice';
 import CategoryPage from '../pages/CategoryPage';
 import { CategoryRouteHandler } from './CategoryProvider';
+import { selectCategory, selectSubcategory } from '../redux/features/categories/categoriesSlice';
+
 
 const CategoryPageWrapper = ({ showAllProducts }) => {
   const dispatch = useDispatch();

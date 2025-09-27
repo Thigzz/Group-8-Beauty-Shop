@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useState } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import Footer from "../components/Footer";
 import ProductDetailModal from "../components/Product/ProductDetailModal";
@@ -28,7 +28,6 @@ const CategoryPage = ({
   const { categoryId, subcategoryId, categoryName, subcategoryName } = useParams();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const productsState = useSelector(state => state.products);
   const productsArray = Array.isArray(productsState.items) ? productsState.items : [];
@@ -40,8 +39,7 @@ const CategoryPage = ({
   });
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-
-   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const createSlug = (name) => {
@@ -51,6 +49,7 @@ const CategoryPage = ({
       .replace(/(^-|-$)+/g, '') || '';
   };
 
+  // Find category based on URL or Redux
   const category = useMemo(() => {
     if (categoryId && categoryId !== "undefined") {
       return categories.find(cat => cat.id.toString() === categoryId.toString());
@@ -63,6 +62,7 @@ const CategoryPage = ({
     return null;
   }, [categories, categoryId, categoryName]);
 
+  // Find subcategory based on URL or Redux
   const subcategory = useMemo(() => {
     if (!category) return null;
     
@@ -70,8 +70,8 @@ const CategoryPage = ({
       return category.subcategories?.find(sub => sub.id.toString() === subcategoryId.toString());
     } else if (subcategoryName) {
       return category.subcategories?.find((sub) => {
-        const subcategorySlug = createSlug(sub.sub_category_name || sub.name);
-        return subcategorySlug === subcategoryName.toLowerCase();
+        const subSlug = createSlug(sub.sub_category_name || sub.name);
+        return subSlug === subcategoryName.toLowerCase();
       });
     }
     return null;
@@ -80,95 +80,45 @@ const CategoryPage = ({
   const effectiveCategory = showAllProducts ? selectedCategory : category;
   const effectiveSubcategory = showAllProducts ? selectedSubcategory : subcategory;
 
+  // Fetch Products
   useEffect(() => {
-    setCurrentPage(1);
-    
-    if (showAllProducts) {
-      if (!selectedCategory || selectedCategory.id === 'shop-all') {
-        dispatch(fetchAllProducts({ page: 1 }));
-      } else if (selectedSubcategory) {
-        dispatch(fetchProductsBySubcategory({ subcategoryId: selectedSubcategory.id, page: 1 }));
-      } else {
-        dispatch(fetchProductsByCategory({ categoryId: selectedCategory.id, page: 1 }));
-      }
-    } else {
-      if (category) {
-        if (subcategory) {
+    const fetchProducts = () => {
+      if (effectiveCategory) {
+        if (effectiveSubcategory) {
           dispatch(fetchProductsByCategoryAndSubcategory({ 
-            categoryId: category.id, 
-            subcategoryId: subcategory.id, 
-            page: 1 
-          }));
-        } else {
-          dispatch(fetchProductsByCategory({ categoryId: category.id, page: 1 }));
-        }
-      } else if (!categoryId && !categoryName) {
-        dispatch(fetchAllProducts({ page: 1 }));
-      }
-    }
-  }, [
-    categoryId, 
-    subcategoryId, 
-    categoryName, 
-    subcategoryName, 
-    category, 
-    subcategory, 
-    showAllProducts, 
-    selectedCategory, 
-    selectedSubcategory, 
-    dispatch
-  ]);
-
-  useEffect(() => {
-    if (currentPage > 1) {
-      if (showAllProducts) {
-        if (!selectedCategory || selectedCategory.id === 'shop-all') {
-          dispatch(fetchAllProducts({ page: currentPage, append: true }));
-        } else if (selectedSubcategory) {
-          dispatch(fetchProductsBySubcategory({ 
-            subcategoryId: selectedSubcategory.id, 
-            page: currentPage, 
-            append: true 
+            categoryId: effectiveCategory.id,
+            subcategoryId: effectiveSubcategory.id,
+            page: currentPage,
+            append: currentPage > 1,
           }));
         } else {
           dispatch(fetchProductsByCategory({ 
-            categoryId: selectedCategory.id, 
-            page: currentPage, 
-            append: true 
+            categoryId: effectiveCategory.id, 
+            page: currentPage,
+            append: currentPage > 1,
           }));
         }
       } else {
-        if (category) {
-          if (subcategory) {
-            dispatch(fetchProductsByCategoryAndSubcategory({ 
-              categoryId: category.id, 
-              subcategoryId: subcategory.id, 
-              page: currentPage, 
-              append: true 
-            }));
-          } else {
-            dispatch(fetchProductsByCategory({ 
-              categoryId: category.id, 
-              page: currentPage, 
-              append: true 
-            }));
-          }
-        }
+        dispatch(fetchAllProducts({ 
+          page: currentPage,
+          append: currentPage > 1,
+        }));
       }
-    }
-  }, [currentPage]);
+    };
 
+    fetchProducts();
+  }, [effectiveCategory, effectiveSubcategory, currentPage, dispatch]);
+
+  // Filtered & Sorted Products 
   const filteredProducts = useMemo(() => {
     if (productsState.loading && currentPage === 1) return [];
 
     return productsArray.filter(product => {
       const price = product.price || 0;
       if (price < filters.priceRange[0] || price > filters.priceRange[1]) return false;
-
       if (filters.brands.length > 0 && product.brand) {
         if (!filters.brands.includes(product.brand)) return false;
       }
-
       return true;
     });
   }, [productsArray, filters, productsState.loading, currentPage]);
@@ -176,30 +126,15 @@ const CategoryPage = ({
   const sortedProducts = useMemo(() => {
     const sorted = [...filteredProducts];
     switch (sortBy) {
-      case 'Price (Low → High)':
-        return sorted.sort((a, b) => (a.price || 0) - (b.price || 0));
-      case 'Price (High → Low)':
-        return sorted.sort((a, b) => (b.price || 0) - (a.price || 0));
-      case 'Name (A-Z)':
-        return sorted.sort((a, b) => {
-          const nameA = (a.name || a.product_name || '').toLowerCase();
-          const nameB = (b.name || b.product_name || '').toLowerCase();
-          return nameA.localeCompare(nameB);
-        });
-      case 'Name (Z-A)':
-        return sorted.sort((a, b) => {
-          const nameA = (a.name || a.product_name || '').toLowerCase();
-          const nameB = (b.name || b.product_name || '').toLowerCase();
-          return nameB.localeCompare(nameA);
-        });
-      default:
-        return sorted.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+      case 'Price (Low → High)': return sorted.sort((a, b) => (a.price || 0) - (b.price || 0));
+      case 'Price (High → Low)': return sorted.sort((a, b) => (b.price || 0) - (a.price || 0));
+      case 'Name (A-Z)': return sorted.sort((a, b) => ((a.name||a.product_name||'').toLowerCase()).localeCompare((b.name||b.product_name||'').toLowerCase()));
+      case 'Name (Z-A)': return sorted.sort((a, b) => ((b.name||b.product_name||'').toLowerCase()).localeCompare((a.name||a.product_name||'').toLowerCase()));
+      default: return sorted.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
     }
   }, [filteredProducts, sortBy]);
 
-  const availableBrands = useMemo(() => {
-    return [...new Set(productsArray.map(p => p.brand).filter(Boolean))].sort();
-  }, [productsArray]);
+  const availableBrands = useMemo(() => [...new Set(productsArray.map(p => p.brand).filter(Boolean))].sort(), [productsArray]);
 
   const handleSortChange = (newSortBy) => setSortBy(newSortBy);
 
@@ -217,10 +152,7 @@ const CategoryPage = ({
   };
 
   const clearFilters = () => {
-    setFilters({
-      priceRange: [0, 100000],
-      brands: [],
-    });
+    setFilters({ priceRange: [0, 100000], brands: [] });
     if (showAllProducts) {
       onCategorySelect({ id: 'shop-all', name: 'SHOP ALL', subcategories: [] });
       onSubcategorySelect(null);
@@ -230,6 +162,7 @@ const CategoryPage = ({
   const handleCategorySelect = (cat) => {
     onCategorySelect(cat);
     onSubcategorySelect(null);
+    setCurrentPage(1);
 
     if (!showAllProducts) {
       const slug = createSlug(cat.category_name || cat.name);
@@ -240,22 +173,19 @@ const CategoryPage = ({
   const handleSubcategorySelect = (subcat) => {
     onSubcategorySelect(subcat);
     setCurrentPage(1);
-    
+
     if (!showAllProducts && effectiveCategory) {
       const categorySlug = createSlug(effectiveCategory.category_name || effectiveCategory.name);
-      const subcategorySlug = createSlug(subcat.sub_category_name || subcat.name);
-      navigate(`/category/${categorySlug}/${subcategorySlug}`);
+      const subcategorySlug = subcat ? createSlug(subcat.sub_category_name || subcat.name) : '';
+      navigate(subcategorySlug ? `/category/${categorySlug}/${subcategorySlug}` : `/category/${categorySlug}`);
     }
   };
 
-  const handleLoadMore = () => {
-    setCurrentPage(prev => prev + 1);
-  };
+  const handleLoadMore = () => setCurrentPage(prev => prev + 1);
 
   const getProductCountText = () => {
     const currentCount = sortedProducts.length;
     const totalCount = productsState.pagination?.total || currentCount;
-    
     return `Showing ${currentCount} of ${totalCount} products`;
   };
 
@@ -265,7 +195,6 @@ const CategoryPage = ({
     return currentProducts < totalProducts;
   };
 
-  // Price ranges
   const priceRanges = [
     { label: 'Under KSh 2,500', min: 0, max: 2500 },
     { label: 'KSh 2,500 - KSh 5,000', min: 2500, max: 5000 },
@@ -278,18 +207,19 @@ const CategoryPage = ({
       <HeroSection category={effectiveCategory} />
 
       <div className="container mx-auto px-4 py-6">
-        {/* ENHANCED: Breadcrumb and Info Section - Made bigger and more prominent */}
         <div className="mb-8 bg-white rounded-xl shadow-sm p-6">
           <div className="mb-4">
             <Breadcrumb 
               selectedCategory={effectiveCategory}
               selectedSubcategory={effectiveSubcategory}
               showAllProducts={showAllProducts}
-              className="text-xl font-semibold" // Made text bigger and bolder
+              onCategoryClick={handleCategorySelect}
+              onSubcategoryClick={handleSubcategorySelect}
+              className="text-xl font-semibold" 
             />
           </div>
           <div className="flex justify-between items-center">
-            <p className="text-gray-800 text-lg font-medium"> {/* Made text bigger and bolder */}
+            <p className="text-gray-800 text-lg font-medium">
               {productsState.loading && currentPage === 1 ? 'Loading...' : getProductCountText()}
             </p>
             {productsState.error && (
@@ -298,10 +228,9 @@ const CategoryPage = ({
           </div>
         </div>
 
-        {/* Sort and Filter Controls */}
+        {/* Sort & Filter */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 bg-white rounded-lg shadow-sm p-4">
           <div></div>
-          
           <div className="flex items-center space-x-4">
             <button
               onClick={() => setShowFilters(!showFilters)}
@@ -338,36 +267,12 @@ const CategoryPage = ({
                 </button>
               </div>
 
-              {/* Show All Categories - Only on /categories route when no category is selected */}
-              {showAllProducts && (!selectedCategory || selectedCategory.id === 'shop-all') && (
-                <div className="mb-6">
-                  <h4 className="font-medium text-gray-900 mb-3">Categories</h4>
-                  <div className="space-y-2">
-                    {categories.map((cat) => (
-                      <button
-                        key={cat.id}
-                        onClick={() => handleCategorySelect(cat)}
-                        className="w-full text-left px-3 py-2 rounded text-sm transition-colors text-gray-600 hover:bg-gray-50"
-                      >
-                        {cat.category_name || cat.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Subcategories - Only show if we have a category context */}
               {effectiveCategory?.subcategories && effectiveCategory.subcategories.length > 0 && (
                 <div className="mb-6">
-                  <h4 className="font-medium text-gray-900 mb-3">
-                    {showAllProducts && (!selectedCategory || selectedCategory.id === 'shop-all') 
-                      ? 'Subcategories' 
-                      : 'Categories'
-                    }
-                  </h4>
+                  <h4 className="font-medium text-gray-900 mb-3">Subcategories</h4>
                   <div className="space-y-2">
                     <button
-                      onClick={() => onSubcategorySelect(null)}
+                      onClick={() => handleSubcategorySelect(null)}
                       className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
                         !effectiveSubcategory 
                           ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' 
@@ -445,9 +350,7 @@ const CategoryPage = ({
             ) : sortedProducts.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-500 text-lg">No products found</p>
-                <p className="text-gray-400 text-sm mt-2">
-                  Try adjusting your filters or check back later
-                </p>
+                <p className="text-gray-400 text-sm mt-2">Try adjusting your filters or check back later</p>
               </div>
             ) : (
               <>
@@ -458,7 +361,6 @@ const CategoryPage = ({
                   onAddToWishlist={onAddToWishlist}
                 />
 
-                 {/* Modal */}
                 <ProductDetailModal
                   product={selectedProduct}
                   isOpen={isModalOpen}
