@@ -4,7 +4,6 @@ import * as Yup from 'yup';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { loginUser } from '../redux/features/auth/authSlice';
-import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 const LoginPage = () => {
@@ -40,7 +39,6 @@ const LoginPage = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
       <main className="flex-grow flex items-center justify-center bg-gray-50">
         <div className="w-full max-w-md p-8 space-y-8 bg-white shadow-lg rounded-lg">
           <h2 className="text-3xl font-bold text-center text-gray-900">
@@ -99,6 +97,11 @@ const LoginPage = () => {
             <Link to="/forgot-password" className="font-medium text-gray-600 hover:text-[#C9A35D]">
                 Forgot your password?
             </Link>
+          </div>
+          <div className="text-sm text-center">
+            <p className="text-gray-600">Not a member?{' '}
+              <Link to="/register" className="font-medium text-[#C9A35D] hover:text-opacity-90">Sign up</Link>
+            </p>
           </div>
         </div>
       </main>
