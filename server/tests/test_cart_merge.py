@@ -1,6 +1,5 @@
 import pytest
 from uuid import uuid4
-import json
 from server.app.models.users import User
 from server.app.models.product import Product
 from server.app.models.category import Category
@@ -21,12 +20,10 @@ def create_user(test_client):
 def sample_product(test_client):
     """Fixture to create a sample product."""
     with test_client.application.app_context():
-        # Create and commit the category first to get an ID
         category = Category(category_name="Merge Cat")
         db.session.add(category)
         db.session.commit()
 
-        # Create the sub_category using the valid category.id
         sub_category = SubCategory(sub_category_name="Merge SubCat", category_id=category.id)
         db.session.add(sub_category)
         db.session.commit()
@@ -54,4 +51,5 @@ def test_guest_cart_merge(test_client, create_user, sample_product):
         user_cart_resp = test_client.get(f"/api/carts/?user_id={user.id}")
         assert user_cart_resp.status_code == 200
         items = user_cart_resp.json["items"]
-        assert any(i["product_id"] == str(product.id) and i["stock_qty"] == 2 for i in items)
+        # FIX: The API nests product info and uses 'quantity'.
+        assert any(i["product"]["id"] == str(product.id) and i["quantity"] == 2 for i in items)
