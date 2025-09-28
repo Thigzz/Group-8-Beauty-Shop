@@ -1,15 +1,20 @@
 import React from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { addItemToCart } from '../../redux/features/cart/cartSlice';
 import toast from "react-hot-toast";
 
 const ProductCard = ({ product, onProductClick }) => {
   const dispatch = useDispatch();
+  const { id: cartId, status: cartStatus } = useSelector((state) => state.cart);
 
   //Add to cart
   const handleAddToCart = () => {
-    dispatch(addItemToCart(product));
-    toast.success(`${product.product_name} added to cart!`);
+    if (cartId) {
+        dispatch(addItemToCart({ cartId: cartId, productId: product.id, quantity: 1 }));
+        toast.success(`${product.product_name} added to cart!`);
+    } else {
+        toast.error("Could not add to cart. Please refresh and try again.");
+    }
   };
 
   // Open product details
@@ -18,6 +23,8 @@ const ProductCard = ({ product, onProductClick }) => {
       onProductClick(product);
     }
   };
+
+  const isAddingToCart = cartStatus === 'loading';
 
   return (
     <div
@@ -63,9 +70,10 @@ const ProductCard = ({ product, onProductClick }) => {
             e.stopPropagation();
             handleAddToCart();
           }}
-          className="w-full bg-[#ADA88E] text-white font-semibold py-2 rounded-md hover:bg-[#C9A35D] hover:text-black transition-colors duration-300 mt-3"
+          disabled={isAddingToCart || !cartId}
+          className="w-full bg-[#ADA88E] text-white font-semibold py-2 rounded-md hover:bg-[#C9A35D] hover:text-black transition-colors duration-300 mt-3 disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
-          Add To Cart
+          {isAddingToCart ? 'Adding...' : 'Add To Cart'}
         </button>
       </div>
     </div>

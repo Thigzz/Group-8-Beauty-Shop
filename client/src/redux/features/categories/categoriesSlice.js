@@ -1,4 +1,18 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import axios from 'axios';
+
+
+export const fetchCategories = createAsyncThunk(
+  'categories/fetchCategories',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/categories');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response.data);
+    }
+  }
+);
 
 const initialState = {
   items: [],
@@ -102,7 +116,7 @@ const categoriesSlice = createSlice({
     // NEW ACTION: Select both category and subcategory at once
     selectCategoryAndSubcategory: (state, action) => {
       const { category, subcategory } = action.payload;
-      
+
       // Handle category selection
       if (category === null) {
         state.selected = null;
@@ -122,14 +136,13 @@ const categoriesSlice = createSlice({
 
       state.selected = fullCategory;
 
-      // Handle subcategory selection
       if (subcategory === null) {
         state.selectedSubcategory = null;
         return;
       }
 
       const subcategoryId = typeof subcategory === 'object' ? subcategory.id : subcategory;
-      
+
       if (!subcategoryId) {
         console.warn('No subcategory id provided');
         state.selectedSubcategory = null;
@@ -153,14 +166,29 @@ const categoriesSlice = createSlice({
       state.selectedSubcategory = null;
     },
   },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchCategories.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCategories.fulfilled, (state, action) => {
+        state.loading = false;
+        state.items = action.payload;
+      })
+      .addCase(fetchCategories.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+  },
 });
 
-export const { 
-  setItems, 
-  selectCategory, 
-  selectSubcategory, 
+export const {
+  setItems,
+  selectCategory,
+  selectSubcategory,
   selectCategoryAndSubcategory,
-  clearSelection 
+  clearSelection
 } = categoriesSlice.actions;
 
 export default categoriesSlice.reducer;

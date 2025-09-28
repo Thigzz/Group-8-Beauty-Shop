@@ -9,17 +9,7 @@ import Footer from '../components/Footer';
 const Register = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { isAuthenticated, status, error, user } = useSelector((state) => state.auth);
-
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      if (user.role === 'admin') {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/profile');
-      }
-    }
-  }, [isAuthenticated, user, navigate]);
+  const { status } = useSelector((state) => state.auth);
 
   const formik = useFormik({
     initialValues: {
@@ -52,7 +42,14 @@ const Register = () => {
         password: values.password,
         confirm_password: values.confirmPassword,
       };
-      dispatch(registerUser(userData));
+      dispatch(registerUser(userData))
+        .unwrap()
+        .then(() => {
+          navigate('/security-questions');
+        })
+        .catch((err) => {
+          console.error("Registration failed:", err);
+        });
     },
   });
 
@@ -188,8 +185,6 @@ const Register = () => {
                 <div className="text-red-500 text-sm mt-1">{formik.errors.confirmPassword}</div>
               ) : null}
             </div>
-
-            {error && <div className="text-red-500 text-center">{error}</div>}
 
             <div>
               <button

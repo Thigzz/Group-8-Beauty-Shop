@@ -1,17 +1,33 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import apiClient from '../../../api/axios';
 import toast from 'react-hot-toast';
+import { getCart } from '../cart/cartSlice';
 
-// LOGIN 
+// LOGIN
 export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async (userData, { dispatch, rejectWithValue }) => {
     try {
-      const response = await apiClient.post('/auth/login', userData);
-      const { access_token } = response.data;
-      dispatch(setToken(access_token));
-      dispatch(fetchUserProfile());
-      return { token: access_token };
+      const session_id = localStorage.getItem('sessionId');
+      
+      const response = await apiClient.post('/auth/login', {
+        ...userData,
+        session_id: session_id
+      });
+
+      const { access_token, user_info } = response.data;
+      
+      dispatch(setToken(access_token)); 
+
+      dispatch(setUser(user_info));
+
+      if (user_info?.id) {
+        dispatch(getCart({ userId: user_info.id }));
+      }
+      
+      localStorage.removeItem('sessionId');
+
+      return response.data;
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Login failed';
       toast.error(errorMessage);
@@ -23,10 +39,20 @@ export const loginUser = createAsyncThunk(
 // REGISTER
 export const registerUser = createAsyncThunk(
   'auth/registerUser',
-  async (userData, { rejectWithValue }) => {
+  async (userData, { dispatch, rejectWithValue }) => {
     try {
       const response = await apiClient.post('/auth/register', userData);
       toast.success('Registration successful! Please log in.');
+
+      const { access_token, user_info } = response.data;
+      
+      dispatch(setToken(access_token));
+      dispatch(setUser(user_info));
+      
+      if (user_info?.id) {
+        dispatch(getCart({ userId: user_info.id }));
+      }
+
       return response.data;
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Registration failed';
@@ -55,7 +81,6 @@ export const saveSecurityQuestions = createAsyncThunk(
         return rejectWithValue('User object not found in state');
       }
 
-      // Try different possible user ID fields
       const userId = user.id || user.user_id || user._id || user.uuid || user.pk || user.user_uuid;
       
       if (!userId) {
@@ -63,7 +88,6 @@ export const saveSecurityQuestions = createAsyncThunk(
         return rejectWithValue(`User ID not found in user object. Available keys: ${Object.keys(user).join(', ')}`);
       }
 
-      // Transform questions to match backend format
       const transformedQuestions = questions.map(q => ({
         question_id: q.question_id,
         answer: q.answer
@@ -172,7 +196,6 @@ export const fetchUserProfile = createAsyncThunk(
       return response.data;
     } catch (error) {
       if (error.response?.status === 401) {
-        // Auto-logout on 401 errors
         localStorage.removeItem('token');
       }
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch profile');
@@ -223,7 +246,6 @@ export const changePassword = createAsyncThunk(
       
       toast.success('Password updated successfully! Please log in with your new password.');
       
-      // Logout user after successful password change
       dispatch(logout());
       
       return response.data;
@@ -274,12 +296,6 @@ export const authSlice = createSlice({
       state.user = null;
       state.isAuthenticated = false;
       state.token = null;
-      state.status = 'idle';
-      state.profileLoading = false;
-      state.securityQuestionsLoading = false;
-      state.userSecurityQuestionsLoading = false;
-      state.savingSecurityQuestions = false;
-      state.error = null;
       localStorage.removeItem('token');
     },
     setToken: (state, action) => {
@@ -287,13 +303,16 @@ export const authSlice = createSlice({
       state.isAuthenticated = true;
       localStorage.setItem('token', action.payload);
     },
+    setUser: (state, action) => {
+        state.user = action.payload;
+        state.isAuthenticated = true;
+    },
     clearError: (state) => {
       state.error = null;
     },
   },
   extraReducers: (builder) => {
     builder
-      // LOGIN
       .addCase(loginUser.pending, (state) => {
         state.status = 'loading';
         state.error = null;
@@ -304,9 +323,9 @@ export const authSlice = createSlice({
       .addCase(loginUser.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
+        state.user = null; 
+        state.isAuthenticated = false;
       })
-
-      // REGISTER
       .addCase(registerUser.pending, (state) => {
         state.status = 'loading';
       })
@@ -317,20 +336,18 @@ export const authSlice = createSlice({
         state.status = 'failed';
         state.error = action.payload;
       })
-
-      // SECURITY QUESTIONS - SAVE
       .addCase(saveSecurityQuestions.pending, (state) => {
         state.savingSecurityQuestions = true;
       })
-      .addCase(saveSecurityQuestions.fulfilled, (state) => {
+      .addCase(saveSecurityQuestions.fulfilled, (state, action) => {
         state.savingSecurityQuestions = false;
+        // Trigger a refetch of the user's security questions after saving.
+        action.meta.dispatch(fetchUserSecurityQuestions());
       })
       .addCase(saveSecurityQuestions.rejected, (state, action) => {
         state.savingSecurityQuestions = false;
         state.error = action.payload;
       })
-
-      // AVAILABLE SECURITY QUESTIONS - FETCH
       .addCase(fetchSecurityQuestions.pending, (state) => {
         state.securityQuestionsLoading = true;
       })
@@ -342,8 +359,6 @@ export const authSlice = createSlice({
         state.securityQuestionsLoading = false;
         state.error = action.payload;
       })
-
-      // USER SECURITY QUESTIONS - FETCH
       .addCase(fetchUserSecurityQuestions.pending, (state) => {
         state.userSecurityQuestionsLoading = true;
       })
@@ -354,8 +369,6 @@ export const authSlice = createSlice({
       .addCase(fetchUserSecurityQuestions.rejected, (state, action) => {
         state.userSecurityQuestionsLoading = false;
       })
-
-      // VERIFY SECURITY ANSWERS
       .addCase(verifySecurityAnswers.pending, (state) => {
         state.status = 'loading';
       })
@@ -366,8 +379,6 @@ export const authSlice = createSlice({
         state.status = 'failed';
         state.error = action.payload;
       })
-
-      // Fetch User Profile cases
       .addCase(fetchUserProfile.pending, (state) => {
         state.profileLoading = true;
       })
@@ -384,8 +395,6 @@ export const authSlice = createSlice({
         state.token = null;
         localStorage.removeItem('token');
       })
-
-      // RESET PASSWORD WITH SECURITY
       .addCase(resetPasswordWithSecurity.pending, (state) => {
         state.status = 'loading';
       })
@@ -396,8 +405,6 @@ export const authSlice = createSlice({
         state.status = 'failed';
         state.error = action.payload;
       })
-
-      // Update User Profile cases
       .addCase(updateUserProfile.pending, (state) => {
         state.status = 'loading';
       })
@@ -410,8 +417,6 @@ export const authSlice = createSlice({
         state.status = 'failed';
         state.error = action.payload;
       })
-
-      // Change Password cases
       .addCase(changePassword.pending, (state) => {
         state.status = 'loading';
       })
@@ -422,8 +427,6 @@ export const authSlice = createSlice({
         state.status = 'failed';
         state.error = action.payload;
       })
-
-      // Forgot Password cases
       .addCase(forgotPassword.pending, (state) => {
         state.status = 'loading';
       })
@@ -437,5 +440,5 @@ export const authSlice = createSlice({
   },
 });
 
-export const { logout, setToken, clearError } = authSlice.actions;
+export const { logout, setToken, setUser, clearError } = authSlice.actions;
 export default authSlice.reducer;

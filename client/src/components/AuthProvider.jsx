@@ -1,21 +1,57 @@
 import React, { useEffect } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { v4 as uuidv4 } from 'uuid';
 import { fetchUserProfile } from '../redux/features/auth/authSlice';
+import { getCart } from '../redux/features/cart/cartSlice';
+import { fetchCategories } from '../redux/features/categories/categoriesSlice';
 
-export const AuthProvider = ({ children }) => {
+const AuthProvider = ({ children }) => {
   const dispatch = useDispatch();
+  const { user: userInfo, token, status } = useSelector((state) => state.auth);
+  const { id: cartId, user_id: cartUserId } = useSelector((state) => state.cart);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      dispatch(fetchUserProfile())
-        .unwrap()
-        .catch((error) => {
-          console.error('Authentication failed:', error);
-          localStorage.removeItem('token');
-        });
+    dispatch(fetchCategories());
+
+    if (status !== 'loading') {
+      const tokenInStorage = localStorage.getItem('token');
+      if (tokenInStorage) {
+        if (!userInfo) {
+          dispatch(fetchUserProfile())
+            .unwrap()
+            .then((fetchedUser) => {
+              if (fetchedUser && fetchedUser.id) {
+                dispatch(getCart({ userId: fetchedUser.id }));
+              }
+            })
+            .catch((error) => {
+              console.error('Auth token is invalid, fetching guest cart:', error);
+              let sessionId = localStorage.getItem('sessionId');
+              if (!sessionId) {
+                sessionId = uuidv4();
+                localStorage.setItem('sessionId', sessionId);
+              }
+              dispatch(getCart({ sessionId }));
+            });
+        } else if (userInfo && userInfo.id) {
+          if (!cartId || cartUserId !== userInfo.id) {
+            dispatch(getCart({ userId: userInfo.id }));
+          }
+        }
+      } else {
+        let sessionId = localStorage.getItem('sessionId');
+        if (!sessionId) {
+          sessionId = uuidv4();
+          localStorage.setItem('sessionId', sessionId);
+        }
+        if (!cartId) {
+          dispatch(getCart({ sessionId }));
+        }
+      }
     }
-  }, [dispatch]);
+  }, [dispatch, token, userInfo, cartId, cartUserId, status]);
 
   return children;
 };
+
+export default AuthProvider;

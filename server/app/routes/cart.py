@@ -24,27 +24,40 @@ def create_cart():
     return jsonify({"id": str(cart.id), "user_id": str(cart.user_id) if cart.user_id else None,
                     "session_id": cart.session_id, "status": cart.status.name,  "grand_total": 0.0, "items": []}), 201
 
-# Get cart by user_id or session_id
+# Get or create cart by user_id or session_id
 @cart_bp.route("/", methods=["GET"])
 def get_cart():
-    user_id = request.args.get("user_id")
+    user_id_str = request.args.get("user_id")
     session_id = request.args.get("session_id")
-    if user_id:
-        cart = Cart.query.filter_by(user_id=user_id, status=CartStatus.open).first()
+    cart = None
+
+    if user_id_str:
+        cart = Cart.query.filter_by(user_id=user_id_str, status=CartStatus.open).first()
     elif session_id:
         cart = Cart.query.filter_by(session_id=session_id, status=CartStatus.open).first()
     else:
         return jsonify({"error": "user_id or session_id required"}), 400
 
+    # If no open cart is found, create one
     if not cart:
-        return jsonify({"error": "Cart not found"}), 404
+        if user_id_str:
+            cart = Cart(user_id=UUID(user_id_str))
+        elif session_id:
+            cart = Cart(session_id=session_id)
+        
+        db.session.add(cart)
+        db.session.commit()
     
     items_data = [
         {
-            "product_id": str(item.product_id),
-            "product_name": item.product.product_name,
-            "price": float(item.product.price),
-            "stock_qty": item.quantity,
+            "id": str(item.id),
+            "product": {
+                "id": str(item.product.id),
+                "product_name": item.product.product_name,
+                "price": float(item.product.price),
+                "image_url": item.product.image_url
+            },
+            "quantity": item.quantity,
             "total_amount": float(item.total_amount)
         }
         for item in cart.items
@@ -71,10 +84,14 @@ def update_cart(cart_id):
     db.session.commit()
     items_data = [
         {
-            "product_id": str(item.product_id),
-            "product_name": item.product.product_name,
-            "price": float(item.product.price),
-            "stock_qty": item.quantity,
+            "id": str(item.id),
+            "product": {
+                "id": str(item.product.id),
+                "product_name": item.product.product_name,
+                "price": float(item.product.price),
+                "image_url": item.product.image_url
+            },
+            "quantity": item.quantity,
             "total_amount": float(item.total_amount)
         }
         for item in cart.items
@@ -138,10 +155,14 @@ def add_item():
     # recalc grand total
     items_data = [
         {
-            "product_id": str(i.product_id),
-            "product_name": i.product.product_name,
-            "price": float(i.product.price),
-            "stock_qty": i.quantity,
+            "id": str(i.id),
+            "product": {
+                "id": str(i.product.id),
+                "product_name": i.product.product_name,
+                "price": float(i.product.price),
+                "image_url": i.product.image_url
+            },
+            "quantity": i.quantity,
             "total_amount": float(i.total_amount)
         }
         for i in cart.items
@@ -176,13 +197,18 @@ def update_item(item_id):
 
     db.session.commit()
 
-    # recalc grand total
+    # **FIX:** Reconstruct the response to include the full nested product object
+    # This ensures data consistency with the get_cart and add_item endpoints
     items_data = [
         {
-            "product_id": str(i.product_id),
-            "product_name": i.product.product_name,
-            "price": float(i.product.price),
-            "stock_qty": i.quantity,
+            "id": str(i.id),
+            "product": {
+                "id": str(i.product.id),
+                "product_name": i.product.product_name,
+                "price": float(i.product.price),
+                "image_url": i.product.image_url
+            },
+            "quantity": i.quantity,
             "total_amount": float(i.total_amount)
         }
         for i in cart.items
@@ -209,10 +235,14 @@ def delete_item(item_id):
     # recalc grand total after deletion
     items_data = [
         {
-            "product_id": str(i.product_id),
-            "product_name": i.product.product_name,
-            "price": float(i.product.price),
-            "stock_qty": i.quantity,
+            "id": str(i.id),
+            "product": {
+                "id": str(i.product.id),
+                "product_name": i.product.product_name,
+                "price": float(i.product.price),
+                "image_url": i.product.image_url
+            },
+            "quantity": i.quantity,
             "total_amount": float(i.total_amount)
         }
         for i in cart.items
@@ -225,4 +255,3 @@ def delete_item(item_id):
         "grand_total": grand_total,
         "items": items_data
     }), 200
-

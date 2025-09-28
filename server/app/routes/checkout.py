@@ -30,7 +30,6 @@ def calculate_total():
             if 'product_id' not in item or 'quantity' not in item:
                 return jsonify({'error': 'Each item must have product_id and quantity'}), 400
             
-            # Convert product_id string to UUID object for lookup
             product_uuid = uuid.UUID(item['product_id'])
             product = Product.query.get_or_404(product_uuid)
             
@@ -48,8 +47,7 @@ def calculate_total():
                 'subtotal': item_total
             })
         
-        # Adding shipping (simplified - could be based on location/weight)
-        shipping = 300.0 if total < 5000 else 0  # Free shipping over Ksh 5000
+        shipping = 300.0 if total < 5000 else 0
         
         return jsonify({
             'items': calculated_items,
@@ -65,44 +63,46 @@ def calculate_total():
 
 @checkout_bp.route('/process', methods=['POST'])
 def process_checkout():
-    """Processing complete checkout - create cart, order, invoice, and payment"""
+    """Processing complete checkout - uses the existing cart, then creates order, invoice, and payment"""
     try:
         data = request.get_json()
         
-        # Validating required fields
-        required_fields = ['user_id', 'items', 'payment_method']
+        required_fields = ['user_id', 'payment_method']
         for field in required_fields:
             if field not in data:
                 return jsonify({'error': f'{field} is required'}), 400
         
-        if not isinstance(data['items'], list) or len(data['items']) == 0:
-            return jsonify({'error': 'items array cannot be empty'}), 400
-        
         user_uuid = uuid.UUID(data['user_id'])
         user = User.query.get_or_404(user_uuid)
-        
-        # Calculating totals and validating stock
+
+        # --- FIX: Find the user's existing open cart ---
+        cart = Cart.query.filter_by(user_id=user_uuid, status=CartStatus.open).first()
+
+        if not cart:
+            return jsonify({'error': 'No active cart found for this user.'}), 404
+        cart_items_from_db = cart.items
+        if not cart_items_from_db:
+            return jsonify({'error': 'Cart is empty.'}), 400
+
+
         total = 0
-        cart_items_data = []
+        order_items_data = []
         
-        for item in data['items']:
-            if 'product_id' not in item or 'quantity' not in item:
-                return jsonify({'error': 'Each item must have product_id and quantity'}), 400
-            
-            # Convert product_id string to UUID object for lookup
-            product_uuid = uuid.UUID(item['product_id'])
-            product = Product.query.get_or_404(product_uuid)
-            
-            if product.stock_qty < item['quantity']:
+        for item in cart_items_from_db:
+            product = item.product
+            if not product:
+                 return jsonify({'error': f'Product details not found for an item in the cart.'}), 500
+
+            if product.stock_qty < item.quantity:
                 return jsonify({'error': f'Insufficient stock for {product.product_name}'}), 400
             
-            item_total = float(product.price) * item['quantity']
+            item_total = float(product.price) * item.quantity
             total += item_total
             
-            cart_items_data.append({
+            order_items_data.append({
                 'product': product,
-                'product_uuid': product_uuid,
-                'quantity': item['quantity'],
+                'product_uuid': product.id,
+                'quantity': item.quantity,
                 'price': product.price,
                 'subtotal': item_total
             })
@@ -111,30 +111,9 @@ def process_checkout():
         shipping = 300.0 if total < 5000 else 0
         final_total = total + shipping
         
-        # Creating Cart (uses UUID objects)
-        cart = Cart(
-            id=uuid.uuid4(),
-            user_id=user_uuid,
-            status=CartStatus.open
-        )
-        db.session.add(cart)
-        db.session.flush()
-        
-        # Creating Cart Items (uses UUID objects)
-        for item_data in cart_items_data:
-            cart_item = CartItem(
-                id=uuid.uuid4(),
-                cart_id=cart.id,
-                product_id=item_data['product_uuid'],
-                quantity=item_data['quantity'],
-                status=CartItemStatus.active,
-                total_amount=item_data['subtotal']
-            )
-            db.session.add(cart_item)
-        
         cart.status = CartStatus.closed
         
-        # Creating Order (uses UUID objects)
+
         order = Order(
             id=uuid.uuid4(),
             cart_id=cart.id,
@@ -145,7 +124,7 @@ def process_checkout():
         db.session.flush()
         
         # Creating Order Items (uses UUID objects)
-        for item_data in cart_items_data:
+        for item_data in order_items_data:
             order_item = OrderItem(
                 id=uuid.uuid4(),
                 order_id=order.id,
@@ -173,9 +152,8 @@ def process_checkout():
         
         # Creating Payment record (uses STRING IDs)
         transaction_id = f"TXN-{datetime.now().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:8]}"
-        
         payment = Payment(
-            invoice_id=str(invoice.id),  # Ensure invoice_id is a string
+            invoice_id=str(invoice.id),
             payment_method=PaymentMethod(data['payment_method']),
             amount=final_total,
             transaction_id=transaction_id
@@ -183,7 +161,7 @@ def process_checkout():
         db.session.add(payment)
         
         # I marked as paid for demo
-        if data['payment_method'] in ['mpesa', 'credit_card', 'debit_card']:
+        if data['payment_method'] in ['mpesa', 'credit_card', 'debit_card', 'paypal']:
             order.status = OrderStatus.paid
             invoice.payment_status = PaymentStatus.paid
             invoice.paid_at = datetime.utcnow()
@@ -193,26 +171,10 @@ def process_checkout():
         return jsonify({
             'success': True,
             'message': 'Order processed successfully',
-            'cart': {
-                'id': str(cart.id),
-                'status': cart.status.value
-            },
-            'order': {
-                'id': str(order.id),
-                'status': order.status.value,
-                'total_amount': float(order.total_amount)
-            },
-            'invoice': {
-                'id': invoice.id,
-                'invoice_number': invoice.invoice_number,
-                'amount': float(invoice.amount),
-                'payment_status': invoice.payment_status.value
-            },
-            'payment': {
-                'id': payment.id,
-                'transaction_id': payment.transaction_id,
-                'method': payment.payment_method.value
-            }
+            'cart': { 'id': str(cart.id), 'status': cart.status.value },
+            'order': { 'id': str(order.id), 'status': order.status.value, 'total_amount': float(order.total_amount) },
+            'invoice': { 'id': invoice.id, 'invoice_number': invoice.invoice_number, 'amount': float(invoice.amount), 'payment_status': invoice.payment_status.value },
+            'payment': { 'id': payment.id, 'transaction_id': payment.transaction_id, 'method': payment.payment_method.value }
         }), 201
         
     except ValueError:

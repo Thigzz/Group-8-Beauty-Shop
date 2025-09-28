@@ -39,14 +39,27 @@ def register():
     db.session.add(new_user)
     db.session.commit()
 
-    return jsonify({"message": "User registered successfully"}), 201
+    additional_claims = {"role": new_user.role.name}
+    access_token = create_access_token(identity=new_user.username, additional_claims=additional_claims)
+    
+    user_info = {
+        "id": str(new_user.id),
+        "first_name": new_user.first_name,
+        "last_name": new_user.last_name,
+        "username": new_user.username,
+        "email": new_user.email,
+        "role": new_user.role.name
+    }
+    
+    return jsonify({
+        "message": "User registered successfully",
+        "access_token": access_token,
+        "user_info": user_info
+    }), 201
 
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
-    """
-    Handles user login, merges guest cart if present, and returns a JWT.
-    """
     data = request.get_json()
     login_identifier = data.get('login_identifier')
     password = data.get('password')
@@ -60,10 +73,19 @@ def login():
         if session_id:
             merge_guest_cart(user.id, session_id)
         
-        # Add the user's role to the token's claims
         additional_claims = {"role": user.role.name}
         access_token = create_access_token(identity=user.username, additional_claims=additional_claims)
-        return jsonify(access_token=access_token)
+        
+        user_info = {
+            "id": str(user.id),
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "username": user.username,
+            "email": user.email,
+            "role": user.role.name
+        }
+        
+        return jsonify(access_token=access_token, user_info=user_info)
 
     return jsonify({"message": "Invalid credentials"}), 401
 
@@ -109,7 +131,6 @@ def verify_answers():
         if question_id not in user_questions or not bcrypt.check_password_hash(user_questions[question_id], answer_text):
             return jsonify({"message": "One or more answers are incorrect."}), 401
 
-    # If answers are correct, generates a short-lived reset token
     s = URLSafeTimedSerializer(current_app.config['JWT_SECRET_KEY'])
     token = s.dumps(user.email, salt='password-reset-salt')
     
@@ -124,7 +145,6 @@ def reset_password():
     
     s = URLSafeTimedSerializer(current_app.config['JWT_SECRET_KEY'])
     try:
-        # Token is valid for 15 minutes
         email = s.loads(token, salt='password-reset-salt', max_age=900)
     except (SignatureExpired, BadTimeSignature):
         return jsonify({"message": "Token is invalid or has expired."}), 400
@@ -178,9 +198,6 @@ def admin_dashboard():
 @auth_bp.route('/change-password', methods=['PUT'])
 @jwt_required()
 def change_password():
-    """
-    Allows a currently logged-in user to change their password.
-    """
     data = request.get_json()
     current_password = data.get('current_password')
     new_password = data.get('new_password')
