@@ -18,7 +18,6 @@ export const loginUser = createAsyncThunk(
       const { access_token, user_info } = response.data;
       
       dispatch(setToken(access_token)); 
-
       dispatch(setUser(user_info));
 
       if (user_info?.id) {
@@ -39,20 +38,10 @@ export const loginUser = createAsyncThunk(
 // REGISTER
 export const registerUser = createAsyncThunk(
   'auth/registerUser',
-  async (userData, { dispatch, rejectWithValue }) => {
+  async (userData, { rejectWithValue }) => {
     try {
       const response = await apiClient.post('/auth/register', userData);
       toast.success('Registration successful! Please log in.');
-
-      const { access_token, user_info } = response.data;
-      
-      dispatch(setToken(access_token));
-      dispatch(setUser(user_info));
-      
-      if (user_info?.id) {
-        dispatch(getCart({ userId: user_info.id }));
-      }
-
       return response.data;
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Registration failed';
@@ -123,9 +112,8 @@ export const fetchSecurityQuestions = createAsyncThunk(
       });
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || 'Failed to fetch security questions'
-      );
+      const message = error.response?.data?.message || 'Failed to fetch security questions';
+      return rejectWithValue(message);
     }
   }
 );
@@ -143,9 +131,8 @@ export const fetchUserSecurityQuestions = createAsyncThunk(
       });
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || 'Failed to fetch user security questions'
-      );
+      const message = error.response?.data?.message || 'Failed to fetch user security questions';
+      return rejectWithValue(message);
     }
   }
 );
@@ -198,7 +185,8 @@ export const fetchUserProfile = createAsyncThunk(
       if (error.response?.status === 401) {
         localStorage.removeItem('token');
       }
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch profile');
+      const message = error.response?.data?.message || 'Failed to fetch profile';
+      return rejectWithValue(message);
     }
   }
 );
@@ -339,10 +327,8 @@ export const authSlice = createSlice({
       .addCase(saveSecurityQuestions.pending, (state) => {
         state.savingSecurityQuestions = true;
       })
-      .addCase(saveSecurityQuestions.fulfilled, (state, action) => {
+      .addCase(saveSecurityQuestions.fulfilled, (state) => {
         state.savingSecurityQuestions = false;
-        // Trigger a refetch of the user's security questions after saving.
-        action.meta.dispatch(fetchUserSecurityQuestions());
       })
       .addCase(saveSecurityQuestions.rejected, (state, action) => {
         state.savingSecurityQuestions = false;

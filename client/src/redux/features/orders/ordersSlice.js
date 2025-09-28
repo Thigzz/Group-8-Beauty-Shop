@@ -1,7 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
-
-const API_URL = 'http://127.0.0.1:5000/api';
+import apiClient from '../../../api/axios';
 
 // Thunk to place a new order
 export const placeOrder = createAsyncThunk(
@@ -9,12 +7,13 @@ export const placeOrder = createAsyncThunk(
   async (orderData, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
-      const response = await axios.post(`${API_URL}/checkout/process`, orderData, {
+      const response = await apiClient.post('/api/checkout/process', orderData, {
         headers: { Authorization: `Bearer ${token}` },
       });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Failed to place order.');
+      const message = error.response?.data?.message || 'Failed to place order.';
+      return rejectWithValue(message);
     }
   }
 );
@@ -25,30 +24,30 @@ export const fetchOrders = createAsyncThunk(
   async (_, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
-      const response = await axios.get(`${API_URL}/orders/history`, {
+      const response = await apiClient.get('/api/orders/history', {
         headers: { Authorization: `Bearer ${token}` },
       });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Failed to fetch orders.');
+      const message = error.response?.data?.message || 'Failed to fetch orders.';
+      return rejectWithValue(message);
     }
   }
 );
 
-// --- NEW THUNK ADDED ---
 // Thunk to fetch details for a single order
 export const fetchOrderDetails = createAsyncThunk(
   'orders/fetchOrderDetails',
   async (orderId, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
-      // This endpoint is based on your checkout.py file
-      const response = await axios.get(`${API_URL}/checkout/order/${orderId}`, {
+      const response = await apiClient.get(`/api/checkout/order/${orderId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Failed to fetch order details.');
+      const message = error.response?.data?.message || 'Failed to fetch order details.';
+      return rejectWithValue(message);
     }
   }
 );
@@ -58,7 +57,6 @@ const initialState = {
   orderHistory: [],
   status: 'idle',
   error: null,
-  // --- NEW STATE ADDED ---
   currentOrderDetails: null,
   detailsStatus: 'idle',
   detailsError: null,
@@ -91,7 +89,6 @@ const ordersSlice = createSlice({
         state.status = 'failed';
         state.error = action.payload;
       })
-      // --- NEW CASES ADDED ---
       .addCase(fetchOrderDetails.pending, (state) => {
         state.detailsStatus = 'loading';
       })

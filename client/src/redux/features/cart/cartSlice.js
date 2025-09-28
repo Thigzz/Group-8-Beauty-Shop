@@ -1,8 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+import apiClient from '../../../api/axios';
 import { logout } from '../auth/authSlice';
-
-const API_URL = 'http://127.0.0.1:5000/api';
 
 
 export const getCart = createAsyncThunk(
@@ -10,7 +8,8 @@ export const getCart = createAsyncThunk(
   async ({ userId, sessionId }, { rejectWithValue }) => {
     try {
       const params = userId ? { user_id: userId } : { session_id: sessionId };
-      const response = await axios.get(`${API_URL}/carts/`, { params });
+      // FIX: Added trailing slash
+      const response = await apiClient.get('/api/carts/', { params });
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || 'Failed to get cart');
@@ -23,7 +22,8 @@ export const addItemToCart = createAsyncThunk(
   'cart/addItemToCart',
   async ({ cartId, productId, quantity }, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${API_URL}/carts/items`, {
+      // FIX: Added trailing slash
+      const response = await apiClient.post('/api/carts/items', {
         cart_id: cartId,
         product_id: productId,
         quantity,
@@ -40,7 +40,8 @@ export const updateCartItem = createAsyncThunk(
   'cart/updateCartItem',
   async ({ itemId, quantity }, { rejectWithValue }) => {
     try {
-      const response = await axios.put(`${API_URL}/carts/items/${itemId}`, { quantity });
+      // FIX: Added trailing slash
+      const response = await apiClient.put(`/api/carts/items/${itemId}`, { quantity });
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || 'Failed to update item');
@@ -53,8 +54,8 @@ export const removeFromCart = createAsyncThunk(
   'cart/removeFromCart',
   async (itemId, { rejectWithValue }) => {
     try {
-
-      const response = await axios.delete(`${API_URL}/carts/items/${itemId}`);
+      // FIX: Added trailing slash
+      const response = await apiClient.delete(`/api/carts/items/${itemId}`);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || 'Failed to remove item');
@@ -75,9 +76,6 @@ export const cartSlice = createSlice({
   name: 'cart',
   initialState,
   reducers: {
-    // --- DO NOT EDIT OR REMOVE!!!! ---
-    // This reducer resets the cart state to its initial empty state.
-    // It's used after a successful order placement.
     clearCart: (state) => {
       state.id = null;
       state.user_id = null;

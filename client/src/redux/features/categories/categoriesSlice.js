@@ -1,12 +1,12 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+import apiClient from '../../../api/axios';
 
 
 export const fetchCategories = createAsyncThunk(
   'categories/fetchCategories',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get('http://localhost:5000/api/categories');
+      const response = await apiClient.get('/api/categories/');
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
@@ -31,20 +31,17 @@ const categoriesSlice = createSlice({
     },
 
     selectCategory: (state, action) => {
-      // Handle null case for "Shop All"
       if (action.payload === null) {
         state.selected = null;
         state.selectedSubcategory = null;
         return;
       }
 
-      // action.payload can be an object { id: ... } or just the id
       const categoryId =
         typeof action.payload === 'object' ? action.payload.id : action.payload;
 
-      if (!categoryId) return; // Guard: no id provided
+      if (!categoryId) return;
 
-      // Find the category safely
       const fullCategory = state.items.find((c) => c.id.toString() === categoryId.toString());
 
       if (!fullCategory) {
@@ -55,11 +52,10 @@ const categoriesSlice = createSlice({
       }
 
       state.selected = fullCategory;
-      state.selectedSubcategory = null; // Reset subcategory when category changes
+      state.selectedSubcategory = null;
     },
 
     selectSubcategory: (state, action) => {
-      // Handle null case for "All Category"
       if (action.payload === null) {
         state.selectedSubcategory = null;
         return;
@@ -74,18 +70,15 @@ const categoriesSlice = createSlice({
         return;
       }
 
-      // NEW IMPROVED LOGIC: Search through all categories if no category is selected
       let fullSubcategory = null;
       let parentCategory = state.selected;
 
-      // If a category is selected, search in its subcategories first
       if (state.selected?.subcategories) {
         fullSubcategory = state.selected.subcategories.find(
           (s) => s.id.toString() === subcategoryId.toString()
         );
       }
 
-      // If not found in selected category OR no category is selected, search all categories
       if (!fullSubcategory) {
         for (const category of state.items) {
           if (category.subcategories) {
@@ -94,7 +87,7 @@ const categoriesSlice = createSlice({
             );
             if (foundSub) {
               fullSubcategory = foundSub;
-              parentCategory = category; // Set the parent category
+              parentCategory = category;
               break;
             }
           }
@@ -102,7 +95,6 @@ const categoriesSlice = createSlice({
       }
 
       if (fullSubcategory) {
-        // Auto-select the parent category if it's not already selected
         if (!state.selected || state.selected.id !== parentCategory.id) {
           state.selected = parentCategory;
         }
@@ -113,11 +105,9 @@ const categoriesSlice = createSlice({
       }
     },
 
-    // NEW ACTION: Select both category and subcategory at once
     selectCategoryAndSubcategory: (state, action) => {
       const { category, subcategory } = action.payload;
 
-      // Handle category selection
       if (category === null) {
         state.selected = null;
         state.selectedSubcategory = null;
