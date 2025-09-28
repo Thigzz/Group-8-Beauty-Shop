@@ -35,10 +35,33 @@ export const fetchOrders = createAsyncThunk(
   }
 );
 
+// --- NEW THUNK ADDED ---
+// Thunk to fetch details for a single order
+export const fetchOrderDetails = createAsyncThunk(
+  'orders/fetchOrderDetails',
+  async (orderId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      // This endpoint is based on your checkout.py file
+      const response = await axios.get(`${API_URL}/checkout/order/${orderId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to fetch order details.');
+    }
+  }
+);
+
+
 const initialState = {
   orderHistory: [],
   status: 'idle',
   error: null,
+  // --- NEW STATE ADDED ---
+  currentOrderDetails: null,
+  detailsStatus: 'idle',
+  detailsError: null,
 };
 
 const ordersSlice = createSlice({
@@ -67,6 +90,18 @@ const ordersSlice = createSlice({
       .addCase(fetchOrders.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
+      })
+      // --- NEW CASES ADDED ---
+      .addCase(fetchOrderDetails.pending, (state) => {
+        state.detailsStatus = 'loading';
+      })
+      .addCase(fetchOrderDetails.fulfilled, (state, action) => {
+        state.detailsStatus = 'succeeded';
+        state.currentOrderDetails = action.payload;
+      })
+      .addCase(fetchOrderDetails.rejected, (state, action) => {
+        state.detailsStatus = 'failed';
+        state.detailsError = action.payload;
       });
   },
 });

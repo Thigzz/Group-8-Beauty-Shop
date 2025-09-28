@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { fetchUserProfile, logout } from '../redux/features/auth/authSlice';
-import apiClient from '../api/axios';
+import { fetchOrders } from '../redux/features/orders/ordersSlice';
 import Footer from '../components/Footer';
 import { UserCircle2 } from 'lucide-react';
 import EditProfileModal from '../components/EditProfileModal';
@@ -11,12 +11,13 @@ import ChangePassword from '../components/ChangePassword';
 import SavedAddresses from '../components/SavedAddresses';
 import AddressForm from '../components/AddressForm';
 import MySecurityQuestions from '../components/MySecurityQuestions';
+import OrderDetailsModal from '../components/OrderDetailsModal';
 
 const ProfilePage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user, token, status } = useSelector((state) => state.auth);
-  const [orders, setOrders] = useState([]);
+  const { orderHistory, status: orderStatus } = useSelector((state) => state.orders);
   
   const [isEditProfileOpen, setEditProfileOpen] = useState(false);
   const [isChangePasswordOpen, setChangePasswordOpen] = useState(false);
@@ -25,33 +26,19 @@ const ProfilePage = () => {
   const [isAddAddressOpen, setAddAddressOpen] = useState(false);
   const [isEditAddressOpen, setEditAddressOpen] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState(null);
+  const [isOrderModalOpen, setOrderModalOpen] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
   
-  // Toast state
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
   useEffect(() => {
     if (token) {
       dispatch(fetchUserProfile());
+      dispatch(fetchOrders());
     } else {
       navigate('/login');
     }
   }, [token, dispatch, navigate]);
-
-  useEffect(() => {
-    const fetchOrders = async () => {
-        if(token) {
-            try {
-                const response = await apiClient.get('/api/orders/history', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setOrders(response.data);
-            } catch (error) {
-                console.error("Failed to fetch orders:", error);
-            }
-        }
-    };
-    fetchOrders();
-  }, [token]);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -95,6 +82,16 @@ const ProfilePage = () => {
     showToast('Address saved successfully!', 'success');
   };
 
+  const handleViewDetails = (orderId) => {
+    setSelectedOrderId(orderId);
+    setOrderModalOpen(true);
+  };
+
+  const handleCloseOrderModal = () => {
+    setOrderModalOpen(false);
+    setSelectedOrderId(null);
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'delivered':
@@ -123,7 +120,6 @@ const ProfilePage = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      {/* Toast Component */}
       {toast.show && (
         <Toast 
           message={toast.message} 
@@ -146,17 +142,32 @@ const ProfilePage = () => {
         </section>
 
         <section className="bg-white p-6 rounded-lg shadow-md mb-8">
-          <h2 className="text-xl font-bold mb-4">Order History</h2>
-          <div className="space-y-4">
-            {orders.length > 0 ? orders.map(order => (
-              <div key={order.id} className="flex justify-between items-center border-b pb-2">
-                <p>Order #{order.id.slice(0, 6)}...</p>
-                <span className={`px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusColor(order.status)}`}>
-                    {order.status}
-                </span>
-              </div>
-            )) : <p>You have no past orders.</p>}
-          </div>
+            <h2 className="text-xl font-bold mb-4">Order History</h2>
+            <div className="space-y-4">
+                {orderStatus === 'loading' && <p>Loading orders...</p>}
+                {orderHistory.length > 0 ? orderHistory.map(order => (
+                    <div key={order.id} className="p-4 border rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-gray-50 transition-colors">
+                        <div className="flex-1">
+                            <p className="font-mono text-sm text-gray-500">ORDER #{order.id.substring(0, 8).toUpperCase()}</p>
+                            <p className="text-sm text-gray-600">
+                                Placed on {new Date(order.created_at).toLocaleDateString()}
+                            </p>
+                        </div>
+                        <div className="text-left sm:text-right">
+                            <p className="font-semibold">Ksh {order.total_amount.toFixed(2)}</p>
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full capitalize ${getStatusColor(order.status)}`}>
+                                {order.status}
+                            </span>
+                        </div>
+                        <button
+                            onClick={() => handleViewDetails(order.id)}
+                            className="w-full sm:w-auto mt-2 sm:mt-0 bg-[#C9A35D] text-black px-4 py-2 rounded-lg text-sm font-medium hover:bg-opacity-90"
+                        >
+                            View Details
+                        </button>
+                    </div>
+                )) : <p>You have no past orders.</p>}
+            </div>
         </section>
 
         <section className="bg-white p-6 rounded-lg shadow-md mb-8">
@@ -207,14 +218,12 @@ const ProfilePage = () => {
       </main>
       <Footer />
 
-      {/* Edit Profile Modal */}
       <EditProfileModal 
         isOpen={isEditProfileOpen}
         onClose={() => setEditProfileOpen(false)}
         onSuccess={handleEditProfileSuccess}
       />
 
-      {/* Change Password Modal */}
       {isChangePasswordOpen && (
         <Modal 
           isOpen={isChangePasswordOpen}
@@ -228,7 +237,6 @@ const ProfilePage = () => {
         </Modal>
       )}
 
-      {/* Saved Addresses Modal */}
       {isAddressesOpen && (
         <Modal 
           isOpen={isAddressesOpen}
@@ -240,7 +248,6 @@ const ProfilePage = () => {
         </Modal>
       )}
 
-      {/* Add Address Modal */}
       {isAddAddressOpen && (
         <Modal 
           isOpen={isAddAddressOpen}
@@ -256,7 +263,6 @@ const ProfilePage = () => {
         </Modal>
       )}
 
-      {/* Edit Address Modal */}
       {isEditAddressOpen && (
         <Modal 
           isOpen={isEditAddressOpen}
@@ -273,7 +279,6 @@ const ProfilePage = () => {
         </Modal>
       )}
 
-      {/* Security Questions Modal */}
       {isSecurityOpen && (
         <Modal 
           isOpen={isSecurityOpen}
@@ -284,11 +289,12 @@ const ProfilePage = () => {
           <MySecurityQuestions onClose={() => setSecurityOpen(false)} />
         </Modal>
       )}
+
+      {isOrderModalOpen && <OrderDetailsModal orderId={selectedOrderId} onClose={handleCloseOrderModal} />}
     </div>
   );
 };
 
-// Modal Component
 const Modal = ({ isOpen, onClose, title, children, size = 'medium' }) => {
   if (!isOpen) return null;
 
