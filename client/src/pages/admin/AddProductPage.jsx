@@ -43,7 +43,6 @@ const AddProductPage = () => {
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState(null);
 
-
   useEffect(() => {
     const loadPage = async () => {
       if (!isAuthenticated) {
@@ -506,7 +505,7 @@ const AddProductPage = () => {
               )}
               
               {showNewCategory && (
-                <div className="flex gap-2 mb-4">
+                <div className="flex gap-2 mb-4 items-center">
                   <input
                     type="text"
                     value={newCategory}
@@ -521,6 +520,17 @@ const AddProductPage = () => {
                     className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md disabled:bg-gray-400"
                   >
                     {operationLoading ? 'Adding...' : 'Add'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewCategory(false);
+                      setNewCategory('');
+                    }}
+                    className="bg-red-500 hover:bg-red-600 text-white w-10 h-10 flex items-center justify-center rounded-md font-bold text-lg"
+                    title="Cancel"
+                  >
+                    ×
                   </button>
                 </div>
               )}
@@ -561,7 +571,7 @@ const AddProductPage = () => {
               </div>
               
               {showNewSubcategory && formData.category && (
-                <div className="flex gap-2 mb-4">
+                <div className="flex gap-2 mb-4 items-center">
                   <input
                     type="text"
                     value={newSubcategory}
@@ -576,6 +586,17 @@ const AddProductPage = () => {
                     className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md disabled:bg-gray-400"
                   >
                     {operationLoading ? 'Adding...' : 'Add'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewSubcategory(false);
+                      setNewSubcategory('');
+                    }}
+                    className="bg-red-500 hover:bg-red-600 text-white w-10 h-10 flex items-center justify-center rounded-md font-bold text-lg"
+                    title="Cancel"
+                  >
+                    ×
                   </button>
                 </div>
               )}
