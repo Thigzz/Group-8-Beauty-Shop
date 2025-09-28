@@ -4,37 +4,53 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { selectCategory, selectSubcategory } from '../redux/features/categories/categoriesSlice';
 
-const Breadcrumb = ({ selectedCategory, selectedSubcategory, showAllProducts, className = "" }) => {
+const Breadcrumb = ({ selectedCategory, selectedSubcategory, className = "" }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const categoryName = selectedCategory?.name || selectedCategory?.category_name;
-  const subcategoryName = selectedSubcategory?.name || selectedSubcategory?.sub_category_name;
+  const categoryName = selectedCategory?.category_name || selectedCategory?.name;
+  const subcategoryName = selectedSubcategory?.sub_category_name || selectedSubcategory?.name;
   
+  const isShopAll = selectedSubcategory?.id === 'all';
+
+  const createSlug = (name) => {
+    return name
+      ?.toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '');
+  };
+
   const handleCategoryClick = () => {
     if (selectedCategory) {
       dispatch(selectCategory(selectedCategory));
-      dispatch(selectSubcategory(null)); // keep subcategory cleared
-      const slug = categoryName.toLowerCase().replace(/\s+/g, '-');
+      dispatch(selectSubcategory(null));
+      const slug = createSlug(categoryName);
       navigate(`/category/${slug}`);
     }
   };
 
   const handleHomeClick = () => {
-    dispatch(selectCategory({ id: 'shop-all', name: 'SHOP ALL', subcategories: [] }));
+    dispatch(selectCategory(null));
     dispatch(selectSubcategory(null));
     navigate('/');
   };
 
   const handleSubcategoryClick = () => {
-    if (selectedCategory && selectedSubcategory) {
-      dispatch(selectCategoryAndSubcategory({
-        category: selectedCategory,
-        subcategory: selectedSubcategory
-      }));
-      const catSlug = categoryName.toLowerCase().replace(/\s+/g, '-');
-      const subSlug = subcategoryName.toLowerCase().replace(/\s+/g, '-');
+    if (selectedCategory && selectedSubcategory && !isShopAll) {
+      dispatch(selectCategory(selectedCategory));
+      dispatch(selectSubcategory(selectedSubcategory));
+      const catSlug = createSlug(categoryName);
+      const subSlug = createSlug(subcategoryName);
       navigate(`/category/${catSlug}/${subSlug}`);
+    }
+  };
+
+  const handleShopAllClick = () => {
+    if (selectedCategory) {
+      dispatch(selectCategory(selectedCategory));
+      dispatch(selectSubcategory({ id: 'all', name: 'All Products' }));
+      const catSlug = createSlug(categoryName);
+      navigate(`/category/${catSlug}/all`);
     }
   };
 
@@ -48,24 +64,31 @@ const Breadcrumb = ({ selectedCategory, selectedSubcategory, showAllProducts, cl
       {categoryName && (
         <>
           <ChevronRight className="w-5 h-5" />
-          <button
-            onClick={handleCategoryClick}
-            className="text-lg hover:text-yellow-600 transition-colors"
-          >
-            {categoryName}
-          </button>
+          
+          {selectedSubcategory ? (
+            <button
+              onClick={handleCategoryClick}
+              className="text-lg hover:text-yellow-600 transition-colors"
+            >
+              {categoryName}
+            </button>
+          ) : (
+            <span className="text-lg font-semibold text-yellow-600">{categoryName}</span>
+          )}
         </>
       )}
 
-      {subcategoryName && (
+      {isShopAll && (
         <>
           <ChevronRight className="w-5 h-5" />
-          <button
-            onClick={handleSubcategoryClick}
-            className="text-lg hover:text-yellow-600 transition-colors"
-          >
-            {subcategoryName}
-          </button>
+          <span className="text-lg font-semibold text-yellow-600">All Products</span>
+        </>
+      )}
+
+      {subcategoryName && !isShopAll && (
+        <>
+          <ChevronRight className="w-5 h-5" />
+          <span className="text-lg font-semibold text-yellow-600">{subcategoryName}</span>
         </>
       )}
     </nav>

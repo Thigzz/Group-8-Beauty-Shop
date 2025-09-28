@@ -20,12 +20,15 @@ const CategoryPage = ({
   selectedSubcategory,
   onCategorySelect,
   onSubcategorySelect,
+  onShopAllCategory,
+  onGlobalShopAll,
   onProductClick,
   onAddToCart,
   onAddToWishlist,
   showAllProducts = false,
+  isShopAllMode = false,
 }) => {
-  const { categoryId, subcategoryId, categoryName, subcategoryName } = useParams();
+  const { categoryName, subcategoryName } = useParams();
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -49,56 +52,50 @@ const CategoryPage = ({
       .replace(/(^-|-$)+/g, '') || '';
   };
 
-  // Find category based on URL or Redux
-  const category = useMemo(() => {
-    if (categoryId && categoryId !== "undefined") {
-      return categories.find(cat => cat.id.toString() === categoryId.toString());
-    } else if (categoryName) {
-      return categories.find((cat) => {
-        const categorySlug = createSlug(cat.category_name || cat.name);
-        return categorySlug === categoryName.toLowerCase();
-      });
-    }
-    return null;
-  }, [categories, categoryId, categoryName]);
+  const effectiveCategory = selectedCategory;
+  const effectiveSubcategory = selectedSubcategory;
 
-  // Find subcategory based on URL or Redux
-  const subcategory = useMemo(() => {
-    if (!category) return null;
-    
-    if (subcategoryId && subcategoryId !== "undefined") {
-      return category.subcategories?.find(sub => sub.id.toString() === subcategoryId.toString());
-    } else if (subcategoryName) {
-      return category.subcategories?.find((sub) => {
-        const subSlug = createSlug(sub.sub_category_name || sub.name);
-        return subSlug === subcategoryName.toLowerCase();
-      });
-    }
-    return null;
-  }, [category, subcategoryId, subcategoryName]);
+  const isGlobalShopAll = showAllProducts && !effectiveCategory;
 
-  const effectiveCategory = showAllProducts ? selectedCategory : category;
-  const effectiveSubcategory = showAllProducts ? selectedSubcategory : subcategory;
-
-  // Fetch Products
   useEffect(() => {
     const fetchProducts = () => {
-      if (effectiveCategory) {
-        if (effectiveSubcategory) {
-          dispatch(fetchProductsByCategoryAndSubcategory({ 
-            categoryId: effectiveCategory.id,
-            subcategoryId: effectiveSubcategory.id,
-            page: currentPage,
-            append: currentPage > 1,
-          }));
-        } else {
-          dispatch(fetchProductsByCategory({ 
-            categoryId: effectiveCategory.id, 
-            page: currentPage,
-            append: currentPage > 1,
-          }));
-        }
+      if (isGlobalShopAll) {
+        // Global Shop All - fetch all products
+        dispatch(fetchAllProducts({ 
+          page: currentPage,
+          append: currentPage > 1,
+        }));
+      } else if (isShopAllMode && effectiveCategory) {
+        // Category-specific Shop All
+        dispatch(fetchProductsByCategory({ 
+          categoryId: effectiveCategory.id,
+          page: currentPage,
+          append: currentPage > 1,
+        }));
+      } else if (effectiveCategory && effectiveSubcategory) {
+        // Normal category + subcategory
+        dispatch(fetchProductsByCategoryAndSubcategory({ 
+          categoryId: effectiveCategory.id,
+          subcategoryId: effectiveSubcategory.id,
+          page: currentPage,
+          append: currentPage > 1,
+        }));
+      } else if (effectiveCategory) {
+        // Only category selected
+        dispatch(fetchProductsByCategory({ 
+          categoryId: effectiveCategory.id, 
+          page: currentPage,
+          append: currentPage > 1,
+        }));
+      } else if (effectiveSubcategory) {
+        // Only subcategory selected
+        dispatch(fetchProductsBySubcategory({ 
+          subcategoryId: effectiveSubcategory.id,
+          page: currentPage,
+          append: currentPage > 1,
+        }));
       } else {
+        // No selections - fetch all products
         dispatch(fetchAllProducts({ 
           page: currentPage,
           append: currentPage > 1,
@@ -107,9 +104,8 @@ const CategoryPage = ({
     };
 
     fetchProducts();
-  }, [effectiveCategory, effectiveSubcategory, currentPage, dispatch]);
+  }, [effectiveCategory, effectiveSubcategory, currentPage, isShopAllMode, isGlobalShopAll, dispatch]);
 
-  // Filtered & Sorted Products 
   const filteredProducts = useMemo(() => {
     if (productsState.loading && currentPage === 1) return [];
 
@@ -153,32 +149,43 @@ const CategoryPage = ({
 
   const clearFilters = () => {
     setFilters({ priceRange: [0, 100000], brands: [] });
-    if (showAllProducts) {
-      onCategorySelect({ id: 'shop-all', name: 'SHOP ALL', subcategories: [] });
-      onSubcategorySelect(null);
-    }
   };
 
   const handleCategorySelect = (cat) => {
     onCategorySelect(cat);
-    onSubcategorySelect(null);
     setCurrentPage(1);
+    setFilters({ priceRange: [0, 100000], brands: [] });
 
-    if (!showAllProducts) {
-      const slug = createSlug(cat.category_name || cat.name);
-      navigate(`/category/${slug}`);
-    }
+    const slug = createSlug(cat.category_name || cat.name);
+    navigate(`/category/${slug}`);
   };
 
   const handleSubcategorySelect = (subcat) => {
     onSubcategorySelect(subcat);
     setCurrentPage(1);
+    setFilters({ priceRange: [0, 100000], brands: [] });
 
-    if (!showAllProducts && effectiveCategory) {
+    if (effectiveCategory) {
       const categorySlug = createSlug(effectiveCategory.category_name || effectiveCategory.name);
       const subcategorySlug = subcat ? createSlug(subcat.sub_category_name || subcat.name) : '';
       navigate(subcategorySlug ? `/category/${categorySlug}/${subcategorySlug}` : `/category/${categorySlug}`);
     }
+  };
+
+  const handleShopAllCategory = (category) => {
+    onShopAllCategory(category);
+    setCurrentPage(1);
+    setFilters({ priceRange: [0, 100000], brands: [] });
+
+    const categorySlug = createSlug(category.category_name || category.name);
+    navigate(`/category/${categorySlug}/all`);
+  };
+
+  const handleGlobalShopAll = () => {
+    onGlobalShopAll();
+    setCurrentPage(1);
+    setFilters({ priceRange: [0, 100000], brands: [] });
+    navigate('/shop-all');
   };
 
   const handleLoadMore = () => setCurrentPage(prev => prev + 1);
@@ -202,6 +209,14 @@ const CategoryPage = ({
     { label: 'Over KSh 10,000', min: 10000, max: 100000 },
   ];
 
+  const handleProductClick = (product) => {
+    setSelectedProduct(product);
+    setIsModalOpen(true);
+    if (onProductClick) {
+      onProductClick(product);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <HeroSection category={effectiveCategory} />
@@ -212,9 +227,6 @@ const CategoryPage = ({
             <Breadcrumb 
               selectedCategory={effectiveCategory}
               selectedSubcategory={effectiveSubcategory}
-              showAllProducts={showAllProducts}
-              onCategoryClick={handleCategorySelect}
-              onSubcategoryClick={handleSubcategorySelect}
               className="text-xl font-semibold" 
             />
           </div>
@@ -267,36 +279,119 @@ const CategoryPage = ({
                 </button>
               </div>
 
-              {effectiveCategory?.subcategories && effectiveCategory.subcategories.length > 0 && (
-                <div className="mb-6">
-                  <h4 className="font-medium text-gray-900 mb-3">Subcategories</h4>
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => handleSubcategorySelect(null)}
-                      className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                        !effectiveSubcategory 
-                          ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' 
-                          : 'text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      All {effectiveCategory.category_name || effectiveCategory.name}
-                    </button>
-                    {effectiveCategory.subcategories.map((subcat) => (
-                      <button
-                        key={subcat.id}
-                        onClick={() => handleSubcategorySelect(subcat)}
-                        className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                          effectiveSubcategory?.id === subcat.id
-                            ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' 
-                            : 'text-gray-600 hover:bg-gray-50'
-                        }`}
-                      >
-                        {subcat.sub_category_name || subcat.name}
-                      </button>
-                    ))}
-                  </div>
+              {/* Category Filters */}
+              <div className="mb-6">
+                <h3 className="font-semibold text-lg mb-3">Categories</h3>
+                
+                {!isGlobalShopAll && !effectiveCategory && (
+                  <button
+                    onClick={handleGlobalShopAll}
+                    className="w-full mb-4 px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-900 transition-colors font-medium"
+                  >
+                    Shop All Products
+                  </button>
+                )}
+
+                {/* CATEGORIES LIST*/}
+                <div className="space-y-1">
+                  {(isGlobalShopAll || !effectiveCategory) ? (
+                    categories.map(category => (
+                      <div key={category.id}>
+                        {/* Category Button */}
+                        <button
+                          onClick={() => handleCategorySelect(category)}
+                          className={`w-full text-left px-3 py-2 rounded transition-colors ${
+                            effectiveCategory?.id === category.id 
+                              ? 'bg-yellow-100 text-yellow-700 font-medium' 
+                              : 'hover:bg-gray-100 text-gray-700'
+                          }`}
+                        >
+                          {category.category_name || category.name}
+                        </button>
+                        
+                        {(effectiveCategory?.id === category.id || isGlobalShopAll) && 
+                        category.subcategories?.length > 0 && (
+                          <div className="ml-4 mt-1 space-y-1">
+                            {/* Shop All for this category */}
+                            {effectiveCategory?.id === category.id && (
+                            <button
+                              onClick={() => handleShopAllCategory(category)}
+                              className={`w-full text-left px-3 py-1 rounded text-sm transition-colors ${
+                                isShopAllMode && effectiveCategory?.id === category.id
+                                  ? 'bg-yellow-50 text-yellow-600 font-medium'
+                                  : 'hover:bg-gray-50 text-gray-600'
+                              }`}
+                            >
+                              Shop All {category.category_name || category.name}
+                            </button>
+                            )}
+                            
+                            {/* Individual Subcategories */}
+                            {category.subcategories.map((subcategory) => (
+                              <button
+                                key={subcategory.id}
+                                onClick={() => {
+                                  onCategorySelect(category);
+                                  handleSubcategorySelect(subcategory);
+                                }}
+                                className={`w-full text-left px-3 py-1 rounded text-sm transition-colors ${
+                                  effectiveSubcategory?.id === subcategory.id
+                                    ? 'bg-yellow-50 text-yellow-600 font-medium'
+                                    : 'hover:bg-gray-50 text-gray-600'
+                                }`}
+                              >
+                                {subcategory.sub_category_name || subcategory.name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div>
+                      <div className="mb-3">
+                        <button
+                          onClick={() => handleCategorySelect(effectiveCategory)}
+                          className="w-full text-left px-3 py-2 rounded transition-colors bg-yellow-100 text-yellow-700 font-medium"
+                        >
+                          {effectiveCategory.category_name || effectiveCategory.name}
+                        </button>
+                      </div>
+
+                      <div className="ml-4 mb-2">
+                        <button
+                          onClick={() => handleShopAllCategory(effectiveCategory)}
+                          className={`w-full text-left px-3 py-1 rounded text-sm transition-colors ${
+                            isShopAllMode
+                              ? 'bg-yellow-50 text-yellow-600 font-medium'
+                              : 'hover:bg-gray-50 text-gray-600'
+                          }`}
+                        >
+                          Shop All {effectiveCategory.category_name || effectiveCategory.name}
+                        </button>
+                      </div>
+
+                      {effectiveCategory.subcategories?.length > 0 && (
+                        <div className="ml-4 space-y-1">
+                          {effectiveCategory.subcategories.map((subcategory) => (
+                            <button
+                              key={subcategory.id}
+                              onClick={() => handleSubcategorySelect(subcategory)}
+                              className={`w-full text-left px-3 py-1 rounded text-sm transition-colors ${
+                                effectiveSubcategory?.id === subcategory.id
+                                  ? 'bg-yellow-50 text-yellow-600 font-medium'
+                                  : 'hover:bg-gray-50 text-gray-600'
+                              }`}
+                            >
+                              {subcategory.sub_category_name || subcategory.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
 
               {/* Price Range */}
               <div className="mb-6">
@@ -342,6 +437,32 @@ const CategoryPage = ({
 
           {/* Products Grid */}
           <div className="flex-1">
+            <div className="mb-6">
+              <h1 className="text-3xl font-bold text-gray-900">
+                {isGlobalShopAll 
+                  ? 'All Products' 
+                  : isShopAllMode 
+                    ? `All ${effectiveCategory?.category_name || effectiveCategory?.name || 'Products'}` 
+                    : (effectiveCategory?.category_name || effectiveCategory?.name || 'Products')
+                }
+              </h1>
+              {isGlobalShopAll ? (
+                <p className="text-lg text-gray-600 mt-2">Browse all products from all categories</p>
+              ) : effectiveSubcategory && effectiveSubcategory.id !== 'all' ? (
+                <p className="text-lg text-gray-600 mt-2">
+                  {effectiveSubcategory.sub_category_name || effectiveSubcategory.name}
+                </p>
+              ) : isShopAllMode ? (
+                <p className="text-lg text-gray-600 mt-2">
+                  All products in {effectiveCategory?.category_name || effectiveCategory?.name}
+                </p>
+              ) : effectiveCategory ? (
+                <p className="text-lg text-gray-600 mt-2">
+                  Browse all products in {effectiveCategory.category_name || effectiveCategory.name}
+                </p>
+              ) : null}
+            </div>
+
             {productsState.loading && currentPage === 1 ? (
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
@@ -356,7 +477,7 @@ const CategoryPage = ({
               <>
                 <ProductGrid 
                   products={sortedProducts} 
-                  onProductClick={onProductClick}
+                  onProductClick={handleProductClick}
                   onAddToCart={onAddToCart}
                   onAddToWishlist={onAddToWishlist}
                 />

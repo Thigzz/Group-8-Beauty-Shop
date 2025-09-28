@@ -37,11 +37,57 @@ const setCachedData = (cacheKey, data) => {
   });
 };
 
-// Fetch all products with optional page
+export const handleFulfilled = (state, action, filterType) => {
+  state.loading = false;
+  state.error = null;
+  state.lastFetched = Date.now();
+
+  const page = action.meta.arg?.page || 1;
+  const newProducts = (action.payload.products || []).map((product) => {
+    const categoryName =
+      product.category_name ||
+      (product.category_id
+        ? state.categories.find((cat) => cat.id === product.category_id)?.name
+        : null) ||
+      product.category ||
+      "Uncategorized";
+
+    const subcategoryName =
+      product.subcategory_name ||
+      (product.subcategory_id
+        ? state.subcategories.find((sub) => sub.id === product.subcategory_id)?.name
+        : null) ||
+      product.subcategory ||
+      "None";
+
+    return {
+      ...product,
+      categoryName,
+      subcategoryName,
+    };
+  });
+
+  if (page > 1) {
+    state.items = [...state.items, ...newProducts];
+  } else {
+    state.items = newProducts;
+  }
+
+  state.pagination = {
+    total: action.payload.total || 0,
+    pages: action.payload.pages || 0,
+    currentPage: action.payload.current_page || page,
+  };
+  state.currentFilter = filterType;
+};
+
+
 export const fetchAllProducts = createAsyncThunk(
   'products/fetchAll',
   async ({ page = 1 } = {}, { rejectWithValue }) => {
     try {
+       let query = `?page=${page}`;
+       
       const cacheKey = getCacheKey('all', { page });
       const cachedData = getCachedData(cacheKey);
       
@@ -60,7 +106,7 @@ export const fetchAllProducts = createAsyncThunk(
   }
 );
 
-// Fetch products by category with optional page
+// Fetch products by category 
 export const fetchProductsByCategory = createAsyncThunk(
   'products/fetchByCategory',
   async ({ categoryId, page = 1 }, { rejectWithValue }) => {
@@ -83,7 +129,7 @@ export const fetchProductsByCategory = createAsyncThunk(
   }
 );
 
-// Fetch products by subcategory with optional page
+// Fetch products by subcategory 
 export const fetchProductsBySubcategory = createAsyncThunk(
   'products/fetchBySubcategory',
   async ({ subcategoryId, page = 1 }, { rejectWithValue }) => {
@@ -106,7 +152,7 @@ export const fetchProductsBySubcategory = createAsyncThunk(
   }
 );
 
-// Fetch products by category + subcategory with optional page
+// Fetch products by category + subcategory w
 export const fetchProductsByCategoryAndSubcategory = createAsyncThunk(
   'products/fetchByCategoryAndSubcategory',
   async ({ categoryId, subcategoryId, page = 1 }, { rejectWithValue }) => {
@@ -154,7 +200,7 @@ export const fetchProductById = createAsyncThunk(
   }
 );
 
-// Search products (no caching for search as results can vary frequently)
+// Search products
 export const searchProducts = createAsyncThunk(
   'products/search',
   async ({ query, page = 1 }, { rejectWithValue }) => {
@@ -196,6 +242,11 @@ const initialState = {
 const productsSlice = createSlice({
   name: 'products',
   initialState,
+  products: [],
+  categories: [],      
+  subcategories: [],
+  status: "idle",
+  error: null,
   reducers: {
     setItems: (state, action) => {
       state.items = action.payload;
@@ -238,15 +289,12 @@ const productsSlice = createSlice({
       state.error = null;
       state.lastFetched = Date.now();
 
-      // Append or replace based on page
       const page = action.meta.arg?.page || 1;
       const newProducts = action.payload.products || [];
 
       if (page > 1) {
-        // Append for pagination (load more)
         state.items = [...state.items, ...newProducts];
       } else {
-        // Replace for new search/filter
         state.items = newProducts;
       }
 
