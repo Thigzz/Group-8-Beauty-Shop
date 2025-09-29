@@ -48,11 +48,52 @@ def test_login_invalid_credentials(test_client, new_user):
     assert response.status_code == 401
 
 def test_access_protected_route(test_client, new_user):
-    test_client.post('/auth/register', data=json.dumps({"username": "protecteduser", "email": "protected@test.com", "password": "password123", "confirm_password": "password123", "first_name": "Test", "last_name": "User", "primary_phone_no": "123"}), content_type='application/json')
-    login_res = test_client.post('/auth/login', data=json.dumps({"login_identifier": "protecteduser", "password": "password123"}), content_type='application/json')
+    """Test that a user can access their profile and fetch phone numbers."""
+    # Register the user with both phone numbers
+    test_client.post(
+        '/auth/register',
+        data=json.dumps({
+            "id":  new_user.id,
+            "username": new_user.username,
+            "email": new_user.email,
+            "password": "password123",
+            "confirm_password": "password123",
+            "first_name": "Test",
+            "last_name": "User",
+            "primary_phone_no": "1234567890",
+            "secondary_phone_no": "0987654321"
+        }),
+        content_type='application/json'
+    )
+
+    # Login to get access token
+    login_res = test_client.post(
+        '/auth/login',
+        data=json.dumps({
+            "login_identifier": new_user.username,
+            "password": "password123"
+        }),
+        content_type='application/json'
+    )
     access_token = json.loads(login_res.data)['access_token']
-    response = test_client.get('/auth/profile', headers={"Authorization": f"Bearer {access_token}"})
+
+    # Fetch profile
+    response = test_client.get(
+        '/auth/profile',
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
     assert response.status_code == 200
+    data = json.loads(response.data)
+
+    # Verify all profile fields including phone numbers
+    assert data['first_name'] == "Test"
+    assert data['last_name'] == "User"
+    assert data['username'] == new_user.username
+    assert data['email'] == new_user.email
+    assert data['primary_phone_no'] == "1234567890"
+    assert data['secondary_phone_no'] == "0987654321"
+
 
 def test_admin_access(test_client, new_admin):
     test_client.post('/auth/register', data=json.dumps({"username": new_admin.username, "email": new_admin.email, "password": "password123", "confirm_password": "password123", "first_name": "Admin", "last_name": "User", "primary_phone_no": "456"}), content_type='application/json')

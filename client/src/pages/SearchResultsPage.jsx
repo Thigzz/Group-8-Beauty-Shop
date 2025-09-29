@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import apiClient from '../api/axios';
-import Header from '../components/Header';
-import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import ProductCard from '../components/ProductCard';
+import ProductCard from '../components/Product/ProductCard';
 
 const SearchResultsPage = () => {
   const [searchParams] = useSearchParams();
   const [results, setResults] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
   const query = searchParams.get('q');
 
   useEffect(() => {
@@ -22,7 +21,7 @@ const SearchResultsPage = () => {
     const fetchResults = async () => {
       setIsLoading(true);
       try {
-        const response = await apiClient.get(`/api/search/?q=${query}`);
+        const response = await apiClient.get(`api/search/?q=${query}`);
         setResults(response.data);
       } catch (error) {
         console.error("Failed to fetch search results:", error);
@@ -34,13 +33,37 @@ const SearchResultsPage = () => {
     fetchResults();
   }, [query]);
 
+  const handleGoBack = () => {
+    navigate(-1);
+  };
+
   const hasResults = results && (results.products.length > 0 || results.categories.length > 0 || results.sub_categories.length > 0);
 
   return (
     <div>
-      <Header />
-      <Navbar />
       <main className="container mx-auto py-12 px-4 min-h-[60vh]">
+        {/* Back Button */}
+        <button 
+          onClick={handleGoBack}
+          className="mb-6 flex items-center text-gray-600 hover:text-[#C9A35D] transition-colors duration-200"
+        >
+          <svg 
+            className="w-5 h-5 mr-2" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24" 
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              strokeWidth={2} 
+              d="M15 19l-7-7 7-7" 
+            />
+          </svg>
+          Back
+        </button>
+
         <h1 className="text-3xl font-bold mb-8">
           Search Results for: <span className="text-[#C9A35D]">{query}</span>
         </h1>

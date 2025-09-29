@@ -13,14 +13,23 @@ def get_all_products():
     """Get all products with optional filtering"""
     try:
         category_id = request.args.get('category_id')
+        sub_category_id = request.args.get('sub_category_id')
         search = request.args.get('search')
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
         
         query = Product.query
-        
+
+        query = Product.query.filter(Product.status != "deleted")
+
+        status = request.args.get('status')
+
+        if status:
+            query = query.filter_by(status=status)
         if category_id:
             query = query.filter_by(category_id=category_id)
+        if sub_category_id:
+            query = query.filter_by(sub_category_id=sub_category_id)
         
         if search:
             query = query.filter(Product.product_name.contains(search))
@@ -95,7 +104,8 @@ def create_product():
             stock_qty=data['stock_qty'],
             image_url=data.get('image_url'),
             category_id=data['category_id'],
-            sub_category_id=data['sub_category_id']
+            sub_category_id=data['sub_category_id'],
+            status=data.get('status', 'active')
         )
         
         db.session.add(product)
@@ -132,6 +142,9 @@ def update_product(product_id):
             product.category_id = str(uuid.UUID(data['category_id']))
         if 'sub_category_id' in data:
             product.sub_category_id = str(uuid.UUID(data['sub_category_id']))
+        if 'status' in data:
+            product.status = data['status']
+
         
         db.session.commit()
         return jsonify(product.to_dict()), 200
@@ -144,11 +157,12 @@ def update_product(product_id):
 @jwt_required()
 @admin_required()
 def delete_product(product_id):
-    """Delete a product (Admin only)"""
+    """Soft delete a product (set status=deleted)"""
     try:
         product_uuid = uuid.UUID(product_id)
         product = Product.query.get_or_404(product_uuid)
-        db.session.delete(product)
+
+        product.status = "deleted"
         db.session.commit()
         return jsonify({'message': 'Product deleted successfully'}), 200
     except Exception as e:
