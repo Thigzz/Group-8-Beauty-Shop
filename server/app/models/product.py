@@ -18,12 +18,8 @@ class Product(Base):
 
 
     # Foreign keys
-    category_id = Column(GUID(),
-                         ForeignKey('categories.id'),
-                         nullable=False)
-    sub_category_id = Column(GUID(),
-                             ForeignKey('sub_categories.id'),
-                             nullable=False)
+    category_id = Column(GUID(), ForeignKey('categories.id'), nullable=False)
+    sub_category_id = Column(GUID(), ForeignKey('sub_categories.id'), nullable=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
