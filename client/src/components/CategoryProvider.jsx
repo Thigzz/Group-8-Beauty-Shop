@@ -71,19 +71,25 @@ export const CategoryProvider = ({ children }) => {
 };
 
 // Separate component for category route handling
-export const CategoryRouteHandler = ({ showAllProducts, children }) => {
+export const CategoryRouteHandler = ({ children }) => {
   const { categoryId, subcategoryId, categoryName, subcategoryName } = useParams(); 
   const dispatch = useDispatch();
   const categories = useSelector(state => state.categories.items);
   
   useEffect(() => {
+    // Check if this is a "Shop All" route
+    const isShopAllRoute = subcategoryName === 'all' || subcategoryId === 'all';
+    
     if (categoryId && categoryId !== "undefined") {
       // Handle ID-based routes
       const category = categories.find(cat => cat.id.toString() === categoryId.toString());
       if (category) {
         dispatch(selectCategory(category));
         
-        if (subcategoryId && subcategoryId !== "undefined") {
+        if (isShopAllRoute) {
+          // Special handling for Shop All - set subcategory to indicate "all products"
+          dispatch(selectSubcategory({ id: 'all', name: 'All Products' }));
+        } else if (subcategoryId && subcategoryId !== "undefined") {
           const subcategory = category.subcategories?.find(
             sub => sub.id.toString() === subcategoryId.toString()
           );
@@ -106,7 +112,10 @@ export const CategoryRouteHandler = ({ showAllProducts, children }) => {
       if (category) {
         dispatch(selectCategory(category));
         
-        if (subcategoryName) {
+        if (isShopAllRoute) {
+          // Shop All route
+          dispatch(selectSubcategory({ id: 'all', name: 'All Products' }));
+        } else if (subcategoryName) {
           const subcategory = category.subcategories?.find(
             sub => {
               const subName = (sub.sub_category_name || sub.name || "").toLowerCase();

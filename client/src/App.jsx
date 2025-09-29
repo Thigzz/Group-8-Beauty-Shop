@@ -33,6 +33,12 @@ import SecurityQuestions from './pages/security-questions';
 import AdminLayout from './layouts/AdminLayout';
 import DashboardPage from './pages/admin/DashboardPage';
 import SettingsPage from './pages/admin/SettingsPage';
+import ProductsPage from './pages/admin/ProductsPage';
+import AddProductPage from './pages/admin/AddProductPage';
+import EditProductPage from "./pages/admin/EditProductPage";
+import AdminOrderDetails from './pages/admin/AdminOrderDetails';
+import AdminOrdersPage from "./pages/AdminOrdersPage";
+import AdminReportsPage from "./pages/AdminReportsPage";
 
 import './App.css';
 
@@ -122,6 +128,13 @@ function App() {
                   <Route path="dashboard" element={<DashboardPage />} />
                   <Route path="settings" element={<SettingsPage />} />
                   <Route index element={<DashboardPage />} />
+                  <Route path="products" element={<ProductsPage />} />
+                  <Route path="products/add" element={<AddProductPage />} />
+                  <Route path="products/edit/:id" element={<EditProductPage />} />
+                  <Route path="orders" element={<AdminOrdersPage />} />
+                  <Route path="orders/:orderId" element={<AdminOrderDetails />} />
+                   <Route path="reports" element={<AdminReportsPage />} />
+         
                 </Route>
               </Routes>
             </div>

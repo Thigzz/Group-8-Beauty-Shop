@@ -8,6 +8,8 @@ import uiReducer from './features/ui/uiSlice';
 import wishlistReducer from './features/wishlist/wishlistSlice';
 import addressReducer from './features/address/addressSlice';
 import ordersReducer from './features/orders/ordersSlice';
+import profileReducer from './features/profile/profileSlice';
+import adminReducer from './features/admin/adminSlice';
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +22,8 @@ export const store = configureStore({
     wishlist: wishlistReducer,
     address: addressReducer,
     orders: ordersReducer,
+    profile: profileReducer,
+    admin: adminReducer,
   },
 });
 

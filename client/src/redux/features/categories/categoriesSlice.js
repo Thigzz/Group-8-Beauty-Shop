@@ -107,7 +107,7 @@ const categoriesSlice = createSlice({
 
     selectCategoryAndSubcategory: (state, action) => {
       const { category, subcategory } = action.payload;
-
+      
       if (category === null) {
         state.selected = null;
         state.selectedSubcategory = null;
