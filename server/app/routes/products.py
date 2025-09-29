@@ -20,7 +20,7 @@ def get_all_products():
         
         query = Product.query
 
-        query = Product.query.filter(Product.status != "deleted")
+        query = Product.query.filter(Product.status == True)
 
         status = request.args.get('status')
 
@@ -105,7 +105,8 @@ def create_product():
             image_url=data.get('image_url'),
             category_id=data['category_id'],
             sub_category_id=data['sub_category_id'],
-            status=data.get('status', 'active')
+            status = bool(data.get("status", True))
+
         )
         
         db.session.add(product)
@@ -143,7 +144,7 @@ def update_product(product_id):
         if 'sub_category_id' in data:
             product.sub_category_id = str(uuid.UUID(data['sub_category_id']))
         if 'status' in data:
-            product.status = data['status']
+            product.status = bool(data["status"])
 
         
         db.session.commit()
@@ -162,7 +163,7 @@ def delete_product(product_id):
         product_uuid = uuid.UUID(product_id)
         product = Product.query.get_or_404(product_uuid)
 
-        product.status = "deleted"
+        product.status = False
         db.session.commit()
         return jsonify({'message': 'Product deleted successfully'}), 200
     except Exception as e:

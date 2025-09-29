@@ -113,4 +113,4 @@ def test_get_user_order_history(test_client, user_with_orders):
     response = test_client.get("/api/orders/history", headers=headers)
     assert response.status_code == 200
     data = response.get_json()
-    assert len(data) == 2
+    assert len(data["orders"]) == 2
