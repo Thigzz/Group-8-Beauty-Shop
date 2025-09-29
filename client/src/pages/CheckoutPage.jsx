@@ -2,20 +2,24 @@ import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { fetchAddresses } from '../redux/features/address/addressSlice';
-import { placeOrder } from '../redux/features/orders/ordersSlice';
-import { clearCart } from '../redux/features/cart/cartSlice';
+import { placeOrder } from '../redux/features/orders/orderSlice';
 import toast from 'react-hot-toast';
 
 export default function CheckoutPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  
+
   const [paymentMethod, setPaymentMethod] = useState('credit_card');
+
+  // Local state to manage address form fields
+  const [addressLine1, setAddressLine1] = useState('');
+  const [city, setCity] = useState('');
+  const [postalCode, setPostalCode] = useState('');
 
   const { user } = useSelector((state) => state.auth);
   const { items: cartItems, grand_total } = useSelector((state) => state.cart);
   const { defaultAddress, status: addressStatus } = useSelector((state) => state.address);
-  const { status: orderStatus } = useSelector((state) => state.orders);
+  const { placing: isPlacingOrder } = useSelector((state) => state.orders);
 
   useEffect(() => {
     if (user?.id) {
@@ -23,18 +27,32 @@ export default function CheckoutPage() {
     }
   }, [dispatch, user]);
 
+
+  useEffect(() => {
+    if (defaultAddress) {
+      setAddressLine1(defaultAddress.address_line_1 || '');
+      setCity(defaultAddress.city || '');
+      setPostalCode(defaultAddress.postal_code || '');
+    }
+  }, [defaultAddress]);
+
   const shippingFee = 500.00;
   const orderTotal = grand_total + shippingFee;
   const fullName = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : '';
 
   const handlePlaceOrder = () => {
+    if (!defaultAddress || !defaultAddress.id) {
+      toast.error("Default shipping address is not set. Please update your profile.");
+      return;
+    }
+
     const orderItems = cartItems
-      .filter(item => item.product && item.product.id) 
+      .filter(item => item.product && item.product.id)
       .map(item => ({
         product_id: item.product.id,
         quantity: item.quantity,
       }));
-      
+
     if (orderItems.length === 0) {
         toast.error("Your cart contains no valid items to order.");
         return;
@@ -42,8 +60,9 @@ export default function CheckoutPage() {
 
     const orderData = {
       user_id: user.id,
+      address_id: defaultAddress.id,
       items: orderItems,
-      payment_method: paymentMethod,
+      payment_method: paymentMethod.toUpperCase(),
     };
 
     dispatch(placeOrder(orderData))
@@ -53,7 +72,8 @@ export default function CheckoutPage() {
         navigate('/order-confirmation', { state: { order: response.order, invoice: response.invoice } });
       })
       .catch((error) => {
-        const errorMessage = error.error || "There was an issue placing your order.";
+        // ✅ FIX: This now robustly handles the error string from the slice.
+        const errorMessage = typeof error === 'string' ? error : "There was an issue placing your order.";
         toast.error(errorMessage);
       });
   };
@@ -69,10 +89,10 @@ export default function CheckoutPage() {
         {addressStatus !== 'loading' && defaultAddress ? (
           <>
             <input type="text" defaultValue={fullName} readOnly className="w-full border p-3 rounded-lg bg-gray-100 cursor-not-allowed" />
-            <input type="text" defaultValue={defaultAddress.address_line_1 || ''} readOnly className="w-full border p-3 rounded-lg bg-gray-100 cursor-not-allowed" />
+            <input type="text" value={addressLine1} onChange={(e) => setAddressLine1(e.target.value)} className="w-full border p-3 rounded-lg" />
             <div className="flex gap-4">
-              <input type="text" defaultValue={defaultAddress.city || ''} readOnly className="flex-1 border p-3 rounded-lg bg-gray-100 cursor-not-allowed" />
-              <input type="text" defaultValue={defaultAddress.postal_code || ''} readOnly className="flex-1 border p-3 rounded-lg bg-gray-100 cursor-not-allowed" />
+              <input type="text" value={city} onChange={(e) => setCity(e.target.value)} className="flex-1 border p-3 rounded-lg" />
+              <input type="text" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className="flex-1 border p-3 rounded-lg" />
             </div>
             <Link to="/profile" className="text-sm text-blue-600 hover:underline">
               Want to ship to a different address? Manage addresses in your profile.
@@ -81,7 +101,7 @@ export default function CheckoutPage() {
         ) : (
           <div className="border p-3 rounded-lg bg-gray-50 text-center">
              <p className="text-gray-600">
-                You have no default shipping address. 
+                You have no default shipping address.
                 <Link to="/profile" className="text-blue-600 hover:underline ml-1">
                   Please add one in your profile to proceed.
                 </Link>
@@ -110,8 +130,8 @@ export default function CheckoutPage() {
         )}
         {paymentMethod === 'mpesa' && (
            <div className="space-y-3 p-4 border rounded-lg bg-gray-50">
-               <p className="text-sm text-center text-gray-600">A payment prompt will be sent to your phone.</p>
-               <input type="text" placeholder="Phone Number (e.g., 0712345678)" className="w-full border p-3 rounded-lg" />
+              <p className="text-sm text-center text-gray-600">A payment prompt will be sent to your phone.</p>
+              <input type="text" placeholder="Phone Number (e.g., 0712345678)" className="w-full border p-3 rounded-lg" />
            </div>
         )}
       </div>
@@ -135,10 +155,10 @@ export default function CheckoutPage() {
 
       <button
         onClick={handlePlaceOrder}
-        disabled={!defaultAddress || cartItems.length === 0 || orderStatus === 'loading'}
+        disabled={!defaultAddress || cartItems.length === 0 || isPlacingOrder}
         className="w-full bg-yellow-600 text-white py-3 rounded-xl font-medium hover:bg-yellow-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
       >
-        {orderStatus === 'loading' ? 'Placing Order...' : 'Place Order'}
+        {isPlacingOrder ? 'Placing Order...' : 'Place Order'}
       </button>
     </div>
   );

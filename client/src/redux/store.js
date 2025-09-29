@@ -7,7 +7,7 @@ import searchReducer from './features/search/searchSlice';
 import uiReducer from './features/ui/uiSlice';
 import wishlistReducer from './features/wishlist/wishlistSlice';
 import addressReducer from './features/address/addressSlice';
-import ordersReducer from './features/orders/ordersSlice';
+import ordersReducer from './features/orders/orderSlice';
 import profileReducer from './features/profile/profileSlice';
 import adminReducer from './features/admin/adminSlice';
 

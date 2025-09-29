@@ -3,13 +3,13 @@ from server.app.extensions import db
 from server.app.models.orders import Order
 from server.app.models.order_items import OrderItem
 from server.app.models.enums import OrderStatus
-from flask_jwt_extended import jwt_required, get_jwt_identity # 1. ADD get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from server.app.decorators import admin_required
-from server.app.models.users import User # 2. ADD User import
-from server.app.models.carts import Cart # 3. ADD Cart import
-from sqlalchemy.orm import joinedload
-
-
+from server.app.models.users import User
+from server.app.models.carts import Cart
+from server.app.models.product import Product
+import uuid
+import json
 
 orders_bp = Blueprint("orders", __name__, url_prefix="/api/orders")
 
@@ -31,47 +31,47 @@ def create_order():
         return jsonify({"error": str(e)}), 400
 
 
-
 @orders_bp.route("/", methods=["GET"])
 def get_orders():
-    page = request.args.get("page", 1, type=int)
-    per_page = request.args.get("per_page", 10, type=int)
-
-    pagination = (
-        db.session.query(Order)
-        .options(
-            joinedload(Order.cart).joinedload(Cart.user),
-            joinedload(Order.items).joinedload(OrderItem.product)
-        )
-        .paginate(page=page, per_page=per_page, error_out=False)
-    )
-
-    orders = [order.to_dict(include_items=True) for order in pagination.items]
-
-    return jsonify({
-        "orders": orders,
-        "total": pagination.total,
-        "page": pagination.page,
-        "pages": pagination.pages,
-        "per_page": pagination.per_page,
-        "has_next": pagination.has_next,
-        "has_prev": pagination.has_prev
-    })
+    orders = Order.query.all()
+    return jsonify([{
+        "id": str(o.id),
+        "cart_id": str(o.cart_id),
+        "status": o.status.value,
+        "total_amount": float(o.total_amount)
+    } for o in orders])
 
 
 @orders_bp.route("/<uuid:order_id>", methods=["GET"])
+@jwt_required()
 def get_order(order_id):
-    order = (
-        db.session.query(Order)
-        .options(
-            joinedload(Order.cart).joinedload(Cart.user),
-            joinedload(Order.items).joinedload(OrderItem.product)
-        )
-        .filter(Order.id == order_id)
-        .first_or_404()
-    )
+    """
+    Get the details for a single order, including all of its items.
+    """
+    try:
+        order = Order.query.get_or_404(order_id)
+        
+        order_items = db.session.query(OrderItem, Product)\
+            .join(Product, OrderItem.product_id == Product.id)\
+            .filter(OrderItem.order_id == order_id)\
+            .all()
 
-    return jsonify(order.to_dict(include_items=True))
+        response_data = {
+            'order': order.to_dict(),
+            'items': [
+                {
+                    'product_name': product.product_name,
+                    'quantity': item.quantity,
+                    'price': float(item.price),
+                    'subtotal': float(item.sub_total)
+                } for item, product in order_items
+            ]
+        }
+        
+        return jsonify(response_data), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @orders_bp.route("/<uuid:order_id>", methods=["PATCH"])
@@ -123,35 +123,17 @@ def update_order_status(order_id):
 @orders_bp.route("/history", methods=["GET"])
 @jwt_required()
 def get_user_order_history():
+    """
+    Get the order history for the currently logged-in user.
+    """
     current_user_username = get_jwt_identity()
     user = User.query.filter_by(username=current_user_username).first_or_404()
 
-    page = request.args.get("page", 1, type=int)
-    per_page = request.args.get("per_page", 10, type=int)
+    orders = Order.query.join(Cart).filter(Cart.user_id == user.id).order_by(Order.created_at.desc()).all()
 
-    pagination = (
-        Order.query.join(Cart)
-        .filter(Cart.user_id == user.id)
-        .order_by(Order.created_at.desc())
-        .paginate(page=page, per_page=per_page, error_out=False)
-    )
-
-    orders = [
-        {
-            "id": str(o.id),
-            "status": o.status.value,
-            "total_amount": float(o.total_amount),
-            "created_at": o.created_at.isoformat() if o.created_at else None
-        }
-        for o in pagination.items
-    ]
-
-    return jsonify({
-        "orders": orders,
-        "total": pagination.total,
-        "page": pagination.page,
-        "pages": pagination.pages,
-        "per_page": pagination.per_page,
-        "has_next": pagination.has_next,
-        "has_prev": pagination.has_prev
-    })
+    return jsonify([{
+        "id": str(o.id),
+        "status": o.status.value,
+        "total_amount": float(o.total_amount),
+        "created_at": o.created_at.isoformat() if o.created_at else None
+    } for o in orders])

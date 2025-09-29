@@ -16,13 +16,6 @@ class OrderItem(Base):
     order = relationship("Order", back_populates="items")
     product = relationship("Product", backref="order_items")
 
-    @validates("quantity", "price")
-    def update_sub_total(self, key, value):
-        """Recalculate sub_total whenever quantity or price changes"""
-        setattr(self, key, value)
-        if self.price is not None and self.quantity is not None:
-            self.sub_total = self.price * self.quantity
-        return value
 
     def to_dict(self):
         return {

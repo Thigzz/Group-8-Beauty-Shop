@@ -21,7 +21,6 @@ const SecurityQuestionsPage = () => {
   ]);
 
   useEffect(() => {
-    // Only fetch questions if the user is authenticated
     if (isAuthenticated) {
       dispatch(fetchSecurityQuestions());
     }
@@ -57,7 +56,7 @@ const SecurityQuestionsPage = () => {
       .unwrap()
       .then(() => {
         toast.success('Security questions saved successfully!');
-        navigate('/profile'); // Redirect to profile or dashboard after saving
+        navigate('/profile');
       })
       .catch((error) => {
         toast.error(error || 'Failed to save security questions.');

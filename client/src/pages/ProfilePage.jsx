@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { fetchUserProfile, logout } from '../redux/features/auth/authSlice';
-import { fetchOrders } from '../redux/features/orders/ordersSlice';
+import { fetchOrders } from '../redux/features/orders/orderSlice';
 import Footer from '../components/Footer';
 import { UserCircle2 } from 'lucide-react';
 import EditProfileModal from '../components/EditProfileModal';

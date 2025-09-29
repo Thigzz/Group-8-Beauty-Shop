@@ -38,10 +38,15 @@ export const loginUser = createAsyncThunk(
 // REGISTER
 export const registerUser = createAsyncThunk(
   'auth/registerUser',
-  async (userData, { rejectWithValue }) => {
+  async (userData, { dispatch, rejectWithValue }) => {
     try {
       const response = await apiClient.post('/auth/register', userData);
-      toast.success('Registration successful! Please log in.');
+      const { access_token, user_info } = response.data;
+
+      dispatch(setToken(access_token));
+      dispatch(setUser(user_info));
+      
+      toast.success('Registration successful!');
       return response.data;
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Registration failed';
