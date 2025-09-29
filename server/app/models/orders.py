@@ -15,11 +15,25 @@ class Order(Base):
     cart = relationship("Cart", backref="order")
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
 
-    def to_dict(self):
-        return {
-            'id': str(self.id),
-            'cart_id': str(self.cart_id),
-            'status': self.status.name,
-            'total_amount': float(self.total_amount),
-            'created_at': self.created_at.isoformat() if self.created_at else None
+    def to_dict(self, include_items=False):
+        data = {
+            "id": str(self.id),
+            "cart_id": str(self.cart_id),
+            "status": self.status.name,
+            "total_amount": float(self.total_amount),
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }
+
+        if self.cart and self.cart.user:
+            data["customer"] = {
+                "first_name": self.cart.user.first_name,
+                "last_name": self.cart.user.last_name,
+                "primary_phone_no": self.cart.user.primary_phone_no,
+                "username": self.cart.user.username,    
+                "email": self.cart.user.email, 
+            }
+
+        if include_items:
+            data["items"] = [item.to_dict() for item in self.items]
+
+        return data
