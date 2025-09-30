@@ -143,3 +143,36 @@ def test_full_password_reset_flow(test_client):
     assert reset_res.status_code == 200
     login_res = test_client.post('/auth/login', data=json.dumps({"login_identifier": user_data["username"], "password": "a_brand_new_password"}), content_type='application/json')
     assert login_res.status_code == 200
+
+def test_change_password(test_client, new_user):
+    """
+    GIVEN a logged-in user
+    WHEN the '/auth/change-password' endpoint is called with correct data
+    THEN check that the password is changed successfully
+    """
+
+    test_client.post('/auth/register', data=json.dumps({
+        "username": new_user.username, "email": new_user.email, "password": "password123", "confirm_password": "password123",
+        "first_name": "Test", "last_name": "User", "primary_phone_no": "123"
+    }), content_type='application/json')
+    login_res = test_client.post('/auth/login', data=json.dumps({
+        "login_identifier": new_user.username, "password": "password123"
+    }), content_type='application/json')
+    access_token = json.loads(login_res.data)['access_token']
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+    change_password_data = {
+        "current_password": "password123",
+        "new_password": "new_password_456",
+        "confirm_password": "new_password_456"
+    }
+
+
+    response = test_client.put('/auth/change-password', headers=headers, data=json.dumps(change_password_data), content_type='application/json')
+    assert response.status_code == 200
+    assert response.get_json()['message'] == 'Password updated successfully'
+
+    login_with_new_pass_res = test_client.post('/auth/login', data=json.dumps({
+        "login_identifier": new_user.username, "password": "new_password_456"
+    }), content_type='application/json')
+    assert login_with_new_pass_res.status_code == 200

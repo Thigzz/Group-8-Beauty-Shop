@@ -3,8 +3,12 @@ from server.app.extensions import db
 from server.app.models.orders import Order
 from server.app.models.order_items import OrderItem
 from server.app.models.enums import OrderStatus
-from flask_jwt_extended import jwt_required
-from server.app.decorators import admin_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from server.app.models.users import User
+from server.app.models.carts import Cart
+from sqlalchemy.orm import joinedload
+
+
 
 orders_bp = Blueprint("orders", __name__, url_prefix="/api/orders")
 
@@ -26,26 +30,47 @@ def create_order():
         return jsonify({"error": str(e)}), 400
 
 
+
 @orders_bp.route("/", methods=["GET"])
 def get_orders():
-    orders = Order.query.all()
-    return jsonify([{
-        "id": str(o.id),
-        "cart_id": str(o.cart_id),
-        "status": o.status.value,
-        "total_amount": float(o.total_amount)
-    } for o in orders])
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 10, type=int)
+
+    pagination = (
+        db.session.query(Order)
+        .options(
+            joinedload(Order.cart).joinedload(Cart.user),
+            joinedload(Order.items).joinedload(OrderItem.product)
+        )
+        .paginate(page=page, per_page=per_page, error_out=False)
+    )
+
+    orders = [order.to_dict(include_items=True) for order in pagination.items]
+
+    return jsonify({
+        "orders": orders,
+        "total": pagination.total,
+        "page": pagination.page,
+        "pages": pagination.pages,
+        "per_page": pagination.per_page,
+        "has_next": pagination.has_next,
+        "has_prev": pagination.has_prev
+    })
 
 
 @orders_bp.route("/<uuid:order_id>", methods=["GET"])
 def get_order(order_id):
-    order = Order.query.get_or_404(order_id)
-    return jsonify({
-        "id": str(order.id),
-        "cart_id": str(order.cart_id),
-        "status": order.status.value,
-        "total_amount": float(order.total_amount)
-    })
+    order = (
+        db.session.query(Order)
+        .options(
+            joinedload(Order.cart).joinedload(Cart.user),
+            joinedload(Order.items).joinedload(OrderItem.product)
+        )
+        .filter(Order.id == order_id)
+        .first_or_404()
+    )
+
+    return jsonify(order.to_dict(include_items=True))
 
 
 @orders_bp.route("/<uuid:order_id>", methods=["PATCH"])
@@ -65,32 +90,40 @@ def delete_order(order_id):
     db.session.commit()
     return jsonify({"message": "Order deleted"})
 
-# ------order fulfillment-------
-@orders_bp.route("/<order_id>/status", methods=["PUT"])
+
+# ------order history-------
+@orders_bp.route("/history", methods=["GET"])
 @jwt_required()
-@admin_required()
-def update_order_status(order_id):
-    """
-    Admin-only endpoint to update the status of an order.
-    Expects JSON: { "status": "fulfilled" } 
-    """
-    order = Order.query.get(order_id)
-    if not order:
-        return jsonify({"error": "Order not found"}), 404
+def get_user_order_history():
+    current_user_username = get_jwt_identity()
+    user = User.query.filter_by(username=current_user_username).first_or_404()
 
-    data = request.get_json()
-    new_status = data.get("status")
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 10, type=int)
 
-    if new_status not in [status.value for status in OrderStatus]:
-        return jsonify({"error": f"Invalid status '{new_status}'"}), 400
+    pagination = (
+        Order.query.join(Cart)
+        .filter(Cart.user_id == user.id)
+        .order_by(Order.created_at.desc())
+        .paginate(page=page, per_page=per_page, error_out=False)
+    )
 
-    order.status = OrderStatus(new_status)
-    db.session.commit()
+    orders = [
+        {
+            "id": str(o.id),
+            "status": o.status.value,
+            "total_amount": float(o.total_amount),
+            "created_at": o.created_at.isoformat() if o.created_at else None
+        }
+        for o in pagination.items
+    ]
 
     return jsonify({
-        "message": "Order status updated",
-        "order_id": str(order.id),
-        "status": order.status.value
+        "orders": orders,
+        "total": pagination.total,
+        "page": pagination.page,
+        "pages": pagination.pages,
+        "per_page": pagination.per_page,
+        "has_next": pagination.has_next,
+        "has_prev": pagination.has_prev
     })
-
-    
