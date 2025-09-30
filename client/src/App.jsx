@@ -14,7 +14,7 @@ import Navbar from "./components/Navbar";
 import ProtectedRoute from './components/ProtectedRoute';
 import ProductDetailModal from "./components/Product/ProductDetailModal";
 import { CategoryProvider } from "./components/CategoryProvider";
-import { AuthProvider } from "./components/AuthProvider";
+import AuthProvider from "./components/AuthProvider";
 import CategoryPageWrapper from "./components/CategoryPageWrapper";
 
 // Pages
@@ -39,6 +39,9 @@ import EditProductPage from "./pages/admin/EditProductPage";
 import AdminOrderDetails from './pages/admin/AdminOrderDetails';
 import AdminOrdersPage from "./pages/AdminOrdersPage";
 import AdminReportsPage from "./pages/AdminReportsPage";
+import AnalyticsPage from "./pages/admin/AdminAnalytics";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminUserDetailPage from "./pages/admin/AdminUserDetailPage";
 
 import './App.css';
 
@@ -47,11 +50,11 @@ function App() {
   const selectedProduct = useSelector(state => state.products.selected);
   const isProductModalOpen = useSelector(state => state.ui.isProductModalOpen);
 
-  const handleProductClick = product => { 
-    dispatch(selectProduct(product)); 
-    dispatch(setProductModalOpen(true)); 
+  const handleProductClick = product => {
+    dispatch(selectProduct(product));
+    dispatch(setProductModalOpen(true));
   };
-  
+
   const handleCloseModal = () => dispatch(setProductModalOpen(false));
   const handleAddToCart = product => dispatch(addItemToCart(product));
   const handleAddToWishlist = product => dispatch(addToWishlist(product));
@@ -69,20 +72,20 @@ function App() {
                 error: { style: { background: '#dc3545', color: 'white' } },
               }}
             />
-            
+
             <div className="sticky top-0 z-50">
               <Header />
               <Navbar />
             </div>
-            
+
             <div className="pt-0">
               <Routes>
                 {/* Main Routes */}
-                <Route 
-                  path="/" 
+                <Route
+                  path="/"
                   element={
                     <LandingPage onProductClick={handleProductClick} />
-                  } 
+                  }
                 />
 
                 <Route path="/products" element={<CategoryPageWrapper showAllProducts={true} />} />
@@ -108,17 +111,17 @@ function App() {
                 <Route path="/accessories" element={<CategoryPageWrapper showAllProducts={false} />} />
 
                 {/* Protected Routes */}
-                <Route 
-                  path="/profile" 
+                <Route
+                  path="/profile"
                   element={
                     <ProtectedRoute>
                       <ProfilePage />
                     </ProtectedRoute>
-                  } 
+                  }
                 />
 
-                <Route 
-                  path="/admin/*" 
+                <Route
+                  path="/admin/*"
                   element={
                     <ProtectedRoute adminOnly={true}>
                       <AdminLayout />
@@ -133,19 +136,21 @@ function App() {
                   <Route path="products/edit/:id" element={<EditProductPage />} />
                   <Route path="orders" element={<AdminOrdersPage />} />
                   <Route path="orders/:orderId" element={<AdminOrderDetails />} />
-                   <Route path="reports" element={<AdminReportsPage />} />
-         
+                  <Route path="analytics" element={<AnalyticsPage />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="users/:userId" element={<AdminUserDetailPage />} />
+                  <Route path="reports" element={<AdminReportsPage />} />
                 </Route>
               </Routes>
             </div>
 
             {/* Global Modal */}
-            <ProductDetailModal 
-              product={selectedProduct} 
-              isOpen={isProductModalOpen} 
-              onClose={handleCloseModal} 
-              onAddToCart={handleAddToCart} 
-              onAddToWishlist={handleAddToWishlist} 
+            <ProductDetailModal
+              product={selectedProduct}
+              isOpen={isProductModalOpen}
+              onClose={handleCloseModal}
+              onAddToCart={handleAddToCart}
+              onAddToWishlist={handleAddToWishlist}
             />
           </div>
         </Router>

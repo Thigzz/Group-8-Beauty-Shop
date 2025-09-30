@@ -1,70 +1,113 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import apiClient from '../../../api/axios';
 
-// Fetch order details
-export const fetchOrderDetails = createAsyncThunk(
-  'orders/fetchOrderDetails',
-  async (orderId, { rejectWithValue, getState }) => {
+// --- Thunks ---
+export const placeOrder = createAsyncThunk(
+  'orders/placeOrder',
+  async (orderData, { getState, rejectWithValue }) => {
     try {
-      const { auth } = getState();
-      const response = await apiClient.get(`/api/orders/${orderId}`, {
-        headers: { Authorization: `Bearer ${auth.token}` }
+      const { token } = getState().auth;
+      const response = await apiClient.post('/api/checkout/process', orderData, {
+        headers: { Authorization: `Bearer ${token}` },
       });
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || error.message || 'Failed to fetch order details'
-      );
+      const errorMessage = error.response?.data?.error || 'Failed to place order.';
+      return rejectWithValue(errorMessage);
     }
   }
 );
 
-// Update order status
+export const fetchOrders = createAsyncThunk(
+  'orders/fetchOrders',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const response = await apiClient.get('/api/orders/history', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || 'Failed to fetch orders.';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const fetchAdminOrderDetails = createAsyncThunk(
+  'orders/fetchAdminOrderDetails',
+  async (orderId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const response = await apiClient.get(`/admin/orders/${orderId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || 'Failed to fetch admin order details.';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+// This is the thunk for the user's order details
+export const fetchOrderDetails = createAsyncThunk(
+  'orders/fetchOrderDetails',
+  async (orderId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      const response = await apiClient.get(`/api/orders/${orderId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || 'Failed to fetch order details.';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+
 export const updateOrderStatus = createAsyncThunk(
   'orders/updateOrderStatus',
-  async ({ orderId, status, note }, { rejectWithValue, getState }) => {
+  async ({ orderId, status, note }, { getState, rejectWithValue }) => {
     try {
-      const { auth } = getState();
-      
+      const { token } = getState().auth;
       const response = await apiClient.put(
-        `/api/orders/${orderId}/status`,
+        `/admin/orders/${orderId}/status`,
         { status, note },
-        {
-          headers: { Authorization: `Bearer ${auth.token}` }
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || error.message || 'Failed to update order status'
-      );
+      const errorMessage = error.response?.data?.error || 'Failed to update order status.';
+      return rejectWithValue(errorMessage);
     }
   }
 );
 
-// Order status enums
+// --- Enums ---
 export const ORDER_STATUS = {
   PENDING: 'pending',
   PAID: 'paid',
   DISPATCHED: 'dispatched',
   DELIVERED: 'delivered',
-  CANCELLED: 'cancelled'
+  CANCELLED: 'cancelled',
 };
 
-// Final statuses that cannot be changed
-export const FINAL_STATUSES = [
-  ORDER_STATUS.CANCELLED,
-  ORDER_STATUS.DELIVERED
-];
+export const FINAL_STATUSES = [ORDER_STATUS.CANCELLED, ORDER_STATUS.DELIVERED];
 
-const orderSlice = createSlice({
+// --- Slice ---
+const ordersSlice = createSlice({
   name: 'orders',
   initialState: {
+    orderHistory: [],
     currentOrder: null,
     loading: false,
     error: null,
+    placing: false,
     updating: false,
-    updateSuccess: false
+    updateSuccess: false,
   },
   reducers: {
     clearOrder: (state) => {
@@ -77,48 +120,55 @@ const orderSlice = createSlice({
     },
     clearUpdateSuccess: (state) => {
       state.updateSuccess = false;
-    }
+    },
   },
   extraReducers: (builder) => {
     builder
-      // Fetch order details
-      .addCase(fetchOrderDetails.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+      .addCase(placeOrder.pending, (state) => { state.placing = true; state.error = null; })
+      .addCase(placeOrder.fulfilled, (state) => { state.placing = false; })
+      .addCase(placeOrder.rejected, (state, action) => { state.placing = false; state.error = action.payload; })
+      
+      .addCase(fetchOrders.pending, (state) => { state.loading = true; })
+      .addCase(fetchOrders.fulfilled, (state, action) => {
+        state.loading = false;
+        state.orderHistory = action.payload.orders;
       })
+      .addCase(fetchOrders.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
+      
+      .addCase(fetchOrderDetails.pending, (state) => { state.loading = true; })
       .addCase(fetchOrderDetails.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentOrder = action.payload.order || action.payload;
+        state.currentOrder = action.payload;
       })
-      .addCase(fetchOrderDetails.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
+      .addCase(fetchOrderDetails.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
+
+      .addCase(fetchAdminOrderDetails.pending, (state) => { state.loading = true; })
+      .addCase(fetchAdminOrderDetails.fulfilled, (state, action) => {
+          state.loading = false;
+          state.currentOrder = action.payload;
       })
-      // Update order status
+      .addCase(fetchAdminOrderDetails.rejected, (state, action) => {
+          state.loading = false;
+          state.error = action.payload;
+      })
+
       .addCase(updateOrderStatus.pending, (state) => {
         state.updating = true;
-        state.error = null;
         state.updateSuccess = false;
+        state.error = null;
       })
       .addCase(updateOrderStatus.fulfilled, (state, action) => {
         state.updating = false;
         state.updateSuccess = true;
-        // Update the current order with new status
-        if (state.currentOrder) {
-          state.currentOrder.status = action.payload.status || action.payload.order?.status;
-          // Update status history if provided
-          if (action.payload.statusHistory) {
-            state.currentOrder.status_history = action.payload.statusHistory;
-          }
-        }
+        state.currentOrder = action.payload;
       })
       .addCase(updateOrderStatus.rejected, (state, action) => {
         state.updating = false;
-        state.error = action.payload;
         state.updateSuccess = false;
+        state.error = action.payload;
       });
-  }
+  },
 });
 
-export const { clearOrder, clearError, clearUpdateSuccess } = orderSlice.actions;
-export default orderSlice.reducer;
+export const { clearOrder, clearError, clearUpdateSuccess } = ordersSlice.actions;
+export default ordersSlice.reducer;

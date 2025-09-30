@@ -1,4 +1,18 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import apiClient from '../../../api/axios';
+
+
+export const fetchCategories = createAsyncThunk(
+  'categories/fetchCategories',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.get('/api/categories/');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response.data);
+    }
+  }
+);
 
 const initialState = {
   items: [],
@@ -17,7 +31,6 @@ const categoriesSlice = createSlice({
     },
 
     selectCategory: (state, action) => {
-      // Handle null case for "Shop All"
       if (action.payload === null) {
         state.selected = null;
         state.selectedSubcategory = null;
@@ -27,9 +40,8 @@ const categoriesSlice = createSlice({
       const categoryId =
         typeof action.payload === 'object' ? action.payload.id : action.payload;
 
-      if (!categoryId) return; 
+      if (!categoryId) return;
 
-      // Find the category
       const fullCategory = state.items.find((c) => c.id.toString() === categoryId.toString());
 
       if (!fullCategory) {
@@ -40,7 +52,7 @@ const categoriesSlice = createSlice({
       }
 
       state.selected = fullCategory;
-      state.selectedSubcategory = null; 
+      state.selectedSubcategory = null;
     },
 
     selectSubcategory: (state, action) => {
@@ -75,7 +87,7 @@ const categoriesSlice = createSlice({
             );
             if (foundSub) {
               fullSubcategory = foundSub;
-              parentCategory = category; 
+              parentCategory = category;
               break;
             }
           }
@@ -120,7 +132,7 @@ const categoriesSlice = createSlice({
       }
 
       const subcategoryId = typeof subcategory === 'object' ? subcategory.id : subcategory;
-      
+
       if (!subcategoryId) {
         console.warn('No subcategory id provided');
         state.selectedSubcategory = null;
@@ -144,14 +156,29 @@ const categoriesSlice = createSlice({
       state.selectedSubcategory = null;
     },
   },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchCategories.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCategories.fulfilled, (state, action) => {
+        state.loading = false;
+        state.items = action.payload;
+      })
+      .addCase(fetchCategories.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+  },
 });
 
-export const { 
-  setItems, 
-  selectCategory, 
-  selectSubcategory, 
+export const {
+  setItems,
+  selectCategory,
+  selectSubcategory,
   selectCategoryAndSubcategory,
-  clearSelection 
+  clearSelection
 } = categoriesSlice.actions;
 
 export default categoriesSlice.reducer;

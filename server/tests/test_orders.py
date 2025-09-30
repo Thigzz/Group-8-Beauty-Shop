@@ -38,7 +38,10 @@ def user_token(test_client, new_user):
 def sample_order(test_client):
     """Fixture to create a sample order."""
     with test_client.application.app_context():
-        order = Order(id=uuid4(), status=OrderStatus.pending, total_amount=500, cart_id=str(uuid4()))
+        cart = Cart(id=uuid4())
+        db.session.add(cart)
+        db.session.commit()
+        order = Order(id=uuid4(), status=OrderStatus.pending, total_amount=500, cart_id=cart.id)
         db.session.add(order)
         db.session.commit()
         yield order
@@ -48,7 +51,7 @@ def test_update_order_status_admin(test_client, sample_order, admin_token):
         order = db.session.get(Order, sample_order.id)
         headers = {"Authorization": f"Bearer {admin_token}"}
         response = test_client.put(
-            f"/api/orders/{order.id}/status",
+            f"/admin/orders/{order.id}/status",
             headers=headers,
             json={"status": "dispatched"}
         )
@@ -59,7 +62,7 @@ def test_update_order_status_non_admin(test_client, sample_order, user_token):
         order = db.session.get(Order, sample_order.id)
         headers = {"Authorization": f"Bearer {user_token}"}
         response = test_client.put(
-            f"/api/orders/{order.id}/status",
+            f"/admin/orders/{order.id}/status",
             headers=headers,
             json={"status": "dispatched"}
         )
@@ -70,7 +73,7 @@ def test_update_order_status_invalid(test_client, sample_order, admin_token):
         order = db.session.get(Order, sample_order.id)
         headers = {"Authorization": f"Bearer {admin_token}"}
         response = test_client.put(
-            f"/api/orders/{order.id}/status",
+            f"/admin/orders/{order.id}/status",
             headers=headers,
             json={"status": "shipped"}
         )
@@ -113,4 +116,4 @@ def test_get_user_order_history(test_client, user_with_orders):
     response = test_client.get("/api/orders/history", headers=headers)
     assert response.status_code == 200
     data = response.get_json()
-    assert len(data) == 2
+    assert len(data['orders']) == 2

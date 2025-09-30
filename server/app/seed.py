@@ -84,7 +84,6 @@ def seed_data():
                 email=fake.unique.email(),
                 primary_phone_no=fake.phone_number(),
                 secondary_phone_no=fake.phone_number(),
-                role=random.choice([UserRole.customer, UserRole.admin]),
                 role=random.choice(list(UserRole)),
                 is_active=True,
             )

@@ -1,7 +1,18 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { LogOut } from "lucide-react";
 
 export default function OrderConfirmationPage() {
+  const location = useLocation();
+  const { order, invoice } = location.state || {};
+
+  if (!order || !invoice) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>No order details found. <Link to="/shop" className="text-blue-600">Continue shopping.</Link></p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-yellow-50 to-white p-6">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-md p-6 text-center space-y-6">
@@ -22,14 +33,13 @@ export default function OrderConfirmationPage() {
         {/* Confirmation Text */}
         <div>
           <h2 className="text-xl font-semibold">Thank you for your order!</h2>
-          <p className="text-gray-500 text-sm">Order #123456</p>
+          <p className="text-gray-500 text-sm">Order #{order.id.substring(0, 8)}</p>
+          <p className="text-gray-500 text-sm">Invoice #{invoice.invoice_number}</p>
         </div>
 
         {/* Order Summary */}
         <div className="bg-yellow-50 rounded-lg p-4 text-left text-gray-700">
-          <p>1x Gold Lipstick</p>
-          <p>1x Beige Foundation</p>
-          <p className="font-semibold mt-2">Total: KES 3,500</p>
+          <p className="font-semibold mt-2">Total: KES {order.total_amount.toFixed(2)}</p>
         </div>
 
         {/* Delivery Estimate */}

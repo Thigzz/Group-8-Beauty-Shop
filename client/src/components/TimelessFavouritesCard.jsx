@@ -1,14 +1,15 @@
 import React from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { addItemToCart } from '../redux/features/cart/cartSlice';
 import toast from 'react-hot-toast';
 
 const TimelessFavouriteCard = ({ product }) => {
   const dispatch = useDispatch();
+  const cart = useSelector((state) => state.cart);
 
   const handleAddToCart = (e) => {
     e.stopPropagation();
-    dispatch(addItemToCart(product));
+    dispatch(addItemToCart({ cartId: cart.id, productId: product.id, quantity: 1 }));
     toast.success(`${product.product_name} added to cart!`);
   };
 

@@ -2,108 +2,120 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import apiClient from "../../../api/axios";
 
 // --- Async Thunks --- //
+
+// Fetch all addresses for the current user
 export const fetchAddresses = createAsyncThunk(
   "address/fetchAddresses",
-  async (_, thunkAPI) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await apiClient.get("api/addresses/");
+      const response = await apiClient.get("/api/addresses/");
       return response.data;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
 
+// Add a new address
 export const addNewAddress = createAsyncThunk(
   "address/addNewAddress",
-  async (addressData, thunkAPI) => {
+  async (addressData, { dispatch, rejectWithValue }) => {
     try {
-      const response = await apiClient.post("api/addresses/", addressData);
+      const response = await apiClient.post("/api/addresses/", addressData);
+      dispatch(fetchAddresses());
       return response.data;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
 
+// Update an existing address
 export const updateExistingAddress = createAsyncThunk(
   "address/updateExistingAddress",
-  async ({ addressId, addressData }, thunkAPI) => {
+  async ({ addressId, addressData }, { rejectWithValue }) => {
     try {
-      const response = await apiClient.put(`api/addresses/${addressId}`, addressData);
+      const response = await apiClient.put(`/api/addresses/${addressId}`, addressData);
       return response.data;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
 
+// Deletes an address
 export const deleteExistingAddress = createAsyncThunk(
   "address/deleteExistingAddress",
-  async (addressId, thunkAPI) => {
+  async (addressId, { rejectWithValue }) => {
     try {
-      await apiClient.delete(`api/addresses/${addressId}`);
+      await apiClient.delete(`/api/addresses/${addressId}`);
       return addressId;
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data || error.message);
+      return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
 
-// --- Slice --- //
+// Sets an address as the default for shipping
+export const setDefaultAddress = createAsyncThunk(
+  "address/setDefaultAddress",
+  async (addressId, { dispatch, rejectWithValue }) => {
+    try {
+
+      const response = await apiClient.put(`/api/addresses/${addressId}/set-default`);
+
+      dispatch(fetchAddresses());
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Could not set default address.');
+    }
+  }
+);
+
+
+// --- Slice Definition --- //
 const addressSlice = createSlice({
   name: "address",
   initialState: {
     addresses: [],
+    defaultAddress: null,
     loading: false,
     error: null,
     currentAction: null,
   },
   reducers: {
-    setDefaultAddress: (state, action) => {
-      state.addresses = state.addresses.map((addr) => ({
-        ...addr,
-        isDefault: addr.id === action.payload,
-      }));
-    },
+
   },
   extraReducers: (builder) => {
     builder
-      // fetch
+      // FETCH
       .addCase(fetchAddresses.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchAddresses.fulfilled, (state, action) => {
         state.loading = false;
-        state.addresses = action.payload.map((addr, idx) => ({
-          ...addr,
-          isDefault: idx === 0, // first address default if none set
-        }));
+        state.addresses = action.payload;
+        state.defaultAddress = action.payload.find(addr => addr.is_default) || action.payload[0] || null;
       })
       .addCase(fetchAddresses.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
 
-      // add
+      // ADD
       .addCase(addNewAddress.pending, (state) => {
         state.currentAction = "adding";
       })
       .addCase(addNewAddress.fulfilled, (state, action) => {
         state.currentAction = null;
-        const newAddress = { ...action.payload, isDefault: false };
-        if (state.addresses.length === 0) {
-          newAddress.isDefault = true;
-        }
-        state.addresses.push(newAddress);
       })
       .addCase(addNewAddress.rejected, (state, action) => {
         state.currentAction = null;
         state.error = action.payload;
       })
 
-      // update
+      // UPDATE
       .addCase(updateExistingAddress.pending, (state) => {
         state.currentAction = "editing";
       })
@@ -118,7 +130,7 @@ const addressSlice = createSlice({
         state.error = action.payload;
       })
 
-      // delete
+      // DELETE
       .addCase(deleteExistingAddress.pending, (state) => {
         state.currentAction = "deleting";
       })
@@ -127,17 +139,19 @@ const addressSlice = createSlice({
         state.addresses = state.addresses.filter(
           (addr) => addr.id !== action.payload
         );
-        // ensure at least one default
-        if (!state.addresses.some((a) => a.isDefault) && state.addresses[0]) {
-          state.addresses[0].isDefault = true;
+        if (!state.addresses.some((a) => a.is_default) && state.addresses[0]) {
+          state.defaultAddress = state.addresses[0];
         }
       })
       .addCase(deleteExistingAddress.rejected, (state, action) => {
         state.currentAction = null;
         state.error = action.payload;
+      })
+      
+      // SET DEFAULT
+      .addCase(setDefaultAddress.fulfilled, (state, action) => {
       });
   },
 });
 
-export const { setDefaultAddress } = addressSlice.actions;
 export default addressSlice.reducer;

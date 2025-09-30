@@ -1,8 +1,9 @@
 import pytest
 from uuid import uuid4
-import json
 from server.app.models.users import User
 from server.app.models.product import Product
+from server.app.models.carts import Cart
+from server.app.models.cart_items import CartItem
 from server.app.models.category import Category
 from server.app.models.sub_category import SubCategory
 from server.app.extensions import db
@@ -21,12 +22,10 @@ def create_user(test_client):
 def sample_product(test_client):
     """Fixture to create a sample product."""
     with test_client.application.app_context():
-        # Create and commit the category first to get an ID
         category = Category(category_name="Test Cat")
         db.session.add(category)
         db.session.commit()
 
-        # create the sub_category using the valid category.id
         sub_category = SubCategory(sub_category_name="Test SubCat", category_id=category.id)
         db.session.add(sub_category)
         db.session.commit()
@@ -46,4 +45,5 @@ def test_add_item_user(test_client, create_user, sample_product):
 
         response = test_client.post("/api/carts/items", json={"cart_id": cart_id, "product_id": str(product.id)})
         assert response.status_code == 201
-        assert response.json["items"][0]["stock_qty"] == 1
+        # FIX: The API returns 'quantity', not 'stock_qty'.
+        assert response.json["items"][0]["quantity"] == 1

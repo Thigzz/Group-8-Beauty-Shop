@@ -3,10 +3,9 @@ from server.app.extensions import db
 from server.app.models.orders import Order
 from server.app.models.order_items import OrderItem
 from server.app.models.enums import OrderStatus
-from flask_jwt_extended import jwt_required, get_jwt_identity # 1. ADD get_jwt_identity
-from server.app.decorators import admin_required
-from server.app.models.users import User # 2. ADD User import
-from server.app.models.carts import Cart # 3. ADD Cart import
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from server.app.models.users import User
+from server.app.models.carts import Cart
 from sqlalchemy.orm import joinedload
 
 
@@ -91,33 +90,6 @@ def delete_order(order_id):
     db.session.commit()
     return jsonify({"message": "Order deleted"})
 
-# ------order fulfillment-------
-@orders_bp.route("/<order_id>/status", methods=["PUT"])
-@jwt_required()
-@admin_required()
-def update_order_status(order_id):
-    """
-    Admin-only endpoint to update the status of an order.
-    Expects JSON: { "status": "fulfilled" } 
-    """
-    order = Order.query.get(order_id)
-    if not order:
-        return jsonify({"error": "Order not found"}), 404
-
-    data = request.get_json()
-    new_status = data.get("status")
-
-    if new_status not in [status.value for status in OrderStatus]:
-        return jsonify({"error": f"Invalid status '{new_status}'"}), 400
-
-    order.status = OrderStatus(new_status)
-    db.session.commit()
-
-    return jsonify({
-        "message": "Order status updated",
-        "order_id": str(order.id),
-        "status": order.status.value
-    })
 
 # ------order history-------
 @orders_bp.route("/history", methods=["GET"])

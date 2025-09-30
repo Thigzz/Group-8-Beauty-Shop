@@ -1,68 +1,119 @@
-import React from 'react';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { saveSecurityQuestions } from '../redux/features/auth/authSlice';
-import Footer from '../components/Footer';
+import { useNavigate } from 'react-router-dom';
+import { fetchSecurityQuestions, saveSecurityQuestions } from '../redux/features/auth/authSlice';
+import toast from 'react-hot-toast';
 
-const SecurityQuestions = () => {
+const SecurityQuestionsPage = () => {
   const dispatch = useDispatch();
-  const { status, error } = useSelector((state) => state.auth);
+  const navigate = useNavigate();
+  const { 
+    isAuthenticated, 
+    securityQuestions, 
+    securityQuestionsLoading, 
+    savingSecurityQuestions 
+  } = useSelector((state) => state.auth);
 
-  const formik = useFormik({
-    initialValues: {
-      question1: '',
-      answer1: '',
-      question2: '',
-      answer2: '',
-    },
-    validationSchema: Yup.object({
-      question1: Yup.string().required('Required'),
-      answer1: Yup.string().required('Required'),
-      question2: Yup.string().required('Required'),
-      answer2: Yup.string().required('Required'),
-    }),
-    onSubmit: (values) => {
-      dispatch(saveSecurityQuestions(values));
-    },
-  });
+  const [answers, setAnswers] = useState([
+    { question_id: '', answer: '' },
+    { question_id: '', answer: '' },
+    { question_id: '', answer: '' },
+  ]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(fetchSecurityQuestions());
+    }
+  }, [dispatch, isAuthenticated]);
+
+  const handleQuestionChange = (index, questionId) => {
+    const newAnswers = [...answers];
+    newAnswers[index].question_id = questionId;
+    setAnswers(newAnswers);
+  };
+
+  const handleAnswerChange = (index, answer) => {
+    const newAnswers = [...answers];
+    newAnswers[index].answer = answer;
+    setAnswers(newAnswers);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    // Validation
+    const selectedIds = answers.map(a => a.question_id);
+    if (new Set(selectedIds).size !== answers.length) {
+      toast.error('Please select three unique security questions.');
+      return;
+    }
+    if (answers.some(a => !a.question_id || !a.answer.trim())) {
+      toast.error('Please select a question and provide an answer for all three fields.');
+      return;
+    }
+
+    dispatch(saveSecurityQuestions(answers))
+      .unwrap()
+      .then(() => {
+        toast.success('Security questions saved successfully!');
+        navigate('/profile');
+      })
+      .catch((error) => {
+        toast.error(error || 'Failed to save security questions.');
+      });
+  };
+
+  if (securityQuestionsLoading) {
+    return <div className="text-center p-8">Loading security questions...</div>;
+  }
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <main className="flex-grow flex items-center justify-center bg-gray-50">
-        <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-lg">
-          <h2 className="text-2xl font-bold text-center text-gray-900">Set Security Questions</h2>
-          <form onSubmit={formik.handleSubmit} className="space-y-4">
-            {['question1', 'answer1', 'question2', 'answer2'].map((field, i) => (
-              <div key={i}>
-                <label className="block text-sm font-medium text-gray-700 capitalize">{field}</label>
-                <input
-                  name={field}
-                  type="text"
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  value={formik.values[field]}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                />
-                {formik.touched[field] && formik.errors[field] && (
-                  <div className="text-red-500 text-sm">{formik.errors[field]}</div>
-                )}
-              </div>
-            ))}
-            {error && <div className="text-red-500 text-center">{error}</div>}
-            <button
-              type="submit"
-              disabled={status === 'loading'}
-              className="w-full py-2 px-4 rounded-md bg-[#C9A35D] text-black"
-            >
-              {status === 'loading' ? 'Saving...' : 'Save Questions'}
-            </button>
-          </form>
-        </div>
-      </main>
-      <Footer />
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="max-w-2xl w-full bg-white rounded-lg shadow-md p-8">
+        <h2 className="text-2xl font-bold text-center mb-6">Set Up Your Security Questions</h2>
+        <p className="text-center text-gray-600 mb-8">
+          These questions will help us verify your identity if you need to reset your password.
+        </p>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {answers.map((_, index) => (
+            <div key={index}>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Question {index + 1}
+              </label>
+              <select
+                value={answers[index].question_id}
+                onChange={(e) => handleQuestionChange(index, e.target.value)}
+                className="w-full p-3 border rounded-lg bg-white"
+                required
+              >
+                <option value="">-- Select a Question --</option>
+                {securityQuestions.map((q) => (
+                  <option key={q.id} value={q.id}>
+                    {q.question}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="text"
+                placeholder="Your Answer"
+                value={answers[index].answer}
+                onChange={(e) => handleAnswerChange(index, e.target.value)}
+                className="w-full p-3 border rounded-lg mt-2"
+                required
+              />
+            </div>
+          ))}
+          <button
+            type="submit"
+            disabled={savingSecurityQuestions}
+            className="w-full bg-yellow-600 text-white py-3 rounded-lg font-semibold hover:bg-yellow-700 disabled:bg-gray-400"
+          >
+            {savingSecurityQuestions ? 'Saving...' : 'Save and Continue'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 };
 
-export default SecurityQuestions;
+export default SecurityQuestionsPage;

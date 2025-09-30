@@ -16,21 +16,22 @@ class OrderItem(Base):
     order = relationship("Order", back_populates="items")
     product = relationship("Product", backref="order_items")
 
-    @validates("quantity", "price")
-    def update_sub_total(self, key, value):
-        """Recalculate sub_total whenever quantity or price changes"""
-        setattr(self, key, value)
-        if self.price is not None and self.quantity is not None:
-            self.sub_total = self.price * self.quantity
-        return value
 
     def to_dict(self):
+        # The frontend expects the product details nested inside a "product" object.
+        # This method now provides that structure directly.
+        product_details = None
+        if self.product:
+            product_details = {
+                "id": str(self.product.id),
+                "name": self.product.product_name, # Correctly maps product_name to name
+                "image_url": self.product.image_url
+            }
+
         return {
-        "product_id": str(self.product_id),
-        "quantity": self.quantity,
-        "price": float(self.price),
-        "sub_total": float(self.sub_total) if self.sub_total else None,
-        "product": self.product.to_dict() if self.product else None,
-        "product_name": self.product.product_name if self.product else None,
-        "sub_total": float(self.sub_total) if self.sub_total else None,
+            "product_id": str(self.product_id),
+            "quantity": self.quantity,
+            "price": float(self.price),
+            "sub_total": float(self.sub_total) if self.sub_total else None,
+            "product": product_details # Nest the product details under "product"
     }

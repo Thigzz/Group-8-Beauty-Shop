@@ -21,7 +21,7 @@ const Sidebar = () => {
     { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Products', path: '/admin/products', icon: ShoppingBag },
     { name: 'Orders', path: '/admin/orders', icon: ListOrdered },
-    { name: 'Customers', path: '/admin/customers', icon: Users },
+    { name: 'Users', path: '/admin/users', icon: Users },
     { name: 'Analytics', path: '/admin/analytics', icon: BarChart },
     { name: 'Settings', path: '/admin/settings', icon: Settings },
     { name: 'Reports', path: '/admin/reports', icon: FileText },
@@ -37,7 +37,7 @@ const Sidebar = () => {
   const activeLinkClasses = "bg-gray-800 text-[#C9A35D]";
 
   return (
-    <aside className="w-64 bg-[#000000] text-white flex flex-col p-4 h-5 relative z-10">
+    <aside className="w-64 bg-[#000000] text-white flex flex-col p-4 h-full relative z-10">
       <div className="flex-1 flex flex-col relative z-10">
         <h2 className="text-xl font-bold mb-6 text-[#C9A35D]">Admin Panel</h2>
         <nav className="flex flex-col space-y-2 flex-1 relative z-20">

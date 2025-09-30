@@ -63,7 +63,7 @@ def create_app():
     app.register_blueprint(checkout_bp)
     app.register_blueprint(orders_bp)
     app.register_blueprint(admin_reset_bp)
-    app.register_blueprint(admin_bp)
+    app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(cart_bp)
     app.register_blueprint(reports_bp)
     app.register_blueprint(analytics_bp)

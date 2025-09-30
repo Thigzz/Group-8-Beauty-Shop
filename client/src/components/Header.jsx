@@ -1,17 +1,23 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { FiShoppingCart, FiUser } from 'react-icons/fi';
+import { setQuery } from '../redux/features/search/searchSlice';
 
 const Header = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
-  const { isAuthenticated } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { items: cartItems } = useSelector((state) => state.cart);
+  const cartItemCount = cartItems ? cartItems.length : 0;
 
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchTerm.trim()) {
-      navigate(`/search?q=${searchTerm.trim()}`);
+      dispatch(setQuery(searchTerm.trim()));
+      navigate(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
     }
   };
 
@@ -19,11 +25,11 @@ const Header = () => {
     <header className="bg-[#000000] text-gray-300 p-4 shadow-md relative z-40">
       <div className="flex justify-between items-center">
         <div className="font-['Orbitron'] text-4xl font">
-          <a href="/" data-testid="pambo-logo">
+          <Link to="/" data-testid="pambo-logo">
             <span className="text-white">PA</span>
             <span className="text-[#C9A35D]">M</span>
             <span className="text-white">BO</span>
-          </a>
+          </Link>
         </div>
         <form onSubmit={handleSearch} className="w-full max-w-xl">
           <input
@@ -35,18 +41,24 @@ const Header = () => {
           />
         </form>
         {/* Links */}
-        <div className="flex items-center space-x-15">
+        <div className="flex items-center space-x-6">
           <Link to="/cart" className="relative">
-            <FiShoppingCart className="h-6 w-6 text-[#C9A35D] hover:text-white" />
+            <FiShoppingCart className="h-6 w-20 text-[#C9A35D] hover:text-white" />
+            {cartItemCount > 0 && (
+              <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs font-medium text-white">
+                {cartItemCount}
+              </span>
+            )}
           </Link>
-          {isAuthenticated ? (
+
+          {isAuthenticated && user ? (
             <Link to="/profile" className="flex items-center space-x-2 text-[#C9A35D] hover:text-white">
               <FiUser className="h-6 w-6" />
-              <span>Profile</span>
+              <span>Hi, {user.first_name || user.username}</span>
             </Link>
           ) : (
             <Link to="/login" className="flex items-center space-x-2 text-[#C9A35D] hover:text-white">
-              <FiUser className="h-6 w-6" />
+              <FiUser className="h-6 w-10" />
               <span>Log In</span>
             </Link>
           )}
@@ -57,3 +69,4 @@ const Header = () => {
 };
 
 export default Header;
+
