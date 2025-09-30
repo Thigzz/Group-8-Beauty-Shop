@@ -136,7 +136,7 @@ def add_item():
     product = Product.query.get_or_404(product_id)
     cart = Cart.query.get_or_404(cart_id)
 
-    # check if item already exists -> update instead of duplicate
+    # check if item already exists and update instead of duplicate
     item = CartItem.query.filter_by(cart_id=cart.id, product_id=product.id).first()
     if item:
         item.quantity += quantity
@@ -197,8 +197,6 @@ def update_item(item_id):
 
     db.session.commit()
 
-    # **FIX:** Reconstruct the response to include the full nested product object
-    # This ensures data consistency with the get_cart and add_item endpoints
     items_data = [
         {
             "id": str(i.id),
@@ -227,7 +225,7 @@ def update_item(item_id):
 @cart_bp.route("/items/<uuid:item_id>", methods=["DELETE"])
 def delete_item(item_id):
     item = CartItem.query.get_or_404(item_id)
-    cart = item.cart  # get the parent cart before deleting
+    cart = item.cart 
 
     db.session.delete(item)
     db.session.commit()

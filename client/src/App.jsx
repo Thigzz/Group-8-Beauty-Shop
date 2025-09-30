@@ -39,6 +39,9 @@ import EditProductPage from "./pages/admin/EditProductPage";
 import AdminOrderDetails from './pages/admin/AdminOrderDetails';
 import AdminOrdersPage from "./pages/AdminOrdersPage";
 import AdminReportsPage from "./pages/AdminReportsPage";
+import AnalyticsPage from "./pages/admin/AdminAnalytics";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminUserDetailPage from "./pages/admin/AdminUserDetailPage";
 
 import './App.css';
 
@@ -133,8 +136,10 @@ function App() {
                   <Route path="products/edit/:id" element={<EditProductPage />} />
                   <Route path="orders" element={<AdminOrdersPage />} />
                   <Route path="orders/:orderId" element={<AdminOrderDetails />} />
-                   <Route path="reports" element={<AdminReportsPage />} />
-         
+                  <Route path="analytics" element={<AnalyticsPage />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="users/:userId" element={<AdminUserDetailPage />} />
+                  <Route path="reports" element={<AdminReportsPage />} />
                 </Route>
               </Routes>
             </div>

@@ -70,6 +70,9 @@ def login():
     ).first()
 
     if user and user.check_password(password):
+        if not user.is_active:
+            return jsonify({"message": "Your account has been deactivated. Please contact support."}), 403
+
         if session_id:
             merge_guest_cart(user.id, session_id)
         

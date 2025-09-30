@@ -72,7 +72,6 @@ export default function CheckoutPage() {
         navigate('/order-confirmation', { state: { order: response.order, invoice: response.invoice } });
       })
       .catch((error) => {
-        // ✅ FIX: This now robustly handles the error string from the slice.
         const errorMessage = typeof error === 'string' ? error : "There was an issue placing your order.";
         toast.error(errorMessage);
       });

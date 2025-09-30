@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchOrderDetails } from '../redux/features/orders/orderSlice';
+import { fetchOrderDetails, clearOrder } from '../redux/features/orders/orderSlice';
 import { X } from 'lucide-react';
 
 export default function OrderDetailsModal({ orderId, onClose }) {
@@ -11,6 +11,10 @@ export default function OrderDetailsModal({ orderId, onClose }) {
     if (orderId) {
       dispatch(fetchOrderDetails(orderId));
     }
+    
+    return () => {
+      dispatch(clearOrder());
+    };
   }, [orderId, dispatch]);
 
   const formatDate = (dateString) => {
@@ -24,28 +28,30 @@ export default function OrderDetailsModal({ orderId, onClose }) {
       <div className="bg-white rounded-lg shadow-xl w-full max-w-lg">
         <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-lg font-semibold">Order Details</h2>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200">
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 transition-colors">
             <X size={20} />
           </button>
         </div>
 
         <div className="p-6">
-          {loading && <p>Loading order details...</p>}
-          {error && <p className="text-red-500">{error}</p>}
+          {loading && <p className="text-center text-gray-500">Loading order details...</p>}
+          {error && <p className="text-center text-red-500">Error: {error}</p>}
           
-          {!loading && currentOrder && (
+          {!loading && !error && currentOrder && (
             <div className="space-y-4">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Order ID:</span>
-                <span className="font-mono">{currentOrder.id.substring(0, 8)}</span>
+                <span className="font-mono">{currentOrder.id.substring(0, 8).toUpperCase()}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Date:</span>
                 <span>{formatDate(currentOrder.created_at)}</span>
               </div>
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-sm items-center">
                 <span className="text-gray-600">Status:</span>
-                <span className="px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full capitalize">{currentOrder.status}</span>
+                <span className="px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full capitalize">
+                  {currentOrder.status}
+                </span>
               </div>
 
               <div className="border-t pt-4">
@@ -55,10 +61,10 @@ export default function OrderDetailsModal({ orderId, onClose }) {
                     currentOrder.items.map((item, index) => (
                       <div key={index} className="flex justify-between items-center text-sm">
                         <div>
-                          <p className="font-medium">{item.product_name || 'Unknown Product'}</p>
+                          <p className="font-medium">{item.product?.name || 'Unknown Product'}</p>
                           <p className="text-gray-500">Qty: {item.quantity}</p>
                         </div>
-                        <p>Ksh {(item.price * item.quantity).toFixed(2)}</p>
+                        <p className="font-medium">Ksh {(item.price * item.quantity).toFixed(2)}</p>
                       </div>
                     ))
                   ) : (
@@ -68,7 +74,7 @@ export default function OrderDetailsModal({ orderId, onClose }) {
               </div>
 
               <div className="border-t pt-4 space-y-2">
-                <div className="flex justify-between font-semibold">
+                <div className="flex justify-between text-base font-semibold">
                   <span>Total</span>
                   <span>Ksh {currentOrder.total_amount.toFixed(2)}</span>
                 </div>

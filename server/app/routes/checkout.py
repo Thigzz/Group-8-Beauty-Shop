@@ -206,7 +206,6 @@ def get_order_details(order_id):
             .filter(OrderItem.order_id == order_uuid)\
             .all()
         
-        # ✅ FIX: This is the corrected data structure that the frontend needs
         response_data = {
             'order': {
                 'id': str(order.id),

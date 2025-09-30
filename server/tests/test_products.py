@@ -205,7 +205,7 @@ def test_update_product_status(test_client, admin_token, sample_product_data):
     product_id = json.loads(post_response.data)['id']
 
     # Update status -> inactive
-    update_data = {"status": "inactive"}
+    update_data = {"status": False}
     response = test_client.put(
         f'/api/products/{product_id}',
         headers=headers,
@@ -214,10 +214,10 @@ def test_update_product_status(test_client, admin_token, sample_product_data):
     )
     assert response.status_code == 200
     data = json.loads(response.data)
-    assert data['status'] == "inactive"
+    assert data['status'] == False
 
     # Update status -> active again
-    update_data = {"status": "active"}
+    update_data = {"status": True}
     response = test_client.put(
         f'/api/products/{product_id}',
         headers=headers,
@@ -226,7 +226,7 @@ def test_update_product_status(test_client, admin_token, sample_product_data):
     )
     assert response.status_code == 200
     data = json.loads(response.data)
-    assert data['status'] == "active"
+    assert data['status'] == True
 
 
 def test_update_product_details_and_status(test_client, admin_token, sample_product_data):
@@ -249,7 +249,7 @@ def test_update_product_details_and_status(test_client, admin_token, sample_prod
     update_data = {
         "product_name": "Updated Product Name",
         "price": 99.99,
-        "status": "inactive"
+        "status": False
     }
     response = test_client.put(
         f'/api/products/{product_id}',
@@ -262,7 +262,7 @@ def test_update_product_details_and_status(test_client, admin_token, sample_prod
 
     assert data['product_name'] == "Updated Product Name"
     assert data['price'] == 99.99
-    assert data['status'] == "inactive"
+    assert data['status'] == False
 
 def test_deleted_products_not_listed(test_client, admin_token, sample_product_data):
     """
@@ -343,4 +343,4 @@ def test_get_products_normal_user(test_client, user_token, sample_product_data):
     data = res.get_json()["products"]
 
     # Regular users should never see inactive/deleted products
-    assert all(p["status"] == "active" for p in data)
+    assert all(p["status"] == True for p in data)

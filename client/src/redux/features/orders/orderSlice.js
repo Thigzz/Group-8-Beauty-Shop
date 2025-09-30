@@ -34,17 +34,15 @@ export const fetchOrders = createAsyncThunk(
   }
 );
 
-// ✅ --- THIS THUNK IS NOW SPECIFICALLY FOR ADMINS --- ✅
-// It hits the detailed admin endpoint. Your component will be aliased to use this.
 export const fetchAdminOrderDetails = createAsyncThunk(
-  'orders/fetchAdminOrderDetails', // A new unique name
+  'orders/fetchAdminOrderDetails',
   async (orderId, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
-      const response = await apiClient.get(`/admin/orders/${orderId}`, { // Correct admin route
+      const response = await apiClient.get(`/admin/orders/${orderId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      return response.data; // This returns the full rich object
+      return response.data;
     } catch (error) {
       const errorMessage = error.response?.data?.error || 'Failed to fetch admin order details.';
       return rejectWithValue(errorMessage);
@@ -52,7 +50,7 @@ export const fetchAdminOrderDetails = createAsyncThunk(
   }
 );
 
-// This is the original thunk for users, it remains unchanged
+// This is the thunk for the user's order details
 export const fetchOrderDetails = createAsyncThunk(
   'orders/fetchOrderDetails',
   async (orderId, { getState, rejectWithValue }) => {
@@ -69,18 +67,18 @@ export const fetchOrderDetails = createAsyncThunk(
   }
 );
 
-// ✅ --- THIS THUNK NOW CORRECTLY POINTS TO THE ADMIN UPDATE ROUTE --- ✅
+
 export const updateOrderStatus = createAsyncThunk(
   'orders/updateOrderStatus',
   async ({ orderId, status, note }, { getState, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
-      const response = await apiClient.put( // Correct method is PUT
-        `/admin/orders/${orderId}/status`, // Correct admin route
+      const response = await apiClient.put(
+        `/admin/orders/${orderId}/status`,
         { status, note },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      return response.data; // The backend now returns the full, updated order object
+      return response.data;
     } catch (error) {
       const errorMessage = error.response?.data?.error || 'Failed to update order status.';
       return rejectWithValue(errorMessage);
@@ -88,7 +86,7 @@ export const updateOrderStatus = createAsyncThunk(
   }
 );
 
-// --- Your Enums ---
+// --- Enums ---
 export const ORDER_STATUS = {
   PENDING: 'pending',
   PAID: 'paid',
@@ -99,7 +97,7 @@ export const ORDER_STATUS = {
 
 export const FINAL_STATUSES = [ORDER_STATUS.CANCELLED, ORDER_STATUS.DELIVERED];
 
-// --- Your Slice ---
+// --- Slice ---
 const ordersSlice = createSlice({
   name: 'orders',
   initialState: {
@@ -126,34 +124,34 @@ const ordersSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Your existing reducers for placeOrder, fetchOrders are untouched
       .addCase(placeOrder.pending, (state) => { state.placing = true; state.error = null; })
       .addCase(placeOrder.fulfilled, (state) => { state.placing = false; })
       .addCase(placeOrder.rejected, (state, action) => { state.placing = false; state.error = action.payload; })
+      
       .addCase(fetchOrders.pending, (state) => { state.loading = true; })
-      .addCase(fetchOrders.fulfilled, (state, action) => { state.loading = false; state.orderHistory = action.payload; })
+      .addCase(fetchOrders.fulfilled, (state, action) => {
+        state.loading = false;
+        state.orderHistory = action.payload.orders;
+      })
       .addCase(fetchOrders.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
       
-      // Your existing reducer for USER fetchOrderDetails
       .addCase(fetchOrderDetails.pending, (state) => { state.loading = true; })
       .addCase(fetchOrderDetails.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentOrder = { ...action.payload.order, items: action.payload.items };
+        state.currentOrder = action.payload;
       })
       .addCase(fetchOrderDetails.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
 
-      // ✅ --- ADDED: Reducer for the new ADMIN fetch order details thunk --- ✅
       .addCase(fetchAdminOrderDetails.pending, (state) => { state.loading = true; })
       .addCase(fetchAdminOrderDetails.fulfilled, (state, action) => {
           state.loading = false;
-          state.currentOrder = action.payload; // The payload is the full, rich object
+          state.currentOrder = action.payload;
       })
       .addCase(fetchAdminOrderDetails.rejected, (state, action) => {
           state.loading = false;
           state.error = action.payload;
       })
 
-      // ✅ --- MODIFIED: Reducer for updateOrderStatus --- ✅
       .addCase(updateOrderStatus.pending, (state) => {
         state.updating = true;
         state.updateSuccess = false;
@@ -162,7 +160,7 @@ const ordersSlice = createSlice({
       .addCase(updateOrderStatus.fulfilled, (state, action) => {
         state.updating = false;
         state.updateSuccess = true;
-        state.currentOrder = action.payload; // The backend returns the entire updated order object
+        state.currentOrder = action.payload;
       })
       .addCase(updateOrderStatus.rejected, (state, action) => {
         state.updating = false;
