@@ -1,35 +1,162 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { Toaster } from "react-hot-toast";
+
+import { selectProduct } from "./redux/features/products/productsSlice";
+import { setProductModalOpen } from "./redux/features/ui/uiSlice";
+import { addItemToCart } from "./redux/features/cart/cartSlice";
+import { addItem as addToWishlist } from "./redux/features/wishlist/wishlistSlice";
+
+// Components
+import Header from "./components/Header";
+import Navbar from "./components/Navbar";
+import ProtectedRoute from './components/ProtectedRoute';
+import ProductDetailModal from "./components/Product/ProductDetailModal";
+import { CategoryProvider } from "./components/CategoryProvider";
+import AuthProvider from "./components/AuthProvider";
+import CategoryPageWrapper from "./components/CategoryPageWrapper";
+
+// Pages
+import LandingPage from "./pages/LandingPage";
+import SearchResultsPage from "./pages/SearchResultsPage";
+import ProfilePage from './pages/ProfilePage';
+import LoginPage from './pages/LoginPage';
+import CartPage from './pages/CartPage';
+import CheckoutPage from './pages/CheckoutPage';
+import OrderConfirmationPage from './pages/OrderConfirmationPage';
+import Register from './pages/register';
+import ForgotPassword from './pages/forgot-password';
+import SecurityQuestions from './pages/security-questions';
+
+// Admin
+import AdminLayout from './layouts/AdminLayout';
+import DashboardPage from './pages/admin/DashboardPage';
+import SettingsPage from './pages/admin/SettingsPage';
+import ProductsPage from './pages/admin/ProductsPage';
+import AddProductPage from './pages/admin/AddProductPage';
+import EditProductPage from "./pages/admin/EditProductPage";
+import AdminOrderDetails from './pages/admin/AdminOrderDetails';
+import AdminOrdersPage from "./pages/AdminOrdersPage";
+import AdminReportsPage from "./pages/AdminReportsPage";
+import AnalyticsPage from "./pages/admin/AdminAnalytics";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminUserDetailPage from "./pages/admin/AdminUserDetailPage";
+
+import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const dispatch = useDispatch();
+  const selectedProduct = useSelector(state => state.products.selected);
+  const isProductModalOpen = useSelector(state => state.ui.isProductModalOpen);
+
+  const handleProductClick = product => {
+    dispatch(selectProduct(product));
+    dispatch(setProductModalOpen(true));
+  };
+
+  const handleCloseModal = () => dispatch(setProductModalOpen(false));
+  const handleAddToCart = product => dispatch(addItemToCart(product));
+  const handleAddToWishlist = product => dispatch(addToWishlist(product));
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <CategoryProvider>
+      <AuthProvider>
+        <Router>
+          <div className="App">
+            <Toaster
+              position="top-center"
+              reverseOrder={false}
+              toastOptions={{
+                success: { style: { background: '#28a745', color: 'white' } },
+                error: { style: { background: '#dc3545', color: 'white' } },
+              }}
+            />
+
+            <div className="sticky top-0 z-50">
+              <Header />
+              <Navbar />
+            </div>
+
+            <div className="pt-0">
+              <Routes>
+                {/* Main Routes */}
+                <Route
+                  path="/"
+                  element={
+                    <LandingPage onProductClick={handleProductClick} />
+                  }
+                />
+
+                <Route path="/products" element={<CategoryPageWrapper showAllProducts={true} />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/cart" element={<CartPage />} />
+                <Route path="/checkout" element={<CheckoutPage />} />
+                <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/security-questions" element={<SecurityQuestions />} />
+                <Route path="/search" element={<SearchResultsPage onProductClick={handleProductClick} />} />
+
+                {/* Category Routes */}
+                <Route path="/categories" element={<CategoryPageWrapper showAllProducts={true} />} />
+                <Route path="/products/category/:categoryId" element={<CategoryPageWrapper showAllProducts={false} />} />
+                <Route path="/products/category/:categoryId/subcategory/:subcategoryId" element={<CategoryPageWrapper showAllProducts={false} />} />
+                <Route path="/category/:categoryName" element={<CategoryPageWrapper showAllProducts={false} />} />
+                <Route path="/category/:categoryName/:subcategoryName" element={<CategoryPageWrapper showAllProducts={false} />} />
+                <Route path="/shop-all" element={<CategoryPageWrapper showAllProducts={true} />} />
+                <Route path="/makeup" element={<CategoryPageWrapper showAllProducts={false} />} />
+                <Route path="/skincare" element={<CategoryPageWrapper showAllProducts={false} />} />
+                <Route path="/fragrance" element={<CategoryPageWrapper showAllProducts={false} />} />
+                <Route path="/accessories" element={<CategoryPageWrapper showAllProducts={false} />} />
+
+                {/* Protected Routes */}
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <ProfilePage />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/admin/*"
+                  element={
+                    <ProtectedRoute adminOnly={true}>
+                      <AdminLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route path="dashboard" element={<DashboardPage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                  <Route index element={<DashboardPage />} />
+                  <Route path="products" element={<ProductsPage />} />
+                  <Route path="products/add" element={<AddProductPage />} />
+                  <Route path="products/edit/:id" element={<EditProductPage />} />
+                  <Route path="orders" element={<AdminOrdersPage />} />
+                  <Route path="orders/:orderId" element={<AdminOrderDetails />} />
+                  <Route path="analytics" element={<AnalyticsPage />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="users/:userId" element={<AdminUserDetailPage />} />
+                  <Route path="reports" element={<AdminReportsPage />} />
+                </Route>
+              </Routes>
+            </div>
+
+            {/* Global Modal */}
+            <ProductDetailModal
+              product={selectedProduct}
+              isOpen={isProductModalOpen}
+              onClose={handleCloseModal}
+              onAddToCart={handleAddToCart}
+              onAddToWishlist={handleAddToWishlist}
+            />
+          </div>
+        </Router>
+      </AuthProvider>
+    </CategoryProvider>
+  );
 }
 
-export default App
+export default App;

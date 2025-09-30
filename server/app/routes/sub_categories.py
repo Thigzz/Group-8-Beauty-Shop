@@ -71,3 +71,19 @@ def delete_sub_category(sub_category_id):
     db.session.delete(sub_category)
     db.session.commit()
     return jsonify({"message": "SubCategory deleted"})
+
+@sub_categories_bp.route("/by_category/<uuid:category_id>", methods=["GET"])
+def get_sub_categories_by_category(category_id):
+    """
+    Get all sub-categories for a specific parent category.
+    """
+    category = Category.query.get_or_404(category_id)
+    sub_categories = SubCategory.query.filter_by(category_id=category.id).all()
+    
+    return jsonify([
+        {
+            "id": str(sc.id),
+            "sub_category_name": sc.sub_category_name,
+            "category_id": str(sc.category_id)
+        } for sc in sub_categories
+    ])

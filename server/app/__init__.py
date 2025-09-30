@@ -28,7 +28,8 @@ def create_app():
     migrate.init_app(app, db) 
     jwt.init_app(app)
     bcrypt.init_app(app)
-    CORS(app)
+    
+    CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "https://pambo.onrender.com"]}}, supports_credentials=True)
     
     from server.app.models.users import User
     from server.app import models 
@@ -62,7 +63,7 @@ def create_app():
     app.register_blueprint(checkout_bp)
     app.register_blueprint(orders_bp)
     app.register_blueprint(admin_reset_bp)
-    app.register_blueprint(admin_bp)
+    app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(cart_bp)
     app.register_blueprint(reports_bp)
     app.register_blueprint(analytics_bp)
