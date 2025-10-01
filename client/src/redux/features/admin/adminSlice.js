@@ -25,8 +25,6 @@ export const fetchAdminUsers = createAsyncThunk(
   }
 );
 
-// ... the rest of your adminSlice.js file remains the same
-
 export const fetchProducts = createAsyncThunk(
   'admin/fetchProducts',
   async (params = {}, { getState, rejectWithValue }) => {
@@ -342,7 +340,7 @@ const adminSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchAdminUsers.pending, (state) => {
-        state.loading = true; // You can use the general loading state
+        state.loading = true;
         state.error = null;
       })
       .addCase(fetchAdminUsers.fulfilled, (state, action) => {
@@ -355,7 +353,7 @@ const adminSlice = createSlice({
       .addCase(fetchAdminUsers.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-        state.users = []; // Clear users on error
+        state.users = [];
       })
       .addCase(fetchProducts.pending, (state) => {
         state.loading = true;
