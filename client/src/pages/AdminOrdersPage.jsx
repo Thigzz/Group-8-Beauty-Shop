@@ -1,8 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Eye, Search, Filter,ChevronLeft, ChevronRight  } from "lucide-react";
 import apiClient from "../api/axios";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import debounce from "lodash.debounce"; 
+import { ORDER_STATUS } from "../redux/features/orders/orderSlice";
+
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);
@@ -23,10 +26,10 @@ export default function AdminOrdersPage() {
   const { token } = useSelector((state) => state.auth);
 
   // Fetch orders
-    const fetchOrders = async (page = 1) => {
+    const fetchOrders = async (page = 1, search = searchTerm, status = statusFilter, date = dateFilter) => {
       try {
         setLoading(true);
-        const res = await apiClient.get(`api/orders/?page=${page}`, {
+        const res = await apiClient.get(`api/orders/?page=${page}&sort=desc&search=${search}&status=${status}&date=${date}}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.data && res.data.orders) {
@@ -67,11 +70,31 @@ export default function AdminOrdersPage() {
       }
     };
 
-    useEffect(() => {
-    if (token) {
-      fetchOrders(1);
-    }
-  }, [token]);
+const debouncedSearch = useMemo(
+  () =>
+    debounce((term) => {
+      fetchOrders(1, term, statusFilter, dateFilter);
+    }, 500),
+  [token] // recreate only if filters change
+);
+
+// run only when searchTerm changes
+useEffect(() => {
+  if (token) {
+    debouncedSearch(searchTerm, statusFilter, dateFilter);
+  } 
+
+  return () => {
+    debouncedSearch.cancel(); // cleanup on unmount or re-render
+  };
+}, [searchTerm, statusFilter, dateFilter, token, debouncedSearch]);
+
+  //   useEffect(() => {
+  //   if (token) {
+  //     fetchOrders(1, searchTerm, statusFilter, dateFilter);
+  //   }
+  // }, [token, searchTerm, statusFilter, dateFilter]);
+
 
   const handleNextPage = () => {
     if (pagination.has_next) {
@@ -216,15 +239,11 @@ export default function AdminOrdersPage() {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent appearance-none bg-white"
               >
                 <option value="all">All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="processing">Processing</option>
-                <option value="shipped">Shipped</option>
-                <option value="delivered">Delivered</option>
-                <option value="fulfilled">Fulfilled</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="refunded">Refunded</option>
-
+                {Object.values(ORDER_STATUS).map((status) => (
+                  <option key={status} value={status}>
+                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                  </option>
+                ))}
               </select>
             </div>
        {/* Date Filter */}
