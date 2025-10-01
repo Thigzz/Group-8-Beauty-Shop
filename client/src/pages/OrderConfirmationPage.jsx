@@ -1,5 +1,4 @@
 import { Link, useLocation } from "react-router-dom";
-import { LogOut } from "lucide-react";
 
 export default function OrderConfirmationPage() {
   const location = useLocation();
@@ -8,7 +7,7 @@ export default function OrderConfirmationPage() {
   if (!order || !invoice) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p>No order details found. <Link to="/shop" className="text-blue-600">Continue shopping.</Link></p>
+        <p>No order details found. <Link to="/shop-all" className="text-blue-600">Continue shopping.</Link></p>
       </div>
     );
   }
@@ -48,15 +47,11 @@ export default function OrderConfirmationPage() {
         {/* Buttons */}
         <div className="flex flex-col gap-3">
           <Link
-            to="/shop"
+            to="/shop-all"
             className="w-full py-3 rounded-xl border border-yellow-600 text-yellow-600 hover:bg-yellow-600 hover:text-white font-medium transition"
           >
             Continue Shopping
           </Link>
-
-          <button className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 font-medium transition">
-            <LogOut size={18} /> Logout
-          </button>
         </div>
       </div>
     </div>
