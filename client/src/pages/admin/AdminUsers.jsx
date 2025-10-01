@@ -26,7 +26,7 @@ export default function AdminUsers() {
       const res = await apiClient.get(`/admin/users?page=${page}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       // Check if response is an array
       if (Array.isArray(res.data)) {
         setUsers(res.data);
@@ -73,7 +73,7 @@ export default function AdminUsers() {
   // Filter users based on search and filters
   const filteredUsers = users.filter((user) => {
     const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
-    
+
     const matchesSearch =
       fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -146,7 +146,6 @@ export default function AdminUsers() {
                 <th className="p-4 text-sm font-medium text-gray-600">Email</th>
                 <th className="p-4 text-sm font-medium text-gray-600">Role</th>
                 <th className="p-4 text-sm font-medium text-gray-600">Status</th>
-                <th className="p-4 text-sm font-medium text-gray-600">Joined</th>
                 <th className="p-4 text-sm font-medium text-gray-600">Action</th>
               </tr>
             </thead>
@@ -160,9 +159,6 @@ export default function AdminUsers() {
                     <span className={getStatusBadgeStyle(user.is_active)}>
                       {user.is_active ? "Active" : "Inactive"}
                     </span>
-                  </td>
-                  <td className="p-4 text-gray-500 text-sm">
-                    {user.created_at ? new Date(user.created_at).toLocaleDateString() : "N/A"}
                   </td>
                   <td className="p-4">
                     <button

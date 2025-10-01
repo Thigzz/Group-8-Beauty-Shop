@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import toast from 'react-hot-toast';
-import { Loader, User, Mail, Phone, Lock, Save, Ban, CheckCircle } from 'lucide-react';
+import { Loader, User, Mail, Phone, Lock, Save, Ban, CheckCircle, ArrowLeft } from 'lucide-react';
 import apiClient from '../../api/axios';
 
 const AdminUserDetailPage = () => {
@@ -87,12 +87,12 @@ const AdminUserDetailPage = () => {
 
     try {
       // Endpoint to toggle user status
-      const endpoint = newStatus 
-        ? `/admin/users/${userId}/activate` 
+      const endpoint = newStatus
+        ? `/admin/users/${userId}/activate`
         : `/admin/users/${userId}/deactivate`;
 
       await apiClient.patch(endpoint, {}, { headers: { Authorization: `Bearer ${token}` } });
-      
+
       setUser(prev => ({ ...prev, is_active: newStatus }));
       toast.success(`User successfully ${newStatus ? 'activated' : 'deactivated'}.`);
 
@@ -117,37 +117,49 @@ const AdminUserDetailPage = () => {
 
   return (
     <div className="p-6 bg-gray-50 min-h-full">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">
-          User Details: {user.first_name} {user.last_name}
-        </h1>
-        <div className="flex items-center space-x-4">
-            <span className={getStatusBadgeStyle(user.is_active)}>
-              {user.is_active ? <CheckCircle size={14} className="mr-1" /> : <Ban size={14} className="mr-1" />}
-              {user.is_active ? 'Active' : 'Deactivated'}
-            </span>
-            <button
-              onClick={handleToggleActiveStatus}
-              disabled={isSubmitting}
-              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white transition-all shadow-md min-w-[150px]
-                ${user.is_active
-                  ? 'bg-red-500 hover:bg-red-600'
-                  : 'bg-green-500 hover:bg-green-600'
-                }
-              `}
-            >
-              <Ban size={16} />
-              {isSubmitting 
-                ? 'Processing...' 
-                : user.is_active ? 'Deactivate Account' : 'Activate Account'}
-            </button>
+        {/* Header */}
+        <div className="mb-8">
+          <button
+            onClick={() => navigate('/admin/users')}
+            className="flex items-center text-[#C9A35D] hover:text-[#b18e4e] mb-4 transition-colors"
+          >
+            <ArrowLeft size={20} className="mr-2" />
+            Back to Users
+          </button>
+
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold text-gray-800">
+              User Details: {user.first_name} {user.last_name}
+            </h1>
+            <div className="flex items-center space-x-4">
+                <span className={getStatusBadgeStyle(user.is_active)}>
+                  {user.is_active ? <CheckCircle size={14} className="mr-1" /> : <Ban size={14} className="mr-1" />}
+                  {user.is_active ? 'Active' : 'Deactivated'}
+                </span>
+                <button
+                  onClick={handleToggleActiveStatus}
+                  disabled={isSubmitting}
+                  className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white transition-all shadow-md min-w-[150px]
+                    ${user.is_active
+                      ? 'bg-red-500 hover:bg-red-600'
+                      : 'bg-green-500 hover:bg-green-600'
+                    }
+                  `}
+                >
+                  <Ban size={16} />
+                  {isSubmitting
+                    ? 'Processing...'
+                    : user.is_active ? 'Deactivate Account' : 'Activate Account'}
+                </button>
+            </div>
+          </div>
         </div>
-      </div>
+
 
       <div className="bg-white p-8 rounded-2xl shadow-xl">
         <form onSubmit={formik.handleSubmit} className="space-y-6">
           <h2 className="text-xl font-semibold border-b pb-2 mb-4 text-[#C9A35D]">Personal Information</h2>
-          
+
           {/* Row 1: First Name / Last Name */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -249,15 +261,15 @@ const AdminUserDetailPage = () => {
               )}
             </div>
           </div>
-          
+
           {/* Action Button */}
           <div className="pt-6 border-t mt-8 flex justify-end">
             <button
               type="submit"
               disabled={isSubmitting || !formik.isValid || !formik.dirty}
-              className="flex items-center justify-center gap-2 px-6 py-2 rounded-lg 
-                bg-gradient-to-r from-[#C9A35D] to-[#b18e4e] 
-                text-white hover:from-[#b18e4e] hover:to-[#9c7b43] 
+              className="flex items-center justify-center gap-2 px-6 py-2 rounded-lg
+                bg-gradient-to-r from-[#C9A35D] to-[#b18e4e]
+                text-white hover:from-[#b18e4e] hover:to-[#9c7b43]
                 transition-all shadow-md min-w-[150px] disabled:opacity-50"
             >
               <Save size={16} />

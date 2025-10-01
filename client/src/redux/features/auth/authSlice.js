@@ -63,7 +63,7 @@ export const registerUser = createAsyncThunk(
 // SAVE SECURITY QUESTIONS 
 export const saveSecurityQuestions = createAsyncThunk(
   'auth/saveSecurityQuestions',
-  async (questions, { getState, rejectWithValue }) => {
+  async (questions, { getState, dispatch, rejectWithValue }) => {
     try {
       const { token, user } = getState().auth;
       
@@ -94,6 +94,10 @@ export const saveSecurityQuestions = createAsyncThunk(
           headers: { Authorization: `Bearer ${token}` },
         }
       );
+      
+      // Re-fetch the user's security questions after saving them successfully
+      dispatch(fetchUserSecurityQuestions());
+
       toast.success('Security questions saved!');
       return response.data;
     } catch (error) {
@@ -372,11 +376,13 @@ export const authSlice = createSlice({
       })
       .addCase(fetchUserProfile.pending, (state) => {
         state.profileLoading = true;
+        state.status = 'loading';
       })
       .addCase(fetchUserProfile.fulfilled, (state, action) => {
         state.profileLoading = false;
         state.user = action.payload; 
-        state.isAuthenticated = true; 
+        state.isAuthenticated = true;
+        state.status = 'succeeded';
       })
       .addCase(fetchUserProfile.rejected, (state, action) => {
         state.profileLoading = false;
@@ -385,6 +391,7 @@ export const authSlice = createSlice({
         state.isAuthenticated = false;
         state.token = null;
         localStorage.removeItem('token');
+        state.status = 'failed';
       })
       .addCase(resetPasswordWithSecurity.pending, (state) => {
         state.status = 'loading';

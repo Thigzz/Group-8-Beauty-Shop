@@ -1,15 +1,20 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import apiClient from '../../../api/axios';
+import { clearCart } from '../cart/cartSlice';
 
 // --- Thunks ---
 export const placeOrder = createAsyncThunk(
   'orders/placeOrder',
-  async (orderData, { getState, rejectWithValue }) => {
+  async (orderData, { getState, dispatch, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
       const response = await apiClient.post('/api/checkout/process', orderData, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      // After placing the order, dispatch the clearCart action
+      dispatch(clearCart());
+      
       return response.data;
     } catch (error) {
       const errorMessage = error.response?.data?.error || 'Failed to place order.';
