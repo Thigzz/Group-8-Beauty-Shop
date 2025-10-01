@@ -63,7 +63,7 @@ export const registerUser = createAsyncThunk(
 // SAVE SECURITY QUESTIONS 
 export const saveSecurityQuestions = createAsyncThunk(
   'auth/saveSecurityQuestions',
-  async (questions, { getState, rejectWithValue }) => {
+  async (questions, { getState, dispatch, rejectWithValue }) => {
     try {
       const { token, user } = getState().auth;
       
@@ -94,6 +94,10 @@ export const saveSecurityQuestions = createAsyncThunk(
           headers: { Authorization: `Bearer ${token}` },
         }
       );
+      
+      // Re-fetch the user's security questions after saving them successfully
+      dispatch(fetchUserSecurityQuestions());
+
       toast.success('Security questions saved!');
       return response.data;
     } catch (error) {
@@ -142,38 +146,57 @@ export const fetchUserSecurityQuestions = createAsyncThunk(
   }
 );
 
-// RESET PASSWORD WITH SECURITY QUESTIONS 
-export const resetPasswordWithSecurity = createAsyncThunk(
-  'auth/resetPasswordWithSecurity',
-  async (data, { rejectWithValue }) => {
-    try {
-      const response = await apiClient.post('/auth/reset-password', data);
-      toast.success('Password reset successful, please log in.');
-      return response.data;
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Password reset failed';
-      toast.error(errorMessage);
-      return rejectWithValue(errorMessage);
+// GET RESET QUESTIONS
+export const getResetQuestions = createAsyncThunk(
+    'auth/getResetQuestions',
+    async (data, { rejectWithValue }) => {
+        try {
+            const response = await apiClient.post('/auth/reset-questions', data);
+            return response.data;
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || 'Failed to get reset questions';
+            toast.error(errorMessage);
+            return rejectWithValue(errorMessage);
+        }
     }
-  }
-);
+)
 
-// VERIFY SECURITY ANSWERS
-export const verifySecurityAnswers = createAsyncThunk(
-  'auth/verifySecurityAnswers',
-  async ({ userId, answers }, { rejectWithValue }) => {
-    try {
-      const response = await apiClient.post(`/api/security-questions/verify/${userId}`, {
-        answers
-      });
-      return response.data;
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Verification failed';
-      toast.error(errorMessage);
-      return rejectWithValue(errorMessage);
+// VERIFY ANSWERS
+export const verifyAnswers = createAsyncThunk(
+    'auth/verifyAnswers',
+    async (data, { rejectWithValue }) => {
+        try {
+            const response = await apiClient.post('/auth/verify-answers', data);
+            toast.success('Answers verified successfully');
+            return response.data;
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || 'Failed to verify answers';
+            toast.error(errorMessage);
+            return rejectWithValue(errorMessage);
+        }
     }
-  }
-);
+)
+
+// RESET PASSWORD WITH TOKEN
+export const resetPasswordWithToken = createAsyncThunk(
+    'auth/resetPasswordWithToken',
+    async (data, { dispatch, rejectWithValue }) => {
+        try {
+            const response = await apiClient.post('/auth/reset-password', data);
+            const { access_token, user_info } = response.data;
+      
+            dispatch(setToken(access_token)); 
+            dispatch(setUser(user_info));
+            toast.success('Password reset successfully');
+            return response.data;
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || 'Password reset failed';
+            toast.error(errorMessage);
+            return rejectWithValue(errorMessage);
+        }
+    }
+)
+
 
 // FETCH PROFILE 
 export const fetchUserProfile = createAsyncThunk(
@@ -279,6 +302,7 @@ const initialState = {
   error: null,
   securityQuestions: [], 
   userSecurityQuestions: [],
+  resetQuestions: [],
 };
 
 export const authSlice = createSlice({
@@ -360,23 +384,15 @@ export const authSlice = createSlice({
       .addCase(fetchUserSecurityQuestions.rejected, (state, action) => {
         state.userSecurityQuestionsLoading = false;
       })
-      .addCase(verifySecurityAnswers.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(verifySecurityAnswers.fulfilled, (state) => {
-        state.status = 'succeeded';
-      })
-      .addCase(verifySecurityAnswers.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.payload;
-      })
       .addCase(fetchUserProfile.pending, (state) => {
         state.profileLoading = true;
+        state.status = 'loading';
       })
       .addCase(fetchUserProfile.fulfilled, (state, action) => {
         state.profileLoading = false;
         state.user = action.payload; 
-        state.isAuthenticated = true; 
+        state.isAuthenticated = true;
+        state.status = 'succeeded';
       })
       .addCase(fetchUserProfile.rejected, (state, action) => {
         state.profileLoading = false;
@@ -385,16 +401,7 @@ export const authSlice = createSlice({
         state.isAuthenticated = false;
         state.token = null;
         localStorage.removeItem('token');
-      })
-      .addCase(resetPasswordWithSecurity.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(resetPasswordWithSecurity.fulfilled, (state) => {
-        state.status = 'succeeded';
-      })
-      .addCase(resetPasswordWithSecurity.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.payload;
       })
       .addCase(updateUserProfile.pending, (state) => {
         state.status = 'loading';
@@ -425,6 +432,37 @@ export const authSlice = createSlice({
         state.status = 'succeeded';
       })
       .addCase(forgotPassword.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+      .addCase(getResetQuestions.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(getResetQuestions.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.resetQuestions = action.payload;
+      })
+      .addCase(getResetQuestions.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+      .addCase(verifyAnswers.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(verifyAnswers.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+      })
+      .addCase(verifyAnswers.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+      .addCase(resetPasswordWithToken.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(resetPasswordWithToken.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+      })
+      .addCase(resetPasswordWithToken.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
       });
