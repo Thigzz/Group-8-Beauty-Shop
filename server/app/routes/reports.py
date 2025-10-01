@@ -41,7 +41,7 @@ def generate_excel(data, headers):
 
     return Response(
         output.getvalue(),
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheet.sheet",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=report.xlsx"}
     )
 
