@@ -13,16 +13,25 @@ def setup_user_with_questions(test_client):
         
         q1 = SecurityQuestion(question="What is your pet's name?")
         q2 = SecurityQuestion(question="What is your favorite color?")
-        db.session.add_all([q1, q2])
+        q3 = SecurityQuestion(question="What city were you born in?")
+        db.session.add_all([q1, q2, q3])
         db.session.commit()
 
-        ans1 = UserSecurityQuestion(user_id=user.id, question_id=q1.id, answer_hash=bcrypt.generate_password_hash("Buddy").decode('utf-8'))
-        ans2 = UserSecurityQuestion(user_id=user.id, question_id=q2.id, answer_hash=bcrypt.generate_password_hash("Blue").decode('utf-8'))
-        db.session.add_all([ans1, ans2])
+        ans1 = UserSecurityQuestion(user_id=user.id, question_id=q1.id, answer_hash=bcrypt.generate_password_hash("Buddy".lower().strip()).decode('utf-8'))
+        ans2 = UserSecurityQuestion(user_id=user.id, question_id=q2.id, answer_hash=bcrypt.generate_password_hash("Blue".lower().strip()).decode('utf-8'))
+        ans3 = UserSecurityQuestion(user_id=user.id, question_id=q3.id, answer_hash=bcrypt.generate_password_hash("Nairobi".lower().strip()).decode('utf-8'))
+        db.session.add_all([ans1, ans2, ans3])
         db.session.commit()
         
  
-        return {"username": user.username, "q1_id": q1.id, "q2_id": q2.id}
+        return {
+            "username": user.username, 
+            "questions": [
+                {"id": str(q1.id), "question": q1.question, "answer": "Buddy"},
+                {"id": str(q2.id), "question": q2.question, "answer": "Blue"},
+                {"id": str(q3.id), "question": q3.question, "answer": "Nairobi"}
+            ]
+        }
 
 def test_register_user(test_client, new_user):
     response = test_client.post('/auth/register', data=json.dumps({"first_name": new_user.first_name, "last_name": new_user.last_name, "username": new_user.username, "email": new_user.email, "primary_phone_no": new_user.primary_phone_no, "password": "password123", "confirm_password": "password123"}), content_type='application/json')
@@ -119,28 +128,63 @@ def test_get_security_questions_for_user(test_client):
     assert response.status_code == 200
     data = json.loads(response.data)
     assert len(data) == 2
-    assert data[0]['question'] == "What is your pet's name?"
+    
+    # Check that the returned questions are valid
+    question_texts = [q['question'] for q in user_data['questions']]
+    for item in data:
+        assert item['question'] in question_texts
 
 def test_verify_correct_answers(test_client):
     user_data = setup_user_with_questions(test_client)
-    answers = [{"question_id": str(user_data["q1_id"]), "answer": "Buddy"}, {"question_id": str(user_data["q2_id"]), "answer": "Blue"}]
+    
+    # Get the two random questions first
+    questions_res = test_client.post('/auth/reset-questions', data=json.dumps({"login_identifier": user_data["username"]}), content_type='application/json')
+    questions_data = json.loads(questions_res.data)
+    
+    # Prepare the correct answers for the fetched questions
+    answers = []
+    for q in questions_data:
+        for full_q in user_data['questions']:
+            if q['id'] == full_q['id']:
+                answers.append({"question_id": q['id'], "answer": full_q['answer']})
+
     response = test_client.post('/auth/verify-answers', data=json.dumps({"login_identifier": user_data["username"], "answers": answers}), content_type='application/json')
     assert response.status_code == 200
     assert "reset_token" in json.loads(response.data)
 
 def test_verify_incorrect_answers(test_client):
     user_data = setup_user_with_questions(test_client)
-    answers = [{"question_id": str(user_data["q1_id"]), "answer": "Buddy"}, {"question_id": str(user_data["q2_id"]), "answer": "WRONG_ANSWER"}]
+
+    # Get the two random questions first
+    questions_res = test_client.post('/auth/reset-questions', data=json.dumps({"login_identifier": user_data["username"]}), content_type='application/json')
+    questions_data = json.loads(questions_res.data)
+
+    answers = [{"question_id": questions_data[0]['id'], "answer": "WRONG_ANSWER"}, {"question_id": questions_data[1]['id'], "answer": "ANOTHER_WRONG_ANSWER"}]
+    
     response = test_client.post('/auth/verify-answers', data=json.dumps({"login_identifier": user_data["username"], "answers": answers}), content_type='application/json')
     assert response.status_code == 401
 
 def test_full_password_reset_flow(test_client):
     user_data = setup_user_with_questions(test_client)
-    answers = [{"question_id": str(user_data["q1_id"]), "answer": "Buddy"}, {"question_id": str(user_data["q2_id"]), "answer": "Blue"}]
+    
+    # Get the two random questions first
+    questions_res = test_client.post('/auth/reset-questions', data=json.dumps({"login_identifier": user_data["username"]}), content_type='application/json')
+    questions_data = json.loads(questions_res.data)
+    
+    # Prepare the correct answers for the fetched questions
+    answers = []
+    for q in questions_data:
+        for full_q in user_data['questions']:
+            if q['id'] == full_q['id']:
+                answers.append({"question_id": q['id'], "answer": full_q['answer']})
+
     verify_res = test_client.post('/auth/verify-answers', data=json.dumps({"login_identifier": user_data["username"], "answers": answers}), content_type='application/json')
+    assert verify_res.status_code == 200
     token = json.loads(verify_res.data)['reset_token']
+
     reset_res = test_client.post('/auth/reset-password', data=json.dumps({"token": token, "new_password": "a_brand_new_password"}), content_type='application/json')
     assert reset_res.status_code == 200
+
     login_res = test_client.post('/auth/login', data=json.dumps({"login_identifier": user_data["username"], "password": "a_brand_new_password"}), content_type='application/json')
     assert login_res.status_code == 200
 
