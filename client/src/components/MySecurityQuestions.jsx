@@ -23,10 +23,8 @@ const MySecurityQuestions = () => {
 
   const [isEditing, setIsEditing] = useState(false);
   const [existingQuestions, setExistingQuestions] = useState([]);
-  const [showAnswers, setShowAnswers] = useState({});
   const [initialized, setInitialized] = useState(false);
 
-  // Initialize - fetch profile once
   useEffect(() => {
     if (!user && !profileLoading && !initialized) {
       dispatch(fetchUserProfile());
@@ -34,7 +32,6 @@ const MySecurityQuestions = () => {
     }
   }, [dispatch, user, profileLoading, initialized]);
 
-  // Once user is loaded, fetch security questions
   useEffect(() => {
     if (user?.id && securityQuestions.length === 0 && !securityQuestionsLoading) {
       dispatch(fetchSecurityQuestions());
@@ -42,26 +39,14 @@ const MySecurityQuestions = () => {
     }
   }, [dispatch, user?.id, securityQuestions.length, securityQuestionsLoading]);
 
-  // Handle existing user questions
   useEffect(() => {
     if (userSecurityQuestions && userSecurityQuestions.length > 0) {
       setExistingQuestions(userSecurityQuestions);
-      const initialShowAnswers = {};
-      userSecurityQuestions.forEach((_, index) => {
-        initialShowAnswers[index] = false;
-      });
-      setShowAnswers(initialShowAnswers);
+    } else {
+      setExistingQuestions([]);
     }
   }, [userSecurityQuestions]);
 
-  const toggleAnswerVisibility = (index) => {
-    setShowAnswers((prev) => ({
-      ...prev,
-      [index]: !prev[index]
-    }));
-  };
-
-  // Get available questions for dropdown (exclude already selected ones)
   const getAvailableQuestions = (currentIndex) => {
     const selectedQuestionIds = questions
       .map((q, index) => index === currentIndex ? '' : q.question_id)
@@ -101,13 +86,11 @@ const MySecurityQuestions = () => {
   const handleSave = async (e) => {
     e.preventDefault();
 
-    // Count existing questions when editing
     const existingCount = isEditing ? existingQuestions.length : 0;
     const validQuestions = questions.filter(
       (q) => q.question_id.trim() && q.answer.trim()
     );
     
-    // Check if total questions (existing + new) meet minimum requirement
     const totalQuestions = isEditing ? existingCount + validQuestions.length : validQuestions.length;
     
     if (totalQuestions < 2) {
@@ -115,7 +98,6 @@ const MySecurityQuestions = () => {
       return;
     }
 
-    // Check for duplicate questions
     const questionIds = validQuestions.map((q) => q.question_id.trim());
     const uniqueQuestions = new Set(questionIds);
     if (uniqueQuestions.size !== validQuestions.length) {
@@ -124,7 +106,6 @@ const MySecurityQuestions = () => {
     }
 
     try {
-      // Only save valid questions
       await dispatch(saveSecurityQuestions(validQuestions)).unwrap();
       await dispatch(fetchUserSecurityQuestions()).unwrap();
       setIsEditing(false);
@@ -173,7 +154,6 @@ const MySecurityQuestions = () => {
     dispatch(fetchSecurityQuestions());
   };
 
-  // Show loading while profile is being fetched
   if (profileLoading || (!user && initialized)) {
     return (
       <div className="max-w-2xl mx-auto p-6">
@@ -192,7 +172,6 @@ const MySecurityQuestions = () => {
     );
   }
 
-  // Show error if profile failed to load
   if (error && !user) {
     return (
       <div className="max-w-2xl mx-auto p-6">
@@ -250,34 +229,32 @@ const MySecurityQuestions = () => {
             <div className="p-3 bg-amber-100 border border-amber-400 text-amber-700 rounded">
               <p className="font-medium">⚠️ Security Alert</p>
               <p className="text-sm mt-1">
-                You only have {existingQuestions.length} security question{existingQuestions.length === 1 ? '' : 's'} set up. 
-                For better account security, we recommend having at least 2 security questions.
+                You only have {existingQuestions.length} security question
+                {existingQuestions.length === 1 ? "" : "s"} set up. For better
+                account security, we recommend having at least 2 security
+                questions.
               </p>
             </div>
           )}
           <p className="text-gray-600 mb-4">
-            Your security questions are set up. You can edit them or add more if needed.
+            Your security questions are set up. You can edit them or add more if
+            needed.
           </p>
           {existingQuestions.map((q, index) => (
-            <div key={index} className="p-4 border border-gray-200 rounded-lg">
+            <div
+              key={q.question_id}
+              className="p-4 border border-gray-200 rounded-lg"
+            >
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-800">Question {index + 1}</h3>
+                  <h3 className="font-semibold text-gray-800">
+                    Question {index + 1}
+                  </h3>
                   <p className="text-gray-600 mt-1">{q.question}</p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className="text-gray-700 text-sm">Answer:</span>
-                    {showAnswers[index] ? (
-                      <span className="font-medium text-sm">{q.answer}</span>
-                    ) : (
-                      <span className="font-mono text-sm">••••••••</span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => toggleAnswerVisibility(index)}
-                      className="text-blue-600 hover:text-blue-800 text-sm underline"
-                    >
-                      {showAnswers[index] ? 'Hide' : 'Show'}
-                    </button>
+                  <div className="mt-2">
+                    <span className="text-gray-500 text-sm italic">
+                      Answer is securely stored and cannot be viewed
+                    </span>
                   </div>
                 </div>
               </div>
@@ -288,7 +265,10 @@ const MySecurityQuestions = () => {
         <form onSubmit={handleSave} className="space-y-6">
           <div className="space-y-4">
             {questions.map((question, index) => (
-              <div key={index} className="p-4 border border-gray-200 rounded-lg">
+              <div
+                key={index}
+                className="p-4 border border-gray-200 rounded-lg"
+              >
                 <div className="flex justify-between items-center mb-3">
                   <label className="block text-sm font-medium text-gray-700">
                     Question {index + 1}
@@ -328,14 +308,17 @@ const MySecurityQuestions = () => {
                   <select
                     value={question.question}
                     onChange={(e) =>
-                      handleQuestionChange(index, 'question', e.target.value)
+                      handleQuestionChange(index, "question", e.target.value)
                     }
                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   >
                     <option value="">Select a security question</option>
                     {getAvailableQuestions(index).map((questionOption) => (
-                      <option key={questionOption.id} value={questionOption.question}>
+                      <option
+                        key={questionOption.id}
+                        value={questionOption.question}
+                      >
                         {questionOption.question}
                       </option>
                     ))}
@@ -347,7 +330,7 @@ const MySecurityQuestions = () => {
                   placeholder="Your answer"
                   value={question.answer}
                   onChange={(e) =>
-                    handleQuestionChange(index, 'answer', e.target.value)
+                    handleQuestionChange(index, "answer", e.target.value)
                   }
                   className="w-full mt-3 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
@@ -372,7 +355,7 @@ const MySecurityQuestions = () => {
               disabled={savingSecurityQuestions}
               className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
-              {savingSecurityQuestions ? 'Saving...' : 'Save Questions'}
+              {savingSecurityQuestions ? "Saving..." : "Save Questions"}
             </button>
 
             {isEditing && (
@@ -385,13 +368,18 @@ const MySecurityQuestions = () => {
               </button>
             )}
           </div>
-          
+
           {/* Validation helper */}
           <div className="mt-2 text-sm text-gray-600">
             <p>
-              📋 Complete at least 2 questions to save. 
-              Current: {questions.filter(q => q.question_id && q.answer.trim()).length} of {questions.length}
-              {isEditing && existingQuestions.length > 0 && ` (You already have ${existingQuestions.length} question${existingQuestions.length === 1 ? '' : 's'})`}
+              📋 Complete at least 2 questions to save. Current:{" "}
+              {questions.filter((q) => q.question_id && q.answer.trim()).length}{" "}
+              of {questions.length}
+              {isEditing &&
+                existingQuestions.length > 0 &&
+                ` (You already have ${existingQuestions.length} question${
+                  existingQuestions.length === 1 ? "" : "s"
+                })`}
             </p>
           </div>
         </form>
@@ -401,10 +389,21 @@ const MySecurityQuestions = () => {
         <h3 className="font-semibold text-yellow-800 mb-2">Important Notes</h3>
         <ul className="text-yellow-700 text-sm space-y-1">
           <li>• Security answers are case-sensitive</li>
-          <li>• Choose questions that are memorable but not easily guessable</li>
-          <li>• You need at least 2 questions for account security (minimum requirement)</li>
-          <li>• We recommend having 3-5 questions for maximum security</li>
+          <li>
+            • Choose questions that are memorable but not easily guessable
+          </li>
+          <li>
+            • You need at least 2 questions for account security (minimum
+            requirement)
+          </li>
+          <li>
+            • We recommend having at least 3 questions for maximum security
+          </li>
           <li>• These questions will be used for password recovery</li>
+          <li>
+            • Answers are securely encrypted and cannot be viewed for your
+            protection
+          </li>
         </ul>
       </div>
     </div>
