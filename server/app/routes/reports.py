@@ -14,6 +14,7 @@ from server.app.decorators import admin_required
 
 reports_bp = Blueprint("reports", __name__, url_prefix="/reports")
 
+
 def generate_csv(data, headers):
     """Helper: convert list of dicts into CSV response."""
     proxy = io.StringIO()
@@ -28,12 +29,16 @@ def generate_csv(data, headers):
         headers={"Content-Disposition": "attachment; filename=report.csv"}
     )
 
+
 def generate_excel(data, headers):
     """Helper: convert list of dicts into Excel response."""
     output = io.BytesIO()
     wb = Workbook()
     ws = wb.active
-    ws.append(headers)
+
+    # ✅ FIXED: convert headers to list before appending
+    ws.append(list(headers))
+
     for row in data:
         ws.append([row.get(h, "") for h in headers])
     wb.save(output)
@@ -45,6 +50,7 @@ def generate_excel(data, headers):
         headers={"Content-Disposition": "attachment; filename=report.xlsx"}
     )
 
+
 def generate_pdf(data, headers, title="Report"):
     """Helper: convert list of dicts into PDF response."""
     output = io.BytesIO()
@@ -54,7 +60,7 @@ def generate_pdf(data, headers, title="Report"):
     styles = getSampleStyleSheet()
     elements.append(Paragraph(title, styles["Title"]))
 
-    table_data = [headers] + [[row.get(h, "") for h in headers] for row in data]
+    table_data = [list(headers)] + [[row.get(h, "") for h in headers] for row in data]
     table = Table(table_data)
     table.setStyle(TableStyle([
         ("BACKGROUND", (0,0), (-1,0), colors.grey),
@@ -75,9 +81,42 @@ def generate_pdf(data, headers, title="Report"):
         headers={"Content-Disposition": "attachment; filename=report.pdf"}
     )
 
+
+def flatten_dict(d, parent_key="", sep="."):
+    """Recursively flattens nested dicts/lists for tabular export."""
+    items = []
+    for k, v in d.items():
+        new_key = f"{parent_key}{sep}{k}" if parent_key else k
+
+        if isinstance(v, dict):
+            # Flatten nested dict
+            items.extend(flatten_dict(v, new_key, sep=sep).items())
+
+        elif isinstance(v, list):
+            if all(isinstance(i, dict) for i in v):
+                # Try to get 'name' or 'id' for readability
+                simplified = []
+                for i in v:
+                    if "name" in i:
+                        simplified.append(i["name"])
+                    elif "id" in i:
+                        simplified.append(str(i["id"]))
+                    else:
+                        simplified.append(str(i))
+                items.append((new_key, ", ".join(simplified)))
+            else:
+                # Just join list values
+                items.append((new_key, ", ".join(map(str, v))))
+
+        else:
+            items.append((new_key, v))
+
+    return dict(items)
+
+
 def export_data(queryset, format_type, title):
-    """General export function"""
-    data = [obj.to_dict() for obj in queryset]
+    """General export function with flattening support."""
+    data = [flatten_dict(obj.to_dict()) for obj in queryset]
     headers = data[0].keys() if data else []
 
     if format_type == "csv":
@@ -89,6 +128,7 @@ def export_data(queryset, format_type, title):
     else:
         return jsonify(data)
 
+
 @reports_bp.route("/products", methods=["GET"])
 @jwt_required()
 @admin_required()
@@ -97,6 +137,7 @@ def export_products():
     format_type = request.args.get("format", "json").lower()
     products = Product.query.all()
     return export_data(products, format_type, "Product Report")
+
 
 @reports_bp.route("/orders", methods=["GET"])
 @jwt_required()

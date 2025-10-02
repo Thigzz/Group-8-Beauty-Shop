@@ -1,9 +1,9 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
+from sqlalchemy import or_
 from server.app.extensions import db
 from server.app.models.users import User
 from server.app.decorators import admin_required
-# --- ADDED IMPORTS ---
 from server.app.models.orders import Order
 from server.app.models.order_items import OrderItem
 from server.app.models.enums import OrderStatus
@@ -21,13 +21,44 @@ VALID_STATUS_TRANSITIONS = {
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
-#---------Get all users --------------------
+#---------Get all users (with Pagination, Search, and Status Filter) --------------------
 @admin_bp.route("/users", methods=["GET"])
 @jwt_required()
 @admin_required()
 def get_users():
-    users = User.query.all()
-    return jsonify([user.to_dict() for user in users]), 200
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    search_term = request.args.get('search', None, type=str)
+    status = request.args.get('status', 'all', type=str)
+
+    query = User.query
+
+    if search_term:
+        search_filter = or_(
+            User.first_name.ilike(f"%{search_term}%"),
+            User.last_name.ilike(f"%{search_term}%"),
+            User.username.ilike(f"%{search_term}%"),
+            User.email.ilike(f"%{search_term}%")
+        )
+        query = query.filter(search_filter)
+
+    if status == 'active':
+        query = query.filter(User.is_active == True)
+    elif status == 'inactive':
+        query = query.filter(User.is_active == False)
+
+    paginated_users = query.order_by(User.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    
+    users = paginated_users.items
+    
+    return jsonify({
+        "users": [user.to_dict() for user in users],
+        "total": paginated_users.total,
+        "pages": paginated_users.pages,
+        "current_page": paginated_users.page,
+        "has_next": paginated_users.has_next,
+        "has_prev": paginated_users.has_prev
+    }), 200
 
 # --------Get single user------------------
 @admin_bp.route("/users/<uuid:user_id>", methods=["GET"])
