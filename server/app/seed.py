@@ -256,8 +256,7 @@ def seed_data():
             {"first_name": "Simon", "last_name": "Warui", "username": "simon", "email": "simon@pambo.com"},
             {"first_name": "Ruth", "last_name": "Siyoi", "username": "ruth", "email": "ruth@pambo.com"},
             {"first_name": "Ike", "last_name": "Mwithiga", "username": "ike", "email": "ike@pambo.com"},
-            {"first_name": "Justin", "last_name": "Kipkorir", "username": "justin", "email": "justin@pambo.com"},
-            {"first_name": "Test", "last_name": "Admin", "username": "testadmin", "email": "admins@pambo.com"}
+            {"first_name": "Justin", "last_name": "Kipkorir", "username": "justin", "email": "justin@pambo.com"}
         ]
 
         for admin_data in admins:
