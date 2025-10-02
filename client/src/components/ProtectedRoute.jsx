@@ -5,12 +5,19 @@ import { Navigate, useLocation } from 'react-router-dom';
 const ProtectedRoute = ({ children, adminOnly = false }) => {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const location = useLocation();
+
+  if (isAuthenticated && !user) {
+    return <div>Loading...</div>;
+  }
+
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
+
   if (adminOnly && user?.role !== 'admin') {
     return <Navigate to="/" replace />;
   }
+
   return children;
 };
 

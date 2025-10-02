@@ -1,20 +1,12 @@
 from flask import Blueprint, request, jsonify
 import uuid
-import hashlib
-from server.app.extensions import db
+from server.app.extensions import db, bcrypt
 from server.app.models.security_question import SecurityQuestion
 from server.app.models.user_security_questions import UserSecurityQuestion
 from server.app.models.users import User
 
 security_questions_bp = Blueprint('security_questions', __name__, url_prefix='/api/security-questions')
 
-def hash_answer(answer):
-    """Simple hash function for answers"""
-    return hashlib.sha256(answer.encode('utf-8')).hexdigest()
-
-def verify_answer(stored_hash, provided_answer):
-    """Verify if provided answer matches stored hash"""
-    return stored_hash == hash_answer(provided_answer)
 
 @security_questions_bp.route('/available', methods=['GET'])
 def get_available_questions():
@@ -78,10 +70,13 @@ def set_user_questions(user_id):
             if 'question_id' not in question_data or 'answer' not in question_data:
                 return jsonify({'error': 'Each question must have question_id and answer'}), 400
             
+            # Use bcrypt to hash the answer
+            answer_hash = bcrypt.generate_password_hash(question_data['answer'].lower().strip()).decode('utf-8')
+            
             user_question = UserSecurityQuestion(
                 user_id=user_uuid,
                 question_id=uuid.UUID(question_data['question_id']),
-                answer_hash=hash_answer(question_data['answer'].lower().strip()),
+                answer_hash=answer_hash,
                 is_active=True
             )
             db.session.add(user_question)
@@ -122,7 +117,8 @@ def verify_answers(user_id):
             question_uuid = uuid.UUID(answer_data['question_id'])
             user_question = next((uq for uq in user_questions if uq.question_id == question_uuid), None)
             
-            if user_question and verify_answer(user_question.answer_hash, answer_data['answer'].lower().strip()):
+            # Use bcrypt to verify the answer
+            if user_question and bcrypt.check_password_hash(user_question.answer_hash, answer_data['answer'].lower().strip()):
                 correct_answers += 1
         
         required_correct = min(1, len(user_questions))
