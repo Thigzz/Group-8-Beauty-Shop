@@ -1,8 +1,8 @@
 """Initial migration with all models
 
-Revision ID: 5906c77950ac
+Revision ID: b32589bbaa23
 Revises: 
-Create Date: 2025-10-02 20:27:28.438786
+Create Date: 2025-10-02 21:05:17.422017
 
 """
 from alembic import op
@@ -11,7 +11,7 @@ import server
 
 
 # revision identifiers, used by Alembic.
-revision = '5906c77950ac'
+revision = 'b32589bbaa23'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -190,7 +190,7 @@ def upgrade():
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('payments',
-    sa.Column('invoice_id', sa.String(), nullable=False),
+    sa.Column('invoice_id', server.app.models.base.GUID(), nullable=False),
     sa.Column('payment_method', sa.Enum('mpesa', 'cash', 'credit_card', 'debit_card', 'voucher', name='paymentmethod'), nullable=True),
     sa.Column('amount', sa.Numeric(precision=10, scale=2), nullable=False),
     sa.Column('transaction_id', sa.String(), nullable=True),
