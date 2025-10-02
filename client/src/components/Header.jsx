@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { FiShoppingCart, FiUser } from 'react-icons/fi';
+import { FiShoppingCart, FiUser, FiLogOut, FiGrid } from 'react-icons/fi';
 import { setQuery } from '../redux/features/search/searchSlice';
+import { logout } from '../redux/features/auth/authSlice';
 
 const Header = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -11,7 +12,7 @@ const Header = () => {
 
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const { items: cartItems } = useSelector((state) => state.cart);
-  const cartItemCount = cartItems ? cartItems.length : 0;
+  const cartItemCount = cartItems ? cartItems.reduce((acc, item) => acc + item.quantity, 0) : 0;
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -19,6 +20,11 @@ const Header = () => {
       dispatch(setQuery(searchTerm.trim()));
       navigate(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
     }
+  };
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate('/login');
   };
 
   return (
@@ -42,20 +48,35 @@ const Header = () => {
         </form>
         {/* Links */}
         <div className="flex items-center space-x-6">
-          <Link to="/cart" className="relative">
-            <FiShoppingCart className="h-6 w-20 text-[#C9A35D] hover:text-white" />
-            {cartItemCount > 0 && (
-              <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs font-medium text-white">
-                {cartItemCount}
-              </span>
-            )}
-          </Link>
+          {/* Conditionally render Cart Icon */}
+          {user?.role !== 'admin' && (
+            <Link to="/cart" className="relative">
+              <FiShoppingCart className="h-6 w-20 text-[#C9A35D] hover:text-white" />
+              {cartItemCount > 0 && (
+                <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs font-medium text-white">
+                  {cartItemCount}
+                </span>
+              )}
+            </Link>
+          )}
 
           {isAuthenticated && user ? (
-            <Link to="/profile" className="flex items-center space-x-2 text-[#C9A35D] hover:text-white">
-              <FiUser className="h-6 w-6" />
-              <span>Hi, {user.first_name || user.username}</span>
-            </Link>
+            <>
+              {user?.role === 'admin' && (
+                <Link to="/admin" className="flex items-center space-x-2 text-[#C9A35D] hover:text-white" title="Admin Dashboard">
+                  <FiGrid className="h-6 w-6" />
+                  <span>Admin</span>
+                </Link>
+              )}
+              <Link to="/profile" className="flex items-center space-x-2 text-[#C9A35D] hover:text-white">
+                <FiUser className="h-6 w-6" />
+                <span>Hi, {user.first_name || user.username}</span>
+              </Link>
+              <button onClick={handleLogout} className="flex items-center space-x-2 text-[#C9A35D] hover:text-white">
+                <FiLogOut className="h-6 w-6" />
+                <span>Logout</span>
+              </button>
+            </>
           ) : (
             <Link to="/login" className="flex items-center space-x-2 text-[#C9A35D] hover:text-white">
               <FiUser className="h-6 w-10" />
@@ -69,4 +90,3 @@ const Header = () => {
 };
 
 export default Header;
-

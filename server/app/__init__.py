@@ -29,7 +29,8 @@ def create_app():
     jwt.init_app(app)
     bcrypt.init_app(app)
     
-    CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "https://pambo.onrender.com"]}}, supports_credentials=True)
+    CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "https://pambo.onrender.com"], "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
+}}, supports_credentials=True)
     
     from server.app.models.users import User
     from server.app import models 

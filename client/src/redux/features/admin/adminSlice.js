@@ -4,6 +4,27 @@ import toast from 'react-hot-toast';
 
 const transformationCache = new Map();
 
+export const fetchAdminUsers = createAsyncThunk(
+  'admin/fetchUsers',
+  async ({ page = 1, search = '', status = 'all' } = {}, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().auth;
+      if (!token) {
+        return rejectWithValue('No authentication token');
+      }
+
+      const response = await apiClient.get('/admin/users', {
+        params: { page, search, status }
+      });
+      return response.data;
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Failed to fetch users';
+      toast.error(errorMessage);
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
 export const fetchProducts = createAsyncThunk(
   'admin/fetchProducts',
   async (params = {}, { getState, rejectWithValue }) => {
@@ -280,6 +301,10 @@ export const bulkUploadProducts = createAsyncThunk(
 );
 
 const initialState = {
+  users: [],
+  totalUsers: 0,
+  userCurrentPage: 1,
+  userTotalPages: 1,
   products: [],
   categories: [],
   subcategories: [],
@@ -314,7 +339,22 @@ const adminSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-     
+      .addCase(fetchAdminUsers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAdminUsers.fulfilled, (state, action) => {
+        state.loading = false;
+        state.users = action.payload.users;
+        state.totalUsers = action.payload.total;
+        state.userCurrentPage = action.payload.current_page;
+        state.userTotalPages = action.payload.pages;
+      })
+      .addCase(fetchAdminUsers.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.users = [];
+      })
       .addCase(fetchProducts.pending, (state) => {
         state.loading = true;
         state.error = null;

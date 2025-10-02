@@ -1,23 +1,64 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
+from sqlalchemy import or_
 from server.app.extensions import db
 from server.app.models.users import User
 from server.app.decorators import admin_required
-# --- ADDED IMPORTS ---
 from server.app.models.orders import Order
 from server.app.models.order_items import OrderItem
 from server.app.models.enums import OrderStatus
 from sqlalchemy.orm import joinedload
 
+# Allowed transitions
+VALID_STATUS_TRANSITIONS = {
+    OrderStatus.pending: [OrderStatus.paid, OrderStatus.cancelled],
+    OrderStatus.paid: [OrderStatus.dispatched, OrderStatus.delivered],
+    OrderStatus.dispatched: [OrderStatus.delivered],
+    OrderStatus.delivered: [],
+    OrderStatus.cancelled: []
+}
+
+
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
-#---------Get all users --------------------
+#---------Get all users (with Pagination, Search, and Status Filter) --------------------
 @admin_bp.route("/users", methods=["GET"])
 @jwt_required()
 @admin_required()
 def get_users():
-    users = User.query.all()
-    return jsonify([user.to_dict() for user in users]), 200
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    search_term = request.args.get('search', None, type=str)
+    status = request.args.get('status', 'all', type=str)
+
+    query = User.query
+
+    if search_term:
+        search_filter = or_(
+            User.first_name.ilike(f"%{search_term}%"),
+            User.last_name.ilike(f"%{search_term}%"),
+            User.username.ilike(f"%{search_term}%"),
+            User.email.ilike(f"%{search_term}%")
+        )
+        query = query.filter(search_filter)
+
+    if status == 'active':
+        query = query.filter(User.is_active == True)
+    elif status == 'inactive':
+        query = query.filter(User.is_active == False)
+
+    paginated_users = query.order_by(User.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    
+    users = paginated_users.items
+    
+    return jsonify({
+        "users": [user.to_dict() for user in users],
+        "total": paginated_users.total,
+        "pages": paginated_users.pages,
+        "current_page": paginated_users.page,
+        "has_next": paginated_users.has_next,
+        "has_prev": paginated_users.has_prev
+    }), 200
 
 # --------Get single user------------------
 @admin_bp.route("/users/<uuid:user_id>", methods=["GET"])
@@ -120,6 +161,7 @@ def update_admin_order_status(order_id):
 
     data = request.get_json()
     new_status_str = data.get("status")
+    note = data.get("note", "")
 
     if not new_status_str:
         return jsonify({"error": "Status is required"}), 400
@@ -128,8 +170,28 @@ def update_admin_order_status(order_id):
         new_status = OrderStatus[new_status_str.lower()]
     except KeyError:
         return jsonify({"error": f"Invalid status '{new_status_str}'"}), 400
+    
+    # ADD STATUS VALIDATION H
+    print(f" Status update attempt: {order.status.name} → {new_status.name}")
+    
+    allowed_next_statuses = VALID_STATUS_TRANSITIONS.get(order.status, [])
+    print(f" Allowed transitions from {order.status.name}: {[s.name for s in allowed_next_statuses]}")
+    
+    if new_status not in allowed_next_statuses:
+        error_message = f"Invalid status transition: {order.status.name} → {new_status.name}"
+        print(f" {error_message}")
+        return jsonify({
+            "error": error_message,
+            "current_status": order.status.name,
+            "requested_status": new_status.name,
+            "allowed_transitions": [s.name for s in allowed_next_statuses]
+        }), 400
+    
+    print(f" Transition allowed - updating status")
+
 
     order.status = new_status
     db.session.commit()
-    
+    print(f" Order status updated successfully to {order.status.name}")
+
     return jsonify(order.to_dict(include_items=True, include_customer=True))

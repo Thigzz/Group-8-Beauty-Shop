@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, current_app
 from sqlalchemy import or_
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt, current_user
+import random
 
 from server.app.models.users import User
 from server.app.extensions import db, bcrypt
@@ -102,12 +103,15 @@ def get_reset_questions():
         return jsonify({"message": "User not found"}), 404
 
     questions = user.security_questions
-    if not questions:
-        return jsonify({"message": "No security questions found for this user."}), 404
+    if not questions or len(questions) < 2:
+        return jsonify({"message": "Not enough security questions found for this user."}), 404
         
+    # Get 2 random questions
+    random_questions = random.sample(questions, 2)
+    
     return jsonify([
         {"id": str(q.security_question.id), "question": q.security_question.question}
-        for q in questions
+        for q in random_questions
     ]), 200
 
 
@@ -124,15 +128,29 @@ def verify_answers():
 
     user_questions = {str(q.question_id): q.answer_hash for q in user.security_questions}
 
-    if len(answers) != len(user_questions):
-        return jsonify({"message": "Incorrect number of answers submitted"}), 400
+    if len(answers) != 2:
+        return jsonify({"message": "Please answer both questions"}), 400
 
     for ans in answers:
         question_id = ans.get('question_id')
         answer_text = ans.get('answer')
         
-        if question_id not in user_questions or not bcrypt.check_password_hash(user_questions[question_id], answer_text):
+        if question_id not in user_questions or not user_questions[question_id]:
+            current_app.logger.warning(f"Failed verification attempt for user {user.id}: Question ID {question_id} not found.")
             return jsonify({"message": "One or more answers are incorrect."}), 401
+
+        try:
+            normalized_answer = answer_text.lower().strip()
+            stored_hash = user_questions[question_id]
+
+            current_app.logger.info(f"Verifying answer for user {user.id}, question {question_id}")
+            
+            if not bcrypt.check_password_hash(stored_hash, normalized_answer):
+                current_app.logger.warning(f"Failed verification attempt for user {user.id}: Incorrect answer for question ID {question_id}.")
+                return jsonify({"message": "One or more answers are incorrect."}), 401
+        except ValueError as e:
+            current_app.logger.error(f"Invalid hash for user {user.id}, question {question_id}: {e}")
+            return jsonify({"message": "An error occurred while verifying your answers. Please contact support."}), 500
 
     s = URLSafeTimedSerializer(current_app.config['JWT_SECRET_KEY'])
     token = s.dumps(user.email, salt='password-reset-salt')
@@ -156,7 +174,25 @@ def reset_password():
     if user:
         user.set_password(new_password)
         db.session.commit()
-        return jsonify({"message": "Password has been reset successfully."}), 200
+        
+        # Log the user in by creating a new access token
+        additional_claims = {"role": user.role.name}
+        access_token = create_access_token(identity=user.username, additional_claims=additional_claims)
+        
+        user_info = {
+            "id": str(user.id),
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "username": user.username,
+            "email": user.email,
+            "role": user.role.name
+        }
+        
+        return jsonify({
+            "message": "Password has been reset successfully.",
+            "access_token": access_token,
+            "user_info": user_info
+        }), 200
     
     return jsonify({"message": "User not found."}), 404
 

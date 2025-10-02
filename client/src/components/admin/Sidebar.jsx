@@ -1,22 +1,16 @@
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { logout } from '../../redux/features/auth/authSlice';
-import { 
-  LayoutDashboard, 
-  ShoppingBag, 
-  ListOrdered, 
-  Users, 
-  BarChart, 
-  Settings, 
-  FileText, 
-  LogOut 
+import { NavLink } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  ShoppingBag,
+  ListOrdered,
+  Users,
+  BarChart,
+  Settings,
+  FileText
 } from 'lucide-react';
 
 const Sidebar = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-
   const navLinks = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Products', path: '/admin/products', icon: ShoppingBag },
@@ -26,11 +20,6 @@ const Sidebar = () => {
     { name: 'Settings', path: '/admin/settings', icon: Settings },
     { name: 'Reports', path: '/admin/reports', icon: FileText },
   ];
-
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/');
-  };
 
   const linkClasses =
     "flex items-center p-3 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-[#C9A35D] transition-colors";
@@ -54,15 +43,6 @@ const Sidebar = () => {
             </NavLink>
           ))}
         </nav>
-      </div>
-      <div>
-        <button
-          onClick={handleLogout}
-          className={`${linkClasses} w-full`}
-        >
-          <LogOut className="mr-3 h-5 w-5" />
-          <span>Log Out</span>
-        </button>
       </div>
     </aside>
   );

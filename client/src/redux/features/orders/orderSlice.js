@@ -1,15 +1,20 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import apiClient from '../../../api/axios';
+import { clearCart } from '../cart/cartSlice';
 
 // --- Thunks ---
 export const placeOrder = createAsyncThunk(
   'orders/placeOrder',
-  async (orderData, { getState, rejectWithValue }) => {
+  async (orderData, { getState, dispatch, rejectWithValue }) => {
     try {
       const { token } = getState().auth;
       const response = await apiClient.post('/api/checkout/process', orderData, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      // After placing the order, dispatch the clearCart action
+      dispatch(clearCart());
+      
       return response.data;
     } catch (error) {
       const errorMessage = error.response?.data?.error || 'Failed to place order.';
@@ -67,6 +72,37 @@ export const fetchOrderDetails = createAsyncThunk(
   }
 );
 
+// --- Helper functions for status validation ---
+const isValidStatusTransition = (currentStatus, newStatus) => {
+  if (currentStatus === ORDER_STATUS.PAID) {
+    return newStatus !== ORDER_STATUS.PENDING && newStatus !== ORDER_STATUS.CANCELLED;
+  }
+  if (currentStatus === ORDER_STATUS.DISPATCHED && newStatus === ORDER_STATUS.CANCELLED) {
+    return false;
+  }
+  if (FINAL_STATUSES.includes(currentStatus)) {
+    return false;
+  }
+  
+  return true;
+};
+
+const getStatusTransitionError = (currentStatus, newStatus) => {
+  if (currentStatus === ORDER_STATUS.PAID && 
+      (newStatus === ORDER_STATUS.PENDING || newStatus === ORDER_STATUS.CANCELLED)) {
+    return 'Cannot return to pending or cancel an order that has been paid.';
+  }
+  
+  if (currentStatus === ORDER_STATUS.DISPATCHED && newStatus === ORDER_STATUS.CANCELLED) {
+    return 'Cannot cancel an order that has been dispatched.';
+  }
+  
+  if (FINAL_STATUSES.includes(currentStatus)) {
+    return 'Cannot modify order status once delivered or cancelled.';
+  }
+  
+  return 'Invalid status transition.';
+};
 
 export const updateOrderStatus = createAsyncThunk(
   'orders/updateOrderStatus',
@@ -78,8 +114,10 @@ export const updateOrderStatus = createAsyncThunk(
         { status, note },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
       return response.data;
     } catch (error) {
+      
       const errorMessage = error.response?.data?.error || 'Failed to update order status.';
       return rejectWithValue(errorMessage);
     }
@@ -96,6 +134,15 @@ export const ORDER_STATUS = {
 };
 
 export const FINAL_STATUSES = [ORDER_STATUS.CANCELLED, ORDER_STATUS.DELIVERED];
+
+// Valid status transitions for reference
+export const ALLOWED_TRANSITIONS = {
+  [ORDER_STATUS.PENDING]: [ORDER_STATUS.PAID, ORDER_STATUS.CANCELLED],
+  [ORDER_STATUS.PAID]: [ORDER_STATUS.DISPATCHED, ORDER_STATUS.DELIVERED],
+  [ORDER_STATUS.DISPATCHED]: [ORDER_STATUS.DELIVERED],
+  [ORDER_STATUS.DELIVERED]: [],
+};
+
 
 // --- Slice ---
 const ordersSlice = createSlice({
@@ -161,6 +208,12 @@ const ordersSlice = createSlice({
         state.updating = false;
         state.updateSuccess = true;
         state.currentOrder = action.payload;
+  
+        const updatedOrder = action.payload;
+        const orderIndex = state.orderHistory.findIndex(order => order._id === updatedOrder._id);
+        if (orderIndex !== -1) {
+          state.orderHistory[orderIndex] = updatedOrder;
+        }
       })
       .addCase(updateOrderStatus.rejected, (state, action) => {
         state.updating = false;
