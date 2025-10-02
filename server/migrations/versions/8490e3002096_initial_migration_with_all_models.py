@@ -1,8 +1,8 @@
 """Initial migration with all models
 
-Revision ID: b32589bbaa23
+Revision ID: 8490e3002096
 Revises: 
-Create Date: 2025-10-02 21:05:17.422017
+Create Date: 2025-10-02 21:21:53.538652
 
 """
 from alembic import op
@@ -11,7 +11,7 @@ import server
 
 
 # revision identifiers, used by Alembic.
-revision = 'b32589bbaa23'
+revision = '8490e3002096'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -138,7 +138,7 @@ def upgrade():
     sa.Column('description', sa.Text(), nullable=True),
     sa.Column('price', sa.Numeric(precision=10, scale=2), nullable=False),
     sa.Column('stock_qty', sa.Integer(), nullable=False),
-    sa.Column('image_url', sa.String(length=255), nullable=True),
+    sa.Column('image_url', sa.Text(), nullable=True),
     sa.Column('status', sa.Boolean(), nullable=False),
     sa.Column('category_id', server.app.models.base.GUID(), nullable=False),
     sa.Column('sub_category_id', server.app.models.base.GUID(), nullable=False),
