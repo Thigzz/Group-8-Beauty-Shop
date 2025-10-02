@@ -22,14 +22,16 @@ export default function AdminOrdersPage() {
   });
   const navigate = useNavigate();
 
-  // ✅ Get token from Redux
+
   const { token } = useSelector((state) => state.auth);
 
   // Fetch orders
     const fetchOrders = async (page = 1, search = searchTerm, status = statusFilter, date = dateFilter) => {
       try {
         setLoading(true);
-        const res = await apiClient.get(`api/orders/?page=${page}&sort=desc&search=${search}&status=${status}&date=${date}}`, {
+        const backendStatus = status === "all" ? "" : status;
+
+        const res = await apiClient.get(`api/orders/?page=${page}&sort=desc&search=${search}&status=${backendStatus}&date=${date}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.data && res.data.orders) {
@@ -41,7 +43,7 @@ export default function AdminOrdersPage() {
           total_pages: res.data.total_pages || 1
         });
       } else {
-        setMessage("❌ Invalid response format from server");
+        setMessage(" Invalid response format from server");
         setOrders([]);
       }
       } catch (err) {
@@ -51,18 +53,18 @@ export default function AdminOrdersPage() {
         console.error("Response data:", err.response.data);
         
         if (err.response.status === 401) {
-          setMessage("❌ Unauthorized - Please check your authentication");
+          setMessage("Unauthorized - Please check your authentication");
         } else if (err.response.status === 404) {
-          setMessage("❌ Orders endpoint not found - Check API URL");
+          setMessage("Orders endpoint not found - Check API URL");
         } else if (err.response.status === 500) {
-          setMessage("❌ Server error - Please try again later");
+          setMessage("Server error - Please try again later");
         } else {
-          setMessage(`❌ Could not load orders (${err.response.status})`);
+          setMessage(`Could not load orders (${err.response.status})`);
         }
       } else if (err.request) {
-        setMessage("❌ Network error - Could not connect to server");
+        setMessage("Network error - Could not connect to server");
       } else {
-        setMessage("❌ Could not load orders");
+        setMessage("Could not load orders");
       }
       setOrders([]);
       } finally {
@@ -72,8 +74,8 @@ export default function AdminOrdersPage() {
 
 const debouncedSearch = useMemo(
   () =>
-    debounce((term) => {
-      fetchOrders(1, term, statusFilter, dateFilter);
+    debounce((term, status, date) => {
+      fetchOrders(1, term, status, date);
     }, 500),
   [token]
 );
@@ -90,13 +92,13 @@ useEffect(() => {
 
   const handleNextPage = () => {
     if (pagination.has_next) {
-      fetchOrders(pagination.page + 1);
+      fetchOrders(pagination.page + 1, searchTerm, statusFilter, dateFilter);
     }
   };
 
   const handlePrevPage = () => {
     if (pagination.has_prev) {
-      fetchOrders(pagination.page - 1);
+      fetchOrders(pagination.page - 1, searchTerm, statusFilter, dateFilter);
     }
   };
 
@@ -118,7 +120,7 @@ useEffect(() => {
       );
     } catch (err) {
       console.error(err);
-      setMessage("❌ Failed to update status");
+      setMessage(" Failed to update status");
     }
   };
 
@@ -126,26 +128,6 @@ useEffect(() => {
   const handleViewUpdate = (orderId) => {
     navigate(`/admin/orders/${orderId}`);
   };
-
-  // Filter orders based on search and filters
-    const filteredOrders = orders.filter((order) => {
-    const customerName = order.customer ? 
-      `${order.customer.first_name || ''} ${order.customer.last_name || ''}`.trim() : 
-      "Unknown Customer";
-    
-    const matchesSearch = 
-      order.id?.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.cart_id?.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer?.primary_phone_no?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === "all" || order.status === statusFilter;
-    
-    const matchesDate = !dateFilter;
-    
-    return matchesSearch && matchesStatus && matchesDate;
-  });
-
 
   // Get status 
   const getStatusBadgeStyle = (status) => {
@@ -271,7 +253,7 @@ useEffect(() => {
               </tr>
             </thead>
             <tbody>
-              {filteredOrders.map((order) => (
+              {orders.map((order) => (
                 <tr key={order.id} className="border-t hover:bg-gray-50 transition-colors">
                   <td className="p-4 text-gray-700 font-medium">{formatId(order.id)}</td>
                   <td className="p-4 text-gray-500 text-sm">{formatId(order.cart_id)}</td>
@@ -288,7 +270,7 @@ useEffect(() => {
                   </td>
                     <td className="p-4">
                     <button
-                    onClick={() => {console.log("Navigating to order:", order.id);
+                    onClick={() => {
                         navigate(`/admin/orders/${order.id}`);
                       }}
                     className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg 
@@ -306,7 +288,7 @@ useEffect(() => {
             </tbody>
           </table>
 
-            {filteredOrders.length === 0 && !loading && (
+            {orders.length === 0 && !loading && (
             <div className="p-8 text-center text-gray-500">
               {orders.length === 0 ? "No orders found" : "No orders matching your search criteria"}
             </div>

@@ -47,9 +47,11 @@ export default function AdminOrderDetails() {
 
   useEffect(() => {
     if (updateSuccess) {
+    setShowConfirmation(false);
+    setStatusChangeNote('');
+
       const timer = setTimeout(() => {
         dispatch(clearUpdateSuccess());
-        setShowConfirmation(false);
         setStatusChangeNote('');
       }, 2000);
 
@@ -79,29 +81,16 @@ export default function AdminOrderDetails() {
   };
 
   const confirmStatusUpdate = async () => {
-          console.log(" confirmStatusUpdate called"); // Add this for debugging
-
           try {
-                const result = await dispatch(
+              await dispatch(
                   updateOrderStatus({
                     orderId,
                     status: selectedStatus,
                     note: statusChangeNote,
                   })
-                );
-                console.log(" Dispatch result:", result); // Add this for debugging
-                // Check if the action was successful
-                if (updateOrderStatus.fulfilled.match(result)) {
-                  // Success - the useEffect will handle closing the modal after 2 seconds
-                  console.log(" Status update successful");
-                } else if (updateOrderStatus.rejected.match(result)) {
-                  // Error is already in Redux state, will be displayed in modal
-                  console.log(" Status update failed:", result.payload);
-                  // Don't close modal on error - let user see the error message
-                }
+                ).unwrap();
               } catch (err) {
               console.error("Unexpected error:", err);
-              // Ensure we clear any stale errors
               dispatch(clearError());
                             }
         };;
