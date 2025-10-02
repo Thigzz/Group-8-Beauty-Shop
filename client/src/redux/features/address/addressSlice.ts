@@ -1,8 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import apiClient from "../../../api/axios";
 
-// --- Async Thunks --- //
-
 // Fetch all addresses for the current user
 export const fetchAddresses = createAsyncThunk(
   "address/fetchAddresses",
@@ -96,7 +94,7 @@ const addressSlice = createSlice({
       .addCase(fetchAddresses.fulfilled, (state, action) => {
         state.loading = false;
         state.addresses = action.payload;
-        state.defaultAddress = action.payload.find(addr => addr.is_default) || action.payload[0] || null;
+        state.defaultAddress = action.payload.find(addr => addr.isDefault) || action.payload[0] || null;
       })
       .addCase(fetchAddresses.rejected, (state, action) => {
         state.loading = false;
@@ -124,6 +122,9 @@ const addressSlice = createSlice({
         state.addresses = state.addresses.map((addr) =>
           addr.id === action.payload.id ? { ...addr, ...action.payload } : addr
         );
+        if (action.payload.isDefault) {
+          state.defaultAddress = action.payload;
+        }
       })
       .addCase(updateExistingAddress.rejected, (state, action) => {
         state.currentAction = null;
@@ -136,11 +137,12 @@ const addressSlice = createSlice({
       })
       .addCase(deleteExistingAddress.fulfilled, (state, action) => {
         state.currentAction = null;
+        const deletedAddressId = action.payload;
         state.addresses = state.addresses.filter(
-          (addr) => addr.id !== action.payload
+          (addr) => addr.id !== deletedAddressId
         );
-        if (!state.addresses.some((a) => a.is_default) && state.addresses[0]) {
-          state.defaultAddress = state.addresses[0];
+        if (!state.addresses.some((a) => a.deletedAddressId) && state.addresses[0]) {
+          state.defaultAddress = state.find(addr => addr.isDefault) || state.addresses[0] || null;
         }
       })
       .addCase(deleteExistingAddress.rejected, (state, action) => {
@@ -149,9 +151,25 @@ const addressSlice = createSlice({
       })
       
       // SET DEFAULT
+      .addCase(setDefaultAddress.pending, (state) => {
+        state.currentAction = "settingDefault";
+        state.error = null;
+      })
       .addCase(setDefaultAddress.fulfilled, (state, action) => {
+        state.currentAction = null;
+        state.addresses = state.addresses.map(addr => ({
+          ...addr,
+          isDefault: addr.id === action.payload.id
+        }));
+        state.defaultAddress = action.payload;
+      })
+    .addCase(setDefaultAddress.rejected, (state, action) => {
+        state.currentAction = null;
+        state.error = action.payload;
       });
   },
 });
+
+export const { clearError } = addressSlice.actions;
 
 export default addressSlice.reducer;

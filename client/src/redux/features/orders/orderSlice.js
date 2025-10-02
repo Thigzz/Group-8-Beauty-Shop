@@ -72,12 +72,50 @@ export const fetchOrderDetails = createAsyncThunk(
   }
 );
 
+// --- Helper functions for status validation ---
+const isValidStatusTransition = (currentStatus, newStatus) => {
+  if (currentStatus === ORDER_STATUS.PAID) {
+    return newStatus !== ORDER_STATUS.PENDING && newStatus !== ORDER_STATUS.CANCELLED;
+  }
+  if (currentStatus === ORDER_STATUS.DISPATCHED && newStatus === ORDER_STATUS.CANCELLED) {
+    return false;
+  }
+  if (FINAL_STATUSES.includes(currentStatus)) {
+    return false;
+  }
+  
+  return true;
+};
+
+const getStatusTransitionError = (currentStatus, newStatus) => {
+  if (currentStatus === ORDER_STATUS.PAID && 
+      (newStatus === ORDER_STATUS.PENDING || newStatus === ORDER_STATUS.CANCELLED)) {
+    return 'Cannot return to pending or cancel an order that has been paid.';
+  }
+  
+  if (currentStatus === ORDER_STATUS.DISPATCHED && newStatus === ORDER_STATUS.CANCELLED) {
+    return 'Cannot cancel an order that has been dispatched.';
+  }
+  
+  if (FINAL_STATUSES.includes(currentStatus)) {
+    return 'Cannot modify order status once delivered or cancelled.';
+  }
+  
+  return 'Invalid status transition.';
+};
 
 export const updateOrderStatus = createAsyncThunk(
   'orders/updateOrderStatus',
   async ({ orderId, status, note }, { getState, rejectWithValue }) => {
     try {
-      const { token } = getState().auth;
+      const { token,orders } = getState().auth;
+      
+      const currentOrder = orders.currentOrder || 
+                        orders.orderHistory.find(order => order._id === orderId);
+      
+      if (currentOrder && !isValidStatusTransition(currentOrder.status, status)) {
+        return rejectWithValue(getStatusTransitionError(currentOrder.status, status));
+      }
       const response = await apiClient.put(
         `/admin/orders/${orderId}/status`,
         { status, note },
@@ -85,6 +123,16 @@ export const updateOrderStatus = createAsyncThunk(
       );
       return response.data;
     } catch (error) {
+      // Server-side validation error
+      if (error.response?.data?.error) {
+        return rejectWithValue(error.response.data.error);
+      }
+      
+      // Our client-side validation error
+      if (error.payload) {
+        return rejectWithValue(error.payload);
+      }
+      
       const errorMessage = error.response?.data?.error || 'Failed to update order status.';
       return rejectWithValue(errorMessage);
     }
@@ -101,6 +149,15 @@ export const ORDER_STATUS = {
 };
 
 export const FINAL_STATUSES = [ORDER_STATUS.CANCELLED, ORDER_STATUS.DELIVERED];
+
+// Valid status transitions for reference
+export const ALLOWED_TRANSITIONS = {
+  [ORDER_STATUS.PENDING]: [ORDER_STATUS.PAID, ORDER_STATUS.CANCELLED],
+  [ORDER_STATUS.PAID]: [ORDER_STATUS.DISPATCHED, ORDER_STATUS.DELIVERED],
+  [ORDER_STATUS.DISPATCHED]: [ORDER_STATUS.DELIVERED],
+  [ORDER_STATUS.DELIVERED]: [],
+};
+
 
 // --- Slice ---
 const ordersSlice = createSlice({
@@ -166,6 +223,12 @@ const ordersSlice = createSlice({
         state.updating = false;
         state.updateSuccess = true;
         state.currentOrder = action.payload;
+  
+        const updatedOrder = action.payload;
+        const orderIndex = state.orderHistory.findIndex(order => order._id === updatedOrder._id);
+        if (orderIndex !== -1) {
+          state.orderHistory[orderIndex] = updatedOrder;
+        }
       })
       .addCase(updateOrderStatus.rejected, (state, action) => {
         state.updating = false;
