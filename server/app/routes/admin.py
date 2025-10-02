@@ -9,6 +9,16 @@ from server.app.models.order_items import OrderItem
 from server.app.models.enums import OrderStatus
 from sqlalchemy.orm import joinedload
 
+# Allowed transitions
+VALID_STATUS_TRANSITIONS = {
+    OrderStatus.pending: [OrderStatus.paid, OrderStatus.cancelled],
+    OrderStatus.paid: [OrderStatus.dispatched, OrderStatus.delivered],
+    OrderStatus.dispatched: [OrderStatus.delivered],
+    OrderStatus.delivered: [],
+    OrderStatus.cancelled: []
+}
+
+
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 #---------Get all users --------------------
@@ -120,6 +130,7 @@ def update_admin_order_status(order_id):
 
     data = request.get_json()
     new_status_str = data.get("status")
+    note = data.get("note", "")
 
     if not new_status_str:
         return jsonify({"error": "Status is required"}), 400
@@ -128,8 +139,28 @@ def update_admin_order_status(order_id):
         new_status = OrderStatus[new_status_str.lower()]
     except KeyError:
         return jsonify({"error": f"Invalid status '{new_status_str}'"}), 400
+    
+    # ADD STATUS VALIDATION H
+    print(f" Status update attempt: {order.status.name} → {new_status.name}")
+    
+    allowed_next_statuses = VALID_STATUS_TRANSITIONS.get(order.status, [])
+    print(f" Allowed transitions from {order.status.name}: {[s.name for s in allowed_next_statuses]}")
+    
+    if new_status not in allowed_next_statuses:
+        error_message = f"Invalid status transition: {order.status.name} → {new_status.name}"
+        print(f" {error_message}")
+        return jsonify({
+            "error": error_message,
+            "current_status": order.status.name,
+            "requested_status": new_status.name,
+            "allowed_transitions": [s.name for s in allowed_next_statuses]
+        }), 400
+    
+    print(f" Transition allowed - updating status")
+
 
     order.status = new_status
     db.session.commit()
-    
+    print(f" Order status updated successfully to {order.status.name}")
+
     return jsonify(order.to_dict(include_items=True, include_customer=True))

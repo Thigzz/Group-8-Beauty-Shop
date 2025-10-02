@@ -132,7 +132,7 @@ def update_order(order_id):
         order.status = new_status
     db.session.commit()
 
-    return jsonify({"message": f"Order status updated to {order.status.name}"})
+    return jsonify(order.to_dict(include_items=True))
 
 
 @orders_bp.route("/<uuid:order_id>", methods=["DELETE"])

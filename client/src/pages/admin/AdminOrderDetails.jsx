@@ -79,22 +79,32 @@ export default function AdminOrderDetails() {
   };
 
   const confirmStatusUpdate = async () => {
-    try {
-      const result = await dispatch(updateOrderStatus({
-          orderId,
-          status: selectedStatus,
-          note: statusChangeNote
-        })
-      );
+          console.log(" confirmStatusUpdate called"); // Add this for debugging
 
-      if (result.type === "orders/updateOrderStatus/rejected") {
-        return;
-      }
-
-    } catch (err) {
-      console.error("Unexpected error:", err);
-    }
-  };
+          try {
+                const result = await dispatch(
+                  updateOrderStatus({
+                    orderId,
+                    status: selectedStatus,
+                    note: statusChangeNote,
+                  })
+                );
+                console.log(" Dispatch result:", result); // Add this for debugging
+                // Check if the action was successful
+                if (updateOrderStatus.fulfilled.match(result)) {
+                  // Success - the useEffect will handle closing the modal after 2 seconds
+                  console.log(" Status update successful");
+                } else if (updateOrderStatus.rejected.match(result)) {
+                  // Error is already in Redux state, will be displayed in modal
+                  console.log(" Status update failed:", result.payload);
+                  // Don't close modal on error - let user see the error message
+                }
+              } catch (err) {
+              console.error("Unexpected error:", err);
+              // Ensure we clear any stale errors
+              dispatch(clearError());
+                            }
+        };;
 
   const cancelStatusUpdate = () => {
     setShowConfirmation(false);
@@ -156,7 +166,7 @@ export default function AdminOrderDetails() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-red-600 text-lg mb-4">❌ Error: {error}</div>
+          <div className="text-red-600 text-lg mb-4"> Error: {error}</div>
           <button
             onClick={() => {
               dispatch(clearError());
@@ -593,7 +603,7 @@ export default function AdminOrderDetails() {
                   <div className="p-6">
                     <div className="space-y-4">
                       {currentOrder.status_history.map((event, index) => (
-                        <div key={index} className="flex items-start space-x-3">
+                        <div key={index} className="flex items-start space-x-3">ƒ
                           <div
                             className={`w-2 h-2 rounded-full mt-2 ${
                               index === 0 ? "bg-[#C9A35D]" : "bg-gray-300"

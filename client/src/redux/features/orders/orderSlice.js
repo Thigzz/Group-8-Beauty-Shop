@@ -108,30 +108,15 @@ export const updateOrderStatus = createAsyncThunk(
   'orders/updateOrderStatus',
   async ({ orderId, status, note }, { getState, rejectWithValue }) => {
     try {
-      const { token,orders } = getState().auth;
-      
-      const currentOrder = orders.currentOrder || 
-                        orders.orderHistory.find(order => order._id === orderId);
-      
-      if (currentOrder && !isValidStatusTransition(currentOrder.status, status)) {
-        return rejectWithValue(getStatusTransitionError(currentOrder.status, status));
-      }
+      const { token } = getState().auth;
       const response = await apiClient.put(
         `/admin/orders/${orderId}/status`,
         { status, note },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
       return response.data;
     } catch (error) {
-      // Server-side validation error
-      if (error.response?.data?.error) {
-        return rejectWithValue(error.response.data.error);
-      }
-      
-      // Our client-side validation error
-      if (error.payload) {
-        return rejectWithValue(error.payload);
-      }
       
       const errorMessage = error.response?.data?.error || 'Failed to update order status.';
       return rejectWithValue(errorMessage);
