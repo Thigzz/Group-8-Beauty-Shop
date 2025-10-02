@@ -3,6 +3,7 @@ from server.app.extensions import db
 from server.app.models.category import Category
 from flask_jwt_extended import jwt_required
 from server.app.decorators import admin_required
+from server.app.models.sub_category import SubCategory
 
 categories_bp = Blueprint("categories", __name__, url_prefix="/api/categories")
 
@@ -18,16 +19,43 @@ def create_category():
     return jsonify({"message": "Category created", "id": str(category.id)}), 201
 
 
+
 @categories_bp.route("/", methods=["GET"])
 def get_categories():
     categories = Category.query.all()
-    return jsonify([{"id": str(c.id), "category_name": c.category_name} for c in categories])
+
+    result = []
+    for cat in categories:
+        subcategories = SubCategory.query.filter_by(category_id=cat.id).all()
+        result.append({
+            "id": str(cat.id),
+            "category_name": cat.category_name,
+            "subcategories": [
+                {
+                    "id": str(sc.id),
+                    "sub_category_name": sc.sub_category_name
+                } for sc in subcategories
+            ]
+        })
+
+    return jsonify(result)
+
 
 
 @categories_bp.route("/<uuid:category_id>", methods=["GET"])
 def get_category(category_id):
     category = Category.query.get_or_404(category_id)
-    return jsonify({"id": str(category.id), "category_name": category.category_name})
+    subcategories = SubCategory.query.filter_by(category_id=category.id).all()
+    return jsonify({
+        "id": str(category.id),
+        "category_name": category.category_name,
+        "subcategories": [
+            {
+                "id": str(sc.id),
+                "sub_category_name": sc.sub_category_name
+            } for sc in subcategories
+        ]
+    })
 
 
 @categories_bp.route("/<uuid:category_id>", methods=["PATCH"])

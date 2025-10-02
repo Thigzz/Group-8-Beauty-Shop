@@ -1,15 +1,21 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import CategoryPage from '../../../../client/src/pages/CategoryPage';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchAllProducts, fetchProductsByCategory, fetchProductsBySubcategory, fetchProductsByCategoryAndSubcategory } from '../../../src/redux/features/products/productsSlice';
+import CategoryPage from '../CategoryPage';
+import { 
+  fetchAllProducts, 
+  fetchProductsByCategory, 
+  fetchProductsBySubcategory,
+  fetchProductsByCategoryAndSubcategory 
+} from '../../redux/features/products/productsSlice';
 
+// Mock the Redux hooks and actions
 jest.mock('react-redux', () => ({
   useDispatch: jest.fn(),
   useSelector: jest.fn(),
 }));
 
-jest.mock('../../../src/redux/features/products/productsSlice', () => ({
+jest.mock('../../redux/features/products/productsSlice', () => ({
   fetchAllProducts: jest.fn(() => ({ type: 'products/fetchAllProducts' })),
   fetchProductsByCategory: jest.fn(() => ({ type: 'products/fetchProductsByCategory' })),
   fetchProductsBySubcategory: jest.fn(() => ({ type: 'products/fetchProductsBySubcategory' })),
@@ -23,7 +29,10 @@ describe('CategoryPage', () => {
     { 
       id: '1', 
       category_name: 'Makeup', 
-      subcategories: [{ id: '10', sub_category_name: 'Lips' }, { id: '11', sub_category_name: 'Eyes' }] 
+      subcategories: [
+        { id: '10', sub_category_name: 'Lips' }, 
+        { id: '11', sub_category_name: 'Eyes' }
+      ] 
     }
   ];
 
@@ -50,12 +59,18 @@ describe('CategoryPage', () => {
     render(<CategoryPage categories={categoriesMock} showAllProducts={true} />);
     expect(screen.getByText(/Filters/i)).toBeInTheDocument();
     expect(screen.getByText(/Categories/i)).toBeInTheDocument();
+    expect(screen.getByText(/SHOP ALL/i)).toBeInTheDocument();
   });
 
   test('shows loading spinner when productsState.loading=true', () => {
     useSelector.mockImplementation((selector) =>
       selector({
-        products: { items: [], loading: true, error: null, pagination: { total: 0, currentPage: 1 } }
+        products: { 
+          items: [], 
+          loading: true, 
+          error: null, 
+          pagination: { total: 0, currentPage: 1 } 
+        }
       })
     );
     render(<CategoryPage categories={categoriesMock} showAllProducts={true} />);
@@ -67,25 +82,63 @@ describe('CategoryPage', () => {
     expect(screen.getByText(/No products found/i)).toBeInTheDocument();
   });
 
-  test('dispatches fetchAllProducts on mount when showAllProducts=true and shop-all', () => {
-    render(<CategoryPage categories={categoriesMock} showAllProducts={true} />);
-    expect(dispatchMock).toHaveBeenCalledWith(fetchAllProducts({ page: 1 }));
+  test('displays subcategories when a category with subcategories is selected', () => {
+    render(<CategoryPage categories={categoriesMock} showAllProducts={false} />);
+
+    // Click on Makeup category
+    fireEvent.click(screen.getByText('Makeup'));
+    
+    // Check if subcategories are displayed
+    expect(screen.getByText('Subcategories')).toBeInTheDocument();
+    expect(screen.getByText('Lips')).toBeInTheDocument();
+    expect(screen.getByText('Eyes')).toBeInTheDocument();
   });
 
-  test('clears filters when "Clear All" button is clicked', () => {
-    const onCategorySelect = jest.fn();
-    const onSubcategorySelect = jest.fn();
+  test('selecting a subcategory calls onSubcategorySelect callback', () => {
+    const mockOnSubcategorySelect = jest.fn();
+    
     render(
       <CategoryPage 
         categories={categoriesMock} 
-        showAllProducts={true} 
-        onCategorySelect={onCategorySelect}
-        onSubcategorySelect={onSubcategorySelect}
+        showAllProducts={false}
+        onSubcategorySelect={mockOnSubcategorySelect}
       />
     );
+
+    // Select category first
+    fireEvent.click(screen.getByText('Makeup'));
+    // Then select subcategory
+    fireEvent.click(screen.getByText('Lips'));
+    
+    expect(mockOnSubcategorySelect).toHaveBeenCalledWith(
+      expect.objectContaining({ id: '10', sub_category_name: 'Lips' })
+    );
+  });
+
+  test('clears filters when "Clear All" button is clicked', () => {
+    const mockOnCategorySelect = jest.fn();
+    const mockOnSubcategorySelect = jest.fn();
+    
+    render(
+      <CategoryPage 
+        categories={categoriesMock} 
+        showAllProducts={false}
+        onCategorySelect={mockOnCategorySelect}
+        onSubcategorySelect={mockOnSubcategorySelect}
+      />
+    );
+
+    // Select a category and subcategory first
+    fireEvent.click(screen.getByText('Makeup'));
+    fireEvent.click(screen.getByText('Lips'));
+    
+    // Clear filters
     fireEvent.click(screen.getByText(/Clear All/i));
-    expect(onCategorySelect).toHaveBeenCalledWith({ id: 'shop-all', name: 'SHOP ALL', subcategories: [] });
-    expect(onSubcategorySelect).toHaveBeenCalledWith(null);
+    
+    expect(mockOnCategorySelect).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'shop-all', name: 'SHOP ALL' })
+    );
+    expect(mockOnSubcategorySelect).toHaveBeenCalledWith(null);
   });
 
   test('sort dropdown changes sortBy state', () => {
@@ -95,40 +148,38 @@ describe('CategoryPage', () => {
     expect(sortSelect.value).toBe('Price (Low → High)');
   });
 
-  test('selecting a subcategory calls onSubcategorySelect', () => {
-    const onSubcategorySelect = jest.fn();
-    render(
-      <CategoryPage 
-        categories={categoriesMock} 
-        showAllProducts={true} 
-        onCategorySelect={() => {}} 
-        onSubcategorySelect={onSubcategorySelect}
-      />
-    );
-    fireEvent.click(screen.getByText(/Lips/i));
-    expect(onSubcategorySelect).toHaveBeenCalledWith(categoriesMock[0].subcategories[0]);
-  });
-
-  test('load more button dispatches fetchAllProducts with next page', () => {
-    useSelector.mockImplementation((selector) =>
-      selector({
-        products: { items: [{ id: 1 }], loading: false, error: null, pagination: { total: 2, currentPage: 1 } }
-      })
-    );
-    render(<CategoryPage categories={categoriesMock} showAllProducts={true} />);
-    const loadMoreButton = screen.getByText(/Load More Products/i);
-    fireEvent.click(loadMoreButton);
-    // Since currentPage state increments, we cannot directly assert dispatch; real dispatch tests need redux-mock-store
-    expect(loadMoreButton).toBeInTheDocument();
-  });
-
   test('handles error display', () => {
     useSelector.mockImplementation((selector) =>
       selector({
-        products: { items: [], loading: false, error: 'Some error', pagination: { total: 0, currentPage: 1 } }
+        products: { 
+          items: [], 
+          loading: false, 
+          error: 'Some error', 
+          pagination: { total: 0, currentPage: 1 } 
+        }
       })
     );
     render(<CategoryPage categories={categoriesMock} showAllProducts={true} />);
     expect(screen.getByText(/Error: Some error/i)).toBeInTheDocument();
+  });
+
+  test('load more button appears when there are more pages', () => {
+    useSelector.mockImplementation((selector) =>
+      selector({
+        products: { 
+          items: [{ id: 1, name: 'Product 1' }], 
+          loading: false, 
+          error: null, 
+          pagination: { total: 25, currentPage: 1, totalPages: 3 } 
+        }
+      })
+    );
+    render(<CategoryPage categories={categoriesMock} showAllProducts={true} />);
+    expect(screen.getByText(/Load More Products/i)).toBeInTheDocument();
+  });
+
+  test('dispatches fetchAllProducts on mount when showAllProducts=true', () => {
+    render(<CategoryPage categories={categoriesMock} showAllProducts={true} />);
+    expect(dispatchMock).toHaveBeenCalledWith(fetchAllProducts({ page: 1 }));
   });
 });
