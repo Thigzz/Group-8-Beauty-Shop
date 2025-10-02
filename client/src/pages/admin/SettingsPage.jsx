@@ -43,9 +43,6 @@ const SettingsPage = () => {
             <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center">
                 <UserCircle2 size={48} className="text-gray-400" />
             </div>
-            <button type="button" className="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-md hover:bg-gray-300">
-                Change
-            </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
