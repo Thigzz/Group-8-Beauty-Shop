@@ -75,26 +75,18 @@ const debouncedSearch = useMemo(
     debounce((term) => {
       fetchOrders(1, term, statusFilter, dateFilter);
     }, 500),
-  [token] // recreate only if filters change
+  [token]
 );
 
-// run only when searchTerm changes
 useEffect(() => {
   if (token) {
     debouncedSearch(searchTerm, statusFilter, dateFilter);
   } 
 
   return () => {
-    debouncedSearch.cancel(); // cleanup on unmount or re-render
+    debouncedSearch.cancel(); 
   };
 }, [searchTerm, statusFilter, dateFilter, token, debouncedSearch]);
-
-  //   useEffect(() => {
-  //   if (token) {
-  //     fetchOrders(1, searchTerm, statusFilter, dateFilter);
-  //   }
-  // }, [token, searchTerm, statusFilter, dateFilter]);
-
 
   const handleNextPage = () => {
     if (pagination.has_next) {
@@ -130,7 +122,7 @@ useEffect(() => {
     }
   };
 
-// Navigate to order details page
+
   const handleViewUpdate = (orderId) => {
     navigate(`/admin/orders/${orderId}`);
   };
@@ -155,38 +147,30 @@ useEffect(() => {
   });
 
 
-  // Get status badge styling
+  // Get status 
   const getStatusBadgeStyle = (status) => {
     const baseClasses = "px-3 py-1 rounded-full text-xs font-medium";
     switch (status?.toLowerCase()) {
       case "pending":
         return `${baseClasses} bg-yellow-100 text-yellow-800 border border-yellow-200`;
-      case "confirmed":
+      case "paid":
         return `${baseClasses} bg-blue-100 text-blue-800 border border-blue-200`;
-      case "processing":
-        return `${baseClasses} bg-indigo-100 text-indigo-800 border border-indigo-200`;
-      case "shipped":
+      case "dispatched":
         return `${baseClasses} bg-purple-100 text-purple-800 border border-purple-200`;
       case "delivered":
         return `${baseClasses} bg-green-100 text-green-800 border border-green-200`;
       case "cancelled":
         return `${baseClasses} bg-red-100 text-red-800 border border-red-200`;
-      case "refunded":
-        return `${baseClasses} bg-gray-100 text-gray-800 border border-gray-200`;
-      case "fulfilled":
-        return `${baseClasses} bg-emerald-100 text-emerald-800 border border-emerald-200`;
       default:
         return `${baseClasses} bg-gray-100 text-gray-800 border border-gray-200`;
     }
   };
 
-   // Format status for display
   const formatStatus = (status) => {
     if (!status) return "Unknown";
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
-  // Format ID for display (show only first 8 characters)
   const formatId = (id) => {
     if (!id) return "N/A";
     return `${id.substring(0, 8)}...`;
@@ -295,7 +279,7 @@ useEffect(() => {
                   <td className="p-4 text-gray-500 text-sm">{getCustomerPhone(order)}</td>
                   <td className="p-4">
                     <span className={getStatusBadgeStyle(order.status)}>
-                       {formatStatus(order.status)}
+                      {formatStatus(order.status)}
                     </span>
                   </td>
                   <td className="p-4 font-semibold">KES {order.total_amount?.toFixed(2)}</td>
@@ -350,7 +334,7 @@ useEffect(() => {
                 <span className="ml-1">Previous</span>
               </button>
 
-               <button
+              <button
                 onClick={handleNextPage}
                 disabled={!pagination.has_next}
                 className={`flex items-center px-3 py-2 rounded-lg border ${
