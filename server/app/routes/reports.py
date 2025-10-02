@@ -35,7 +35,10 @@ def generate_excel(data, headers):
     output = io.BytesIO()
     wb = Workbook()
     ws = wb.active
-    ws.append(headers)
+
+    # ✅ FIXED: convert headers to list before appending
+    ws.append(list(headers))
+
     for row in data:
         ws.append([row.get(h, "") for h in headers])
     wb.save(output)
@@ -57,7 +60,7 @@ def generate_pdf(data, headers, title="Report"):
     styles = getSampleStyleSheet()
     elements.append(Paragraph(title, styles["Title"]))
 
-    table_data = [headers] + [[row.get(h, "") for h in headers] for row in data]
+    table_data = [list(headers)] + [[row.get(h, "") for h in headers] for row in data]
     table = Table(table_data)
     table.setStyle(TableStyle([
         ("BACKGROUND", (0,0), (-1,0), colors.grey),
