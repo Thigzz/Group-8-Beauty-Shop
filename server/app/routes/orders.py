@@ -9,6 +9,15 @@ from server.app.models.carts import Cart
 from sqlalchemy.orm import joinedload
 from sqlalchemy import or_, cast, String
 
+# Allowed transitions
+VALID_STATUS_TRANSITIONS = {
+    OrderStatus.pending: [OrderStatus.paid, OrderStatus.cancelled],
+    OrderStatus.paid: [OrderStatus.dispatched],
+    OrderStatus.dispatched: [OrderStatus.delivered],
+    OrderStatus.delivered: [],
+    OrderStatus.cancelled: []
+}
+
 
 orders_bp = Blueprint("orders", __name__, url_prefix="/api/orders")
 
@@ -108,9 +117,22 @@ def update_order(order_id):
     order = Order.query.get_or_404(order_id)
     data = request.get_json()
     if "status" in data:
-        order.status = OrderStatus[data["status"]]
+        try:
+            new_status = OrderStatus[data["status"]]
+        except KeyError:
+            return jsonify({"error": f"Invalid status: {data['status']}"}), 400
+
+        allowed_next = VALID_STATUS_TRANSITIONS.get(order.status, [])
+        if new_status not in allowed_next:
+            return jsonify({
+                "error": f"Invalid transition {order.status.name} → {new_status.name}",
+                "allowed": [s.name for s in allowed_next]
+            }), 400
+        
+        order.status = new_status
     db.session.commit()
-    return jsonify({"message": "Order updated"})
+
+    return jsonify({"message": f"Order status updated to {order.status.name}"})
 
 
 @orders_bp.route("/<uuid:order_id>", methods=["DELETE"])
