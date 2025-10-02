@@ -31,6 +31,164 @@ def seed_data():
         db.drop_all()
         db.create_all()
 
+        # ---------- Image Links ----------
+        image_links = {
+            "Huda Beauty Desert Dusk Palette": {
+                "Pro": "https://cdn11.bigcommerce.com/s-dgbc5lzb0p/images/stencil/1280x1280/products/8254/26965/Huda_Beauty_Desert_Dusk_Palette__11880.1712000334.jpg?c=2?imbypass=on",
+                "Edition": "https://m.media-amazon.com/images/I/71x6OMUKd7L._AC_SL1242_.jpg"
+            },
+            "Sally Hansen Miracle Gel": {
+                "Deluxe": "https://images.contentstack.io/v3/assets/blt68535c7ccb9ffe9b/bltdce78ddb26ba5c92/66742575ca9c56574b35e85d/sh-miracle-gel.jpg?auto=webp",
+                "Edition": "https://m.media-amazon.com/images/I/71IzR4zNS+L._SX466_.jpg"
+            },
+            "MAC Ruby Woo Lipstick": {
+                "Pro": "https://cdn.fynd.com/v2/falling-surf-7c8bb8/fyprod/wrkr/products/pictures/item/free/resize-w:1024/000000000494341982/DWrBuFTDk_O-000000000494341982_1.jpg"
+            },
+            "CeraVe Moisturizing Cream": {
+                "Mini": "https://dreamskinhaven.co.ke/wp-content/uploads/2022/04/CeraVe-Hydrating-Cream-to-Foam-Cleanser-87ml.png?x55143"
+            },
+            "Aveeno Daily Moisturizing Lotion": {
+                "Default": "https://i5.walmartimages.com/seo/Aveeno-Daily-Moisturizing-Body-Lotion-with-Oat-for-Dry-Skin-12-fl-oz_d3f610cc-57fd-402f-a9c9-27065888a725.e4111f9bbd775dd00a3505d5203e47f9.jpeg"
+            },
+            "Benefit Hoola Bronzer": {
+                "Deluxe": "https://www.sephora.com/productimages/sku/s2867901-main-zoom.jpg?imwidth=1224",
+                "Edition": "https://www.sephora.com/productimages/sku/s2867901-main-zoom.jpg?imwidth=1224"
+            },
+            "Beauty Blender Solid Cleanser": {
+                "Deluxe": "https://www.lookfantastic.com/images?url=https://static.thcdn.com/productimg/original/11286566-4484965341964831.jpg&format=webp&auto=avif&width=1200&height=1200&fit=cover&dpr=2",
+                "Edition": "https://m.media-amazon.com/images/I/61qaJPNwoGL._AC_SL1238_.jpg"
+            },
+            "Maybelline SuperStay Matte Ink": {
+                "Mini": "https://media6.ppl-media.com//tr:h-750,w-750,c-at_max,dpr-2/static/img/product/246926/maybelline-superstay-matink-mini_2_display_1626271271_403ea7d3.jpg"
+            },
+            "YSL Rouge Volupté Shine": {
+                "Pro": "https://www.yslbeauty.sa/dw/image/v2/BDCL_PRD/on/demandware.static/-/Sites-ysl-master-catalog/default/dwe216e90a/Makeup/RVS/3614271280268_45_rouge-volupte-shine_Alt1.png?sw=500&sh=600"
+            },
+            "Bleu de Chanel Eau de Toilette": {
+                "Deluxe": "https://image.adsoftheworld.com/sxvh71fcepnhzue80fcgiu6hqx9s"
+            },
+            "Moroccanoil Treatment": {
+                "Deluxe": "https://cdn11.bigcommerce.com/s-63354/images/stencil/1280x1280/products/7186/17192/Moroccanoil_Deluxe_Wonders_Mini_Gift_Set_-_Light_1_1__27121.1695293233.jpg?c=2&imbypass=on",
+                "Mini": "https://m.media-amazon.com/images/I/718J5i1N-SL._SL1500_.jpg",
+                "Edition": "https://bluemercury.com/cdn/shop/files/global_images-p7290011521011-7.jpg?v=1755621384&width=750"
+            },
+            "Maybelline Fit Me Foundation": {
+                "Mini": "https://women.brandatt.com/image/cache/catalog/6902395722427-1100x1100.jpg",
+                "Deluxe": "https://m.media-amazon.com/images/I/318C9oC0iUL._SY300_SX300_QL70_FMwebp_.jpg",
+                "Pro": "https://www.true.co.ke/cdn/shop/products/Maybelline-New-York-Fit-Me-Matte-_-Poreless-Liquid-Foundation-30ml_1024x1024.jpg?v=1617024064"
+            },
+            "Ipsy Glam Bag": {
+                "Edition": "https://blog.ipsy.com/_next/image?url=https://images.ctfassets.net/daem4o9l2hfd/532c5a7b-0413-44de-a87b-802d61ea37b1/78d8a67e91c09e3415782e3300ed595b/532c5a7b-0413-44de-a87b-802d61ea37b1.jpeg&w=3840&q=75"
+            },
+            "Sigma F80 Flat Kabuki Brush": {
+                "Deluxe": "https://m.media-amazon.com/images/I/71UskaEafGL._SL1500_.jpg"
+            },
+            "Maybelline Eyestudio Gel Liner": {
+                "Edition": "https://m.media-amazon.com/images/I/91pYdacVKEL._SL1500_.jpg",
+                "Pro": "https://m.media-amazon.com/images/I/51IkEtb9tRL._SS1000_.jpg"
+            },
+            "Tweezerman Stainless Steel Slant Tweezer": {
+                "Mini": "https://salonsaver.com.au/images/ProductImages/500/600406_4.jpg",
+                "Deluxe": "https://m.media-amazon.com/images/I/414Sih9Gs0L._AC_SX679_.jpg"
+            },
+            "Creed Aventus": {
+                "Mini": "https://minispectra.co/wp-content/uploads/2022/07/Spectra-Mini-029-Eau-De-Parfum-For-Men-25ml-Creed-Aventus.jpg",
+                "Edition": "https://cdn.paris-avenues.com/image/cache/catalog/Product2/3508441106420-Creed-Aventus-Edp-120-Ml-2-1100x1100.jpg"
+            },
+            "Chanel Coco Mademoiselle Eau de Parfum": {
+                "Pro": "https://giftpoint.com.pk/cdn/shop/files/CocoMademoiselleChanelEauDeParfum100ml.png?v=1754568615",
+                "Edition": "https://alhajisperfumes.com/cdn/shop/files/3145891165272box.jpg?v=1757503264&width=713"
+            },
+            "Fenty Beauty Pro Filt'r Soft Matte Foundation": {
+                "Edition": "https://kosmetista.in/wp-content/uploads/2022/02/Pro-Filtr-Soft-Matte-Longwear-Liquid-Foundation-Cover.jpg",
+                "Mini": "https://houseofbeauty.co.uk/public/files/productphoto/org/fentyhydrating.jpg"
+            },
+            "OPI Nail Lacquer Big Apple Red": {
+                "Edition": "https://cdn.shopify.com/s/files/1/0649/4879/7673/products/big-apple-red-nln25-nail-lacquer-22001014069_5d248308-fefd-4aef-a1c2-abaedcd41a56.jpg?v=1668556954&width=1080"
+            },
+            "Morphe M439 Deluxe Buffer Brush": {
+                "Mini": "https://www.lookfantastic.com/images?url=https://static.thcdn.com/productimg/1600/1600/11867081-6474613354960808.jpg&format=webp&auto=avif&width=985&height=985&fit=cover&dpr=2",
+                "Deluxe": "https://cdn-img.prettylittlething.com/f/a/5/5/fa5510504097c1c35d3f31936aac168b83562146_cly4747_1.jpg?imwidth=800"
+            },
+            "Sephora Collection Makeup Organizer Bag": {
+                "Deluxe": "https://i.ebayimg.com/images/g/JZoAAOSwxf9lJYkb/s-l1600.webp"
+            },
+            "Got2b Ultra Glued Styling Gel": {
+                "Edition": "https://www.true.co.ke/cdn/shop/products/Got2b-Ultra-Glued-Styling-Gel-For-Edges-150ml_1024x1024.jpg?v=1616059666",
+                "Deluxe": "https://m.media-amazon.com/images/I/71cezXxz9PL._SX466_.jpg"
+            },
+            "Real Techniques Miracle Complexion Sponge": {
+                "Deluxe": "https://m.media-amazon.com/images/I/81XAS27-rdL._SL1500_.jpg"
+            },
+            "Benefit Roller Lash Mascara": {
+                "Deluxe": "https://media.ulta.com/i/ulta/2285068?w=1080&h=1080&fmt=auto",
+                "Edition": "https://www.cultbeauty.com/images?url=https://static.thcdn.com/productimg/original/11068092-2545256189763476.jpg&format=webp&auto=avif&width=985&height=985&fit=cover&dpr=2"
+            },
+            "Tresemmé Moisture Rich Conditioner": {
+                "Pro": "https://assets.unileversolutions.com/v1/43825346.png?im=AspectCrop=(985,985);Resize=(985,985)",
+                "Mini": "https://target.scene7.com/is/image/Target/GUEST_a49d3198-d7c0-4260-a951-a585a9bdd7c1?wid=1200&hei=1200&qlt=80",
+                "Deluxe": "https://cfimg.wowcher.co.uk/cdn-cgi/image/height=487,width=727,quality=85,format=auto/https://static.wowcher.co.uk/images/deal/27493856/1775400.jpg"
+            },
+            "La Roche-Posay Anthelios Melt-in Milk Sunscreen SPF 60": {
+                "Deluxe": "https://media.ulta.com/i/ulta/2236414?w=1080&h=1080&fmt=auto"
+            },
+            "Essie Ballet Slippers": {
+                "Pro": "https://www.lookfantastic.ie/images?url=https://static.thcdn.com/productimg/original/11157771-4014968215088315.jpg&format=webp&auto=avif&width=985&height=985&fit=cover&dpr=2"
+            },
+            "Fenty Gloss Bomb": {
+                "Mini": "https://m.media-amazon.com/images/I/71SSd+EpWXL._SL1500_.jpg"
+            },
+            "Dove Deep Moisture Body Wash": {
+                "Pro": "https://m.media-amazon.com/images/I/71Ug3PJs0oL._SL1500_.jpg"
+            },
+            "SheaMoisture Raw Shea Butter Restorative Conditioner": {
+                "Deluxe": "https://media.superdrug.com//medias/sys_master/prd-images/he8/ha7/10627813081118/prd-ls4-708635_600x600/prd-ls4-708635-600x600.jpg",
+                "Mini": "https://www.beautyclick.co.ke/wp-content/smush-webp/2024/01/SheaMoistureRawSheaButterDeepMoisturizingRestorativeConditioner-384mL.jpg.webp"
+            },
+            "NYX Butter Gloss": {
+                "Deluxe": "https://www.nyxcosmetics.co.uk/dw/image/v2/AAQP_PRD/on/demandware.static/-/Sites-nyx-master-catalog/default/dw8196f9a9/PDPV2-Assets/NYX_089/NYX-PMU-Makeup-Lip-Lip-Gloss-BUTTER-GLOSS-BLING-BLGB01-BRING-THE-BLING-0800897255428-PackshotWithTexture.jpg?sw=1050&sh=1050&sm=cut&sfrm=jpeg&q=70"
+            },
+            "Too Faced Better Than Sex Mascara": {
+                "Edition": "https://media.kohlsimg.com/is/image/kohls/ab928309625341b0886b3af13e6eec0713b9efc8?wid=805&hei=805&op_sharpen=1"
+            },
+            "Pantene Pro-V Daily Moisture Renewal Shampoo": {
+                "Pro": "https://images.ctfassets.net/11glknwkozoe/322MhMEoGeYek59lpFxsZ2/b8fe5250d57a1f792b84bdea16788806/Pantene_Daily-Moisture_SHP_1563X1458_020420.png?fm=webp&q=75"
+            },
+            "L'Oréal True Match Concealer": {
+                "Edition": "https://www.lookfantastic.com/images?url=https://static.thcdn.com/productimg/original/15216239-2505232038854008.jpg&format=webp&auto=avif&width=985&height=985&fit=cover&dpr=2",
+                "Pro": "https://www.lookfantastic.com/images?url=https://static.thcdn.com/productimg/original/15216239-2505232038854008.jpg&format=webp&auto=avif&width=985&height=985&fit=cover&dpr=2"
+            },
+            "Charlotte Tilbury Airbrush Flawless Foundation": {
+                "Pro": "https://www.cultbeauty.com/images?url=https://static.thcdn.com/productimg/original/17165090-1555265501716607.jpg&format=webp&auto=avif&width=1200&height=1200&fit=cover&dpr=2",
+                "Mini": "https://houseofbeauty.co.uk/public/files/productphoto/org/ctairbrush.jpg"
+            },
+            "Neutrogena Ultra Sheer Dry-Touch SPF 55": {
+                "Deluxe": "https://images.ctfassets.net/bcjr30vxh6td/rsxMVyeMGbNsndAZQpHtP/06a1257abd4c07dd6fcb1976cb9f8c57/6868790_Carousel1.webp?fm=webp&w=1920"
+            },
+            "NARS Radiant Creamy Concealer": {
+                "Deluxe": "https://www.narscosmetics.com.hk/dw/image/v2/BCSK_PRD/on/demandware.static/-/Sites-itemmaster_NARS/default/dw98380c4e/alt1/NARS_SP24_ComplexionRepromote_PDPCrop_RCC_Benefits_GLBL_2000x2000.jpg?sw=856&sh=750&sm=fit"
+            },
+            "The Ordinary Niacinamide 10% + Zinc 1%": {
+                "Mini": "https://www.cultbeauty.com/images?url=https://static.thcdn.com/productimg/original/12243648-2075232038854080.jpg&format=webp&auto=avif&width=985&height=985&fit=cover&dpr=2"
+            },
+            "Neutrogena Hydro Boost Water Gel": {
+                "Edition": "https://images.ctfassets.net/bcjr30vxh6td/249vyCPCWOePqx9Reg2Y7O/217ce1ad98092d44f138083ad7a1e1c0/6811047_Carousel_1.webp?fm=webp&w=1920"
+            },
+            "Marc Jacobs Daisy": {
+                "Deluxe": "https://ik.imagekit.io/scentfied/products/marc-jacobs-daisy-eau-so-intense-edp.webp?tr=w-1280%2Ch-1280%2Cc-maintain_ratio%2Cfo-auto"
+            },
+            "Urban Decay Naked Eyeshadow Palette": {
+                "Pro": "https://media.vogue.co.uk/photos/5d5447bfc6ae3400088a3db3/2:3/w_2240,c_limit/604214916630_naked.jpg"
+            },
+            "La Roche-Posay Toleriane Hydrating Cleanser": {
+                "Pro": "https://m.media-amazon.com/images/I/717F3ObzIeL._SL1500_.jpg"
+            },
+            "Head & Shoulders Classic Clean Shampoo": {
+                "Deluxe": "https://cdn.salla.sa/DGdDlG/f770b50b-62f7-45e1-aa34-494169d83a60-1000x1000-IBu9TdN0YrEyOmmGx0Mb195tE00HNe5yOhXeoJwZ.jpg"
+            }
+        }
+
+
         # ---------- Categories ----------
         categories = [
             Category(category_name="MakeUp"),
@@ -98,7 +256,8 @@ def seed_data():
             {"first_name": "Simon", "last_name": "Warui", "username": "simon", "email": "simon@pambo.com"},
             {"first_name": "Ruth", "last_name": "Siyoi", "username": "ruth", "email": "ruth@pambo.com"},
             {"first_name": "Ike", "last_name": "Mwithiga", "username": "ike", "email": "ike@pambo.com"},
-            {"first_name": "Justin", "last_name": "Kipkorir", "username": "justin", "email": "justin@pambo.com"}
+            {"first_name": "Justin", "last_name": "Kipkorir", "username": "justin", "email": "justin@pambo.com"},
+            {"first_name": "Test", "last_name": "Admin", "username": "testadmin", "email": "admins@pambo.com"}
         ]
 
         for admin_data in admins:
@@ -163,59 +322,78 @@ def seed_data():
 
         # ---------- Products ----------
         product_samples = [
-            ("Maybelline Fit Me Foundation", "Matte finish foundation for oily skin.", "https://images.unsplash.com/photo-1580910051075-0a174670bfcf", "MakeUp", "Face"),
-            ("L'Oréal True Match Concealer", "Lightweight concealer that blends perfectly.", "https://images.unsplash.com/photo-1590944491986-df3a1bffc909", "MakeUp", "Face"),
-            ("Benefit Hoola Bronzer", "Soft matte bronzer with natural glow.", "https://images.unsplash.com/photo-1519677100203-a0e668c92439", "MakeUp", "Face"),
-            ("Fenty Beauty Pro Filt'r Soft Matte Foundation", "Full coverage with soft matte finish.", "https://images.unsplash.com/photo-1597234890546-8c4c8e1754a0", "MakeUp", "Face"),
-            ("NARS Radiant Creamy Concealer", "Iconic under-eye concealer.", "https://images.unsplash.com/photo-1580134477039-a753c8e208a9", "MakeUp", "Face"),
-            ("Charlotte Tilbury Airbrush Flawless Foundation", "Weightless, full coverage foundation.", "https://images.unsplash.com/photo-1597622925079-5a5e7e81b2f5", "MakeUp", "Face"),
-            ("MAC Ruby Woo Lipstick", "Signature blue-red matte lipstick.", "https://images.unsplash.com/photo-1616618789026-527e4dead084", "MakeUp", "Lips"),
-            ("NYX Butter Gloss", "High-shine lip gloss with butter smooth feel.", "https://images.unsplash.com/photo-1560840244-550159c8c902", "MakeUp", "Lips"),
-            ("Maybelline SuperStay Matte Ink", "Long lasting liquid lipstick.", "https://images.unsplash.com/photo-1588615700074-dea83c0f3480", "MakeUp", "Lips"),
-            ("Fenty Gloss Bomb", "Universal lip luminizer.", "https://images.unsplash.com/photo-1574861062357-4d86bd9fa392", "MakeUp", "Lips"),
-            ("YSL Rouge Volupté Shine", "Luxurious hydrating lipstick.", "https://images.unsplash.com/photo-1586976221004-051bfad63d3d", "MakeUp", "Lips"),
-            ("Too Faced Better Than Sex Mascara", "Volumizing & dramatic curl mascara.", "https://images.unsplash.com/photo-1580134477039-a753c8e208a9", "MakeUp", "Eyes"),
-            ("Urban Decay Naked Eyeshadow Palette", "12 neutral shades for day or night look.", "https://images.unsplash.com/photo-1588774061046-fd62aecf4df8", "MakeUp", "Eyes"),
-            ("Maybelline Eyestudio Gel Liner", "Intense black waterproof gel liner.", "https://images.unsplash.com/photo-1597622925079-5a5e7e81b2f5", "MakeUp", "Eyes"),
-            ("Benefit Roller Lash Mascara", "Lifted curl for short lashes like lash curler.", "https://images.unsplash.com/photo-1586976221004-051bfad63d3d", "MakeUp", "Eyes"),
-            ("Huda Beauty Desert Dusk Palette", "Exotic eyeshadow shades.", "https://images.unsplash.com/photo-1586870748526-3fda5c00940f", "MakeUp", "Eyes"),
-            ("OPI Nail Lacquer Big Apple Red", "Classic red nail polish.", "https://images.unsplash.com/photo-1586870748526-3fda5c00940f", "MakeUp", "Nails"),
-            ("Sally Hansen Miracle Gel", "Longwear gel-like nail color.", "https://images.unsplash.com/photo-1574861062357-4d86bd9fa392", "MakeUp", "Nails"),
-            ("Essie Ballet Slippers", "Soft pink nail polish.", "https://images.unsplash.com/photo-1588615700074-dea83c0f3480", "MakeUp", "Nails"),
-            ("CeraVe Moisturizing Cream", "Hydrating cream with ceramides.", "https://images.unsplash.com/photo-1596274435143-ee3a67b1575b", "Skincare", "Face"),
-            ("Neutrogena Hydro Boost Water Gel", "Lightweight gel moisturizer.", "https://images.unsplash.com/photo-1606813909412-8fe095868a6b", "Skincare", "Face"),
-            ("La Roche-Posay Toleriane Hydrating Cleanser", "Gentle face wash for sensitive skin.", "https://images.unsplash.com/photo-1595281416070-97ad5535f9a7", "Skincare", "Face"),
-            ("The Ordinary Niacinamide 10% + Zinc 1%", "Best-selling serum.", "https://images.unsplash.com/photo-1599904764381-631dd1a45ea3", "Skincare", "Face"),
-            ("Aveeno Daily Moisturizing Lotion", "Oatmeal body lotion for dry skin.", "https://images.unsplash.com/photo-1581599297893-1f1f3fd78cbe", "Skincare", "Body"),
-            ("Dove Deep Moisture Body Wash", "Cleanses & hydrates without stripping.", "https://images.unsplash.com/photo-1587445221059-4f6b484d32ca", "Skincare", "Body"),
-            ("Neutrogena Ultra Sheer Dry-Touch SPF 55", "Lightweight sunscreen", "https://images.unsplash.com/photo-1590057909111-39983f590c0a", "Skincare", "Sun Care"),
-            ("La Roche-Posay Anthelios Melt-in Milk Sunscreen SPF 60", "Broad spectrum sun protection.", "https://images.unsplash.com/photo-1576765607924-f88e27828f86", "Skincare", "Sun Care"),
-            ("Chanel Coco Mademoiselle Eau de Parfum", "Classic women's fragrance.", "https://images.unsplash.com/photo-1569718232121-bd66948ab08a", "Fragrance", "Women"),
-            ("Dior J'adore Eau de Parfum", "Elegant floral perfume.", "https://images.unsplash.com/photo-1579621970795-87f49102666b", "Fragrance", "Women"),
-            ("Marc Jacobs Daisy", "Playful fresh floral scent.", "https://images.unsplash.com/photo-1580210472454-b9e5d58d7102", "Fragrance", "Women"),
-            ("Creed Aventus", "Bold masculine citrus & smoky scent.", "https://images.unsplash.com/photo-1580210472454-b9e5d58d7102", "Fragrance", "Men"),
-            ("Bleu de Chanel Eau de Toilette", "Fresh woody men's fragrance.", "https://images.unsplash.com/photo-1556228721-de3183c74e8b", "Fragrance", "Men"),
-            ("Pantene Pro-V Daily Moisture Renewal Shampoo", "Hydrating shampoo for dry hair.", "https://images.unsplash.com/photo-1584755390360-1c2c0b2e2d49", "Haircare", "Shampoo"),
-            ("Head & Shoulders Classic Clean Shampoo", "Dandruff shampoo that cleans scalp.", "https://images.unsplash.com/photo-1583347676245-4a135b0018ad", "Haircare", "Shampoo"),
-            ("Tresemmé Moisture Rich Conditioner", "Deep moisture conditioner.", "https://images.unsplash.com/photo-1586348943529-beaae6c28db9", "Haircare", "Conditioner"),
-            ("SheaMoisture Raw Shea Butter Restorative Conditioner", "For curly, dry hair.", "https://images.unsplash.com/photo-1599904764381-631dd1a45ea3", "Haircare", "Conditioner"),
-            ("Got2b Ultra Glued Styling Gel", "Extreme hold hair gel.", "https://images.unsplash.com/photo-1584656001355-5d3fda3f2bd2", "Haircare", "Styling"),
-            ("Moroccanoil Treatment", "Argan oil hair treatment product.", "https://images.unsplash.com/photo-1584263321298-2c6f2f4e5322", "Haircare", "Treatments"),
-            ("Real Techniques Miracle Complexion Sponge", "Beauty sponge for blending foundation.", "https://images.unsplash.com/photo-1589571894960-20bbe2828e9c", "Accessories", "Sponges"),
-            ("Sigma F80 Flat Kabuki Brush", "Buffing makeup brush.", "https://images.unsplash.com/photo-1597382286870-99f72fd2e206", "Accessories", "Brushes"),
-            ("Morphe M439 Deluxe Buffer Brush", "Top-selling face brush.", "https://images.unsplash.com/photo-1615210100443-74b6a08b8a48", "Accessories", "Brushes"),
-            ("Tweezerman Stainless Steel Slant Tweezer", "Precision tweezer for brows.", "https://images.unsplash.com/photo-1583335557867-9b7356522251", "Accessories", "Tools"),
-            ("Beauty Blender Solid Cleanser", "Tool cleanser bar.", "https://images.unsplash.com/photo-1580463011650-cf0c261fd7b0", "Accessories", "Tools"),
-            ("Ipsy Glam Bag", "Makeup bag subscription pouch.", "https://images.unsplash.com/photo-1570129477492-45c003edd2be", "Accessories", "Bags"),
-            ("Sephora Collection Makeup Organizer Bag", "Function meets style.", "https://images.unsplash.com/photo-1615210100443-74b6a08b8a48", "Accessories", "Bags"),
+            ("Maybelline Fit Me Foundation", "Matte finish foundation for oily skin.", "MakeUp", "Face"),
+            ("L'Oréal True Match Concealer", "Lightweight concealer that blends perfectly.", "MakeUp", "Face"),
+            ("Benefit Hoola Bronzer", "Soft matte bronzer with natural glow.", "MakeUp", "Face"),
+            ("Fenty Beauty Pro Filt'r Soft Matte Foundation", "Full coverage with soft matte finish.", "MakeUp", "Face"),
+            ("NARS Radiant Creamy Concealer", "Iconic under-eye concealer.", "MakeUp", "Face"),
+            ("Charlotte Tilbury Airbrush Flawless Foundation", "Weightless, full coverage foundation.", "MakeUp", "Face"),
+            ("MAC Ruby Woo Lipstick", "Signature blue-red matte lipstick.", "MakeUp", "Lips"),
+            ("NYX Butter Gloss", "High-shine lip gloss with butter smooth feel.", "MakeUp", "Lips"),
+            ("Maybelline SuperStay Matte Ink", "Long lasting liquid lipstick.", "MakeUp", "Lips"),
+            ("Fenty Gloss Bomb", "Universal lip luminizer.", "MakeUp", "Lips"),
+            ("YSL Rouge Volupté Shine", "Luxurious hydrating lipstick.", "MakeUp", "Lips"),
+            ("Too Faced Better Than Sex Mascara", "Volumizing & dramatic curl mascara.", "MakeUp", "Eyes"),
+            ("Urban Decay Naked Eyeshadow Palette", "12 neutral shades for day or night look.", "MakeUp", "Eyes"),
+            ("Maybelline Eyestudio Gel Liner", "Intense black waterproof gel liner.", "MakeUp", "Eyes"),
+            ("Benefit Roller Lash Mascara", "Lifted curl for short lashes like lash curler.", "MakeUp", "Eyes"),
+            ("Huda Beauty Desert Dusk Palette", "Exotic eyeshadow shades.", "MakeUp", "Eyes"),
+            ("OPI Nail Lacquer Big Apple Red", "Classic red nail polish.", "MakeUp", "Nails"),
+            ("Sally Hansen Miracle Gel", "Longwear gel-like nail color.", "MakeUp", "Nails"),
+            ("Essie Ballet Slippers", "Soft pink nail polish.", "MakeUp", "Nails"),
+            ("CeraVe Moisturizing Cream", "Hydrating cream with ceramides.", "Skincare", "Face"),
+            ("Neutrogena Hydro Boost Water Gel", "Lightweight gel moisturizer.", "Skincare", "Face"),
+            ("La Roche-Posay Toleriane Hydrating Cleanser", "Gentle face wash for sensitive skin.", "Skincare", "Face"),
+            ("The Ordinary Niacinamide 10% + Zinc 1%", "Best-selling serum.", "Skincare", "Face"),
+            ("Aveeno Daily Moisturizing Lotion", "Oatmeal body lotion for dry skin.", "Skincare", "Body"),
+            ("Dove Deep Moisture Body Wash", "Cleanses & hydrates without stripping.", "Skincare", "Body"),
+            ("Neutrogena Ultra Sheer Dry-Touch SPF 55", "Lightweight sunscreen", "Skincare", "Sun Care"),
+            ("La Roche-Posay Anthelios Melt-in Milk Sunscreen SPF 60", "Broad spectrum sun protection.", "Skincare", "Sun Care"),
+            ("Chanel Coco Mademoiselle Eau de Parfum", "Classic women's fragrance.", "Fragrance", "Women"),
+            ("Dior J'adore Eau de Parfum", "Elegant floral perfume.", "Fragrance", "Women"),
+            ("Marc Jacobs Daisy", "Playful fresh floral scent.", "Fragrance", "Women"),
+            ("Creed Aventus", "Bold masculine citrus & smoky scent.", "Fragrance", "Men"),
+            ("Bleu de Chanel Eau de Toilette", "Fresh woody men's fragrance.", "Fragrance", "Men"),
+            ("Pantene Pro-V Daily Moisture Renewal Shampoo", "Hydrating shampoo for dry hair.", "Haircare", "Shampoo"),
+            ("Head & Shoulders Classic Clean Shampoo", "Dandruff shampoo that cleans scalp.", "Haircare", "Shampoo"),
+            ("Tresemmé Moisture Rich Conditioner", "Deep moisture conditioner.", "Haircare", "Conditioner"),
+            ("SheaMoisture Raw Shea Butter Restorative Conditioner", "For curly, dry hair.", "Haircare", "Conditioner"),
+            ("Got2b Ultra Glued Styling Gel", "Extreme hold hair gel.", "Haircare", "Styling"),
+            ("Moroccanoil Treatment", "Argan oil hair treatment product.", "Haircare", "Treatments"),
+            ("Real Techniques Miracle Complexion Sponge", "Beauty sponge for blending foundation.", "Accessories", "Sponges"),
+            ("Sigma F80 Flat Kabuki Brush", "Buffing makeup brush.", "Accessories", "Brushes"),
+            ("Morphe M439 Deluxe Buffer Brush", "Top-selling face brush.", "Accessories", "Brushes"),
+            ("Tweezerman Stainless Steel Slant Tweezer", "Precision tweezer for brows.", "Accessories", "Tools"),
+            ("Beauty Blender Solid Cleanser", "Tool cleanser bar.", "Accessories", "Tools"),
+            ("Ipsy Glam Bag", "Makeup bag subscription pouch.", "Accessories", "Bags"),
+            ("Sephora Collection Makeup Organizer Bag", "Function meets style.", "Accessories", "Bags"),
         ]
         products = []
         with db.session.no_autoflush:
             for _ in range(100):
                 sample = random.choice(product_samples)
-                variant_name = f"{sample[0]} {random.choice(['Mini','Pro','Deluxe','Edition'])}"
-                category_obj = next(c for c in categories if c.category_name == sample[3])
-                subcategory_obj = next(sc for sc in subcategories if sc.sub_category_name == sample[4] and sc.category.category_name == sample[3])
+                variant_options = ['Mini', 'Pro', 'Deluxe', 'Edition']
+                variant = random.choice(variant_options)
+                
+                base_name = sample[0]
+                variant_name = f"{base_name} {variant}"
+                
+                # Get the image URL
+                product_urls = image_links.get(base_name, {})
+                image_url = product_urls.get(variant)
+
+                # Fallback if specific variant URL is not found
+                if not image_url and product_urls:
+                    # 'Default' is for products without variants like Aveeno
+                    image_url = product_urls.get('Default') or random.choice(list(product_urls.values()))
+                
+                # Final fallback to a placeholder if no URLs are found for the product
+                if not image_url:
+                    # Using a well-known placeholder service
+                    image_url = "https://cdn.fynd.com/v2/falling-surf-7c8bb8/fyprod/wrkr/products/pictures/item/free/resize-w:1024/000000000494341982/DWrBuFTDk_O-000000000494341982_1.jpg"
+
+                category_obj = next(c for c in categories if c.category_name == sample[2])
+                subcategory_obj = next(sc for sc in subcategories if sc.sub_category_name == sample[3] and sc.category.category_name == sample[2])
                 
                 stock_qty = random.randint(10, 200)
 
@@ -224,7 +402,7 @@ def seed_data():
                     description=sample[1],
                     price=round(random.uniform(5, 200), 2),
                     stock_qty=stock_qty,
-                    image_url=sample[2],
+                    image_url=image_url,
                     category=category_obj,
                     sub_category=subcategory_obj,
                 )
