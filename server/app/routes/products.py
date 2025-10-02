@@ -17,6 +17,7 @@ def get_all_products():
         search = request.args.get('search')
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
+        sort = request.args.get('sort', 'desc')  
         
         query = Product.query
 
@@ -33,6 +34,11 @@ def get_all_products():
         
         if search:
             query = query.filter(Product.product_name.contains(search))
+        
+        if sort == "asc": 
+            query = query.order_by(Product.created_at.asc()) 
+        else:
+            query = query.order_by(Product.created_at.desc())
         
         products = query.paginate(page=page, per_page=per_page, error_out=False)
         

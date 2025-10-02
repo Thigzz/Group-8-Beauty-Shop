@@ -53,9 +53,16 @@ def test_update_order_status_admin(test_client, sample_order, admin_token):
         response = test_client.put(
             f"/admin/orders/{order.id}/status",
             headers=headers,
-            json={"status": "dispatched"}
+            json={"status": "paid"}
         )
         assert response.status_code == 200
+
+        response = test_client.put(
+        f"/admin/orders/{sample_order.id}/status",
+        headers=headers,
+        json={"status": "dispatched"}
+    )
+    assert response.status_code == 200
 
 def test_update_order_status_non_admin(test_client, sample_order, user_token):
     with test_client.application.app_context():
@@ -117,3 +124,40 @@ def test_get_user_order_history(test_client, user_with_orders):
     assert response.status_code == 200
     data = response.get_json()
     assert len(data['orders']) == 2
+
+def test_cannot_cancel_after_delivered(test_client, sample_order, admin_token):
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    response = test_client.put(
+        f"/admin/orders/{sample_order.id}/status",
+        headers=headers,
+        json={"status": "paid"}
+    )
+    assert response.status_code == 200
+
+    response = test_client.put(
+        f"/admin/orders/{sample_order.id}/status",
+        headers=headers,
+        json={"status": "dispatched"}
+    )
+    assert response.status_code == 200
+
+    response = test_client.put(
+        f"/admin/orders/{sample_order.id}/status",
+        headers=headers,
+        json={"status": "delivered"}
+    )
+    assert response.status_code == 200
+
+    response = test_client.put(
+        f"/admin/orders/{sample_order.id}/status",
+        headers=headers,
+        json={"status": "cancelled"}
+    )
+    assert response.status_code == 400
+    
+    data = json.loads(response.data)
+    assert data["error"] == "Invalid status transition: delivered → cancelled"
+    assert data["current_status"] == "delivered"
+    assert data["requested_status"] == "cancelled"
+    assert data["allowed_transitions"] == []
+

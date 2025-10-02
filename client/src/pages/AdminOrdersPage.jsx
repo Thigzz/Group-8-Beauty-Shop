@@ -1,8 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Eye, Search, Filter,ChevronLeft, ChevronRight  } from "lucide-react";
 import apiClient from "../api/axios";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import debounce from "lodash.debounce"; 
+import { ORDER_STATUS } from "../redux/features/orders/orderSlice";
+
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);
@@ -19,14 +22,16 @@ export default function AdminOrdersPage() {
   });
   const navigate = useNavigate();
 
-  // ✅ Get token from Redux
+
   const { token } = useSelector((state) => state.auth);
 
   // Fetch orders
-    const fetchOrders = async (page = 1) => {
+    const fetchOrders = async (page = 1, search = searchTerm, status = statusFilter, date = dateFilter) => {
       try {
         setLoading(true);
-        const res = await apiClient.get(`api/orders/?page=${page}`, {
+        const backendStatus = status === "all" ? "" : status;
+
+        const res = await apiClient.get(`api/orders/?page=${page}&sort=desc&search=${search}&status=${backendStatus}&date=${date}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.data && res.data.orders) {
@@ -38,7 +43,7 @@ export default function AdminOrdersPage() {
           total_pages: res.data.total_pages || 1
         });
       } else {
-        setMessage("❌ Invalid response format from server");
+        setMessage(" Invalid response format from server");
         setOrders([]);
       }
       } catch (err) {
@@ -48,18 +53,18 @@ export default function AdminOrdersPage() {
         console.error("Response data:", err.response.data);
         
         if (err.response.status === 401) {
-          setMessage("❌ Unauthorized - Please check your authentication");
+          setMessage("Unauthorized - Please check your authentication");
         } else if (err.response.status === 404) {
-          setMessage("❌ Orders endpoint not found - Check API URL");
+          setMessage("Orders endpoint not found - Check API URL");
         } else if (err.response.status === 500) {
-          setMessage("❌ Server error - Please try again later");
+          setMessage("Server error - Please try again later");
         } else {
-          setMessage(`❌ Could not load orders (${err.response.status})`);
+          setMessage(`Could not load orders (${err.response.status})`);
         }
       } else if (err.request) {
-        setMessage("❌ Network error - Could not connect to server");
+        setMessage("Network error - Could not connect to server");
       } else {
-        setMessage("❌ Could not load orders");
+        setMessage("Could not load orders");
       }
       setOrders([]);
       } finally {
@@ -67,21 +72,33 @@ export default function AdminOrdersPage() {
       }
     };
 
-    useEffect(() => {
-    if (token) {
-      fetchOrders(1);
-    }
-  }, [token]);
+const debouncedSearch = useMemo(
+  () =>
+    debounce((term, status, date) => {
+      fetchOrders(1, term, status, date);
+    }, 500),
+  [token]
+);
+
+useEffect(() => {
+  if (token) {
+    debouncedSearch(searchTerm, statusFilter, dateFilter);
+  } 
+
+  return () => {
+    debouncedSearch.cancel(); 
+  };
+}, [searchTerm, statusFilter, dateFilter, token, debouncedSearch]);
 
   const handleNextPage = () => {
     if (pagination.has_next) {
-      fetchOrders(pagination.page + 1);
+      fetchOrders(pagination.page + 1, searchTerm, statusFilter, dateFilter);
     }
   };
 
   const handlePrevPage = () => {
     if (pagination.has_prev) {
-      fetchOrders(pagination.page - 1);
+      fetchOrders(pagination.page - 1, searchTerm, statusFilter, dateFilter);
     }
   };
 
@@ -103,67 +120,39 @@ export default function AdminOrdersPage() {
       );
     } catch (err) {
       console.error(err);
-      setMessage("❌ Failed to update status");
+      setMessage(" Failed to update status");
     }
   };
 
-// Navigate to order details page
+
   const handleViewUpdate = (orderId) => {
     navigate(`/admin/orders/${orderId}`);
   };
 
-  // Filter orders based on search and filters
-    const filteredOrders = orders.filter((order) => {
-    const customerName = order.customer ? 
-      `${order.customer.first_name || ''} ${order.customer.last_name || ''}`.trim() : 
-      "Unknown Customer";
-    
-    const matchesSearch = 
-      order.id?.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.cart_id?.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer?.primary_phone_no?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === "all" || order.status === statusFilter;
-    
-    const matchesDate = !dateFilter;
-    
-    return matchesSearch && matchesStatus && matchesDate;
-  });
-
-
-  // Get status badge styling
+  // Get status 
   const getStatusBadgeStyle = (status) => {
     const baseClasses = "px-3 py-1 rounded-full text-xs font-medium";
     switch (status?.toLowerCase()) {
       case "pending":
         return `${baseClasses} bg-yellow-100 text-yellow-800 border border-yellow-200`;
-      case "confirmed":
+      case "paid":
         return `${baseClasses} bg-blue-100 text-blue-800 border border-blue-200`;
-      case "processing":
-        return `${baseClasses} bg-indigo-100 text-indigo-800 border border-indigo-200`;
-      case "shipped":
+      case "dispatched":
         return `${baseClasses} bg-purple-100 text-purple-800 border border-purple-200`;
       case "delivered":
         return `${baseClasses} bg-green-100 text-green-800 border border-green-200`;
       case "cancelled":
         return `${baseClasses} bg-red-100 text-red-800 border border-red-200`;
-      case "refunded":
-        return `${baseClasses} bg-gray-100 text-gray-800 border border-gray-200`;
-      case "fulfilled":
-        return `${baseClasses} bg-emerald-100 text-emerald-800 border border-emerald-200`;
       default:
         return `${baseClasses} bg-gray-100 text-gray-800 border border-gray-200`;
     }
   };
 
-   // Format status for display
   const formatStatus = (status) => {
     if (!status) return "Unknown";
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
-  // Format ID for display (show only first 8 characters)
   const formatId = (id) => {
     if (!id) return "N/A";
     return `${id.substring(0, 8)}...`;
@@ -216,15 +205,11 @@ export default function AdminOrdersPage() {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent appearance-none bg-white"
               >
                 <option value="all">All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="processing">Processing</option>
-                <option value="shipped">Shipped</option>
-                <option value="delivered">Delivered</option>
-                <option value="fulfilled">Fulfilled</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="refunded">Refunded</option>
-
+                {Object.values(ORDER_STATUS).map((status) => (
+                  <option key={status} value={status}>
+                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                  </option>
+                ))}
               </select>
             </div>
        {/* Date Filter */}
@@ -268,7 +253,7 @@ export default function AdminOrdersPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredOrders.map((order) => (
+              {orders.map((order) => (
                 <tr key={order.id} className="border-t hover:bg-gray-50 transition-colors">
                   <td className="p-4 text-gray-700 font-medium">{formatId(order.id)}</td>
                   <td className="p-4 text-gray-500 text-sm">{formatId(order.cart_id)}</td>
@@ -276,7 +261,7 @@ export default function AdminOrdersPage() {
                   <td className="p-4 text-gray-500 text-sm">{getCustomerPhone(order)}</td>
                   <td className="p-4">
                     <span className={getStatusBadgeStyle(order.status)}>
-                       {formatStatus(order.status)}
+                      {formatStatus(order.status)}
                     </span>
                   </td>
                   <td className="p-4 font-semibold">KES {order.total_amount?.toFixed(2)}</td>
@@ -285,7 +270,7 @@ export default function AdminOrdersPage() {
                   </td>
                     <td className="p-4">
                     <button
-                    onClick={() => {console.log("Navigating to order:", order.id);
+                    onClick={() => {
                         navigate(`/admin/orders/${order.id}`);
                       }}
                     className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg 
@@ -303,7 +288,7 @@ export default function AdminOrdersPage() {
             </tbody>
           </table>
 
-            {filteredOrders.length === 0 && !loading && (
+            {orders.length === 0 && !loading && (
             <div className="p-8 text-center text-gray-500">
               {orders.length === 0 ? "No orders found" : "No orders matching your search criteria"}
             </div>
@@ -331,7 +316,7 @@ export default function AdminOrdersPage() {
                 <span className="ml-1">Previous</span>
               </button>
 
-               <button
+              <button
                 onClick={handleNextPage}
                 disabled={!pagination.has_next}
                 className={`flex items-center px-3 py-2 rounded-lg border ${

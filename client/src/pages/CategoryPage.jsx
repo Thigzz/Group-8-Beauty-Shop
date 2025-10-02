@@ -58,6 +58,36 @@ const CategoryPage = ({
   const isGlobalShopAll = showAllProducts && !effectiveCategory;
 
   useEffect(() => {
+  if (!categories.length) return;
+
+  const categorySlug = categoryName?.toLowerCase();
+  const subcategorySlug = subcategoryName?.toLowerCase();
+
+  const category = categories.find(
+    c => createSlug(c.category_name || c.name) === categorySlug
+  );
+
+  if (subcategorySlug === 'all') {
+    if (category && category.id !== effectiveCategory?.id) {
+      onCategorySelect(category);
+    }
+    return;
+  }
+
+  const subcategory = category?.subcategories?.find(
+    sc => createSlug(sc.sub_category_name || sc.name) === subcategorySlug
+  );
+
+  if (category && category.id !== effectiveCategory?.id) {
+    onCategorySelect(category);
+  }
+  if (subcategory && subcategory.id !== effectiveSubcategory?.id) {
+    onSubcategorySelect(subcategory);
+  }
+}, [categoryName, subcategoryName, categories]);
+
+
+  useEffect(() => {
     const fetchProducts = () => {
       if (isGlobalShopAll) {
         // Global Shop All - fetch all products
@@ -224,18 +254,22 @@ const CategoryPage = ({
       <div className="container mx-auto px-4 py-6">
         <div className="mb-8 bg-white rounded-xl shadow-sm p-6">
           <div className="mb-4">
-            <Breadcrumb 
+            <Breadcrumb
               selectedCategory={effectiveCategory}
               selectedSubcategory={effectiveSubcategory}
-              className="text-xl font-semibold" 
+              className="text-xl font-semibold"
             />
           </div>
           <div className="flex justify-between items-center">
             <p className="text-gray-800 text-lg font-medium">
-              {productsState.loading && currentPage === 1 ? 'Loading...' : getProductCountText()}
+              {productsState.loading && currentPage === 1
+                ? "Loading..."
+                : getProductCountText()}
             </p>
             {productsState.error && (
-              <p className="text-red-600 text-base font-medium">Error: {productsState.error}</p> 
+              <p className="text-red-600 text-base font-medium">
+                Error: {productsState.error}
+              </p>
             )}
           </div>
         </div>
@@ -270,11 +304,16 @@ const CategoryPage = ({
 
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Filters Sidebar */}
-          <div className={`lg:w-64 ${showFilters ? 'block' : 'hidden lg:block'}`}>
+          <div
+            className={`lg:w-64 ${showFilters ? "block" : "hidden lg:block"}`}
+          >
             <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-semibold text-gray-900">Filters</h3>
-                <button onClick={clearFilters} className="text-sm text-yellow-600 hover:text-yellow-700">
+                <button
+                  onClick={clearFilters}
+                  className="text-sm text-yellow-600 hover:text-yellow-700"
+                >
                   Clear All
                 </button>
               </div>
@@ -282,8 +321,8 @@ const CategoryPage = ({
               {/* Category Filters */}
               <div className="mb-6">
                 <h3 className="font-semibold text-lg mb-3">Categories</h3>
-                
-                {!isGlobalShopAll && !effectiveCategory && (
+
+                {!isGlobalShopAll && (
                   <button
                     onClick={handleGlobalShopAll}
                     className="w-full mb-4 px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-900 transition-colors font-medium"
@@ -294,102 +333,55 @@ const CategoryPage = ({
 
                 {/* CATEGORIES LIST*/}
                 <div className="space-y-1">
-                  {(isGlobalShopAll || !effectiveCategory) ? (
-                    categories.map(category => (
+                  {(isGlobalShopAll
+                    ? categories
+                    : [effectiveCategory].filter(Boolean)
+                  ).map((category) => {
+                    const isActiveCategory =
+                      effectiveCategory?.id === category.id;
+
+                    return (
                       <div key={category.id}>
-                        {/* Category Button */}
                         <button
                           onClick={() => handleCategorySelect(category)}
                           className={`w-full text-left px-3 py-2 rounded transition-colors ${
-                            effectiveCategory?.id === category.id 
-                              ? 'bg-yellow-100 text-yellow-700 font-medium' 
-                              : 'hover:bg-gray-100 text-gray-700'
+                            isActiveCategory && !isGlobalShopAll
+                              ? "bg-yellow-100 text-yellow-700 font-medium"
+                              : "hover:bg-gray-50 text-gray-700"
                           }`}
                         >
                           {category.category_name || category.name}
                         </button>
-                        
-                        {(effectiveCategory?.id === category.id || isGlobalShopAll) && 
-                        category.subcategories?.length > 0 && (
-                          <div className="ml-4 mt-1 space-y-1">
-                            {/* Shop All for this category */}
-                            {effectiveCategory?.id === category.id && (
-                            <button
-                              onClick={() => handleShopAllCategory(category)}
-                              className={`w-full text-left px-3 py-1 rounded text-sm transition-colors ${
-                                isShopAllMode && effectiveCategory?.id === category.id
-                                  ? 'bg-yellow-50 text-yellow-600 font-medium'
-                                  : 'hover:bg-gray-50 text-gray-600'
-                              }`}
-                            >
-                              Shop All {category.category_name || category.name}
-                            </button>
+                        {(isGlobalShopAll || isActiveCategory) && (
+                          <div className="ml-4 mt-2 space-y-1">
+                            {category.subcategories?.length > 0 ? (
+                              <div className="space-y-1">
+                                {category.subcategories.map((subcat) => (
+                                  <button
+                                    key={subcat.id}
+                                    onClick={() =>
+                                      handleSubcategorySelect(subcat)
+                                    }
+                                    className={`w-full text-left px-3 py-1 rounded text-sm transition-colors ${
+                                      effectiveSubcategory?.id === subcat.id
+                                        ? "bg-yellow-50 text-yellow-600 font-medium"
+                                        : "hover:bg-gray-50 text-gray-600"
+                                    }`}
+                                  >
+                                    {subcat.sub_category_name || subcat.name}
+                                  </button>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="ml-4 text-xs text-gray-400">
+                                No subcategories available
+                              </div>
                             )}
-                            
-                            {/* Individual Subcategories */}
-                            {category.subcategories.map((subcategory) => (
-                              <button
-                                key={subcategory.id}
-                                onClick={() => {
-                                  onCategorySelect(category);
-                                  handleSubcategorySelect(subcategory);
-                                }}
-                                className={`w-full text-left px-3 py-1 rounded text-sm transition-colors ${
-                                  effectiveSubcategory?.id === subcategory.id
-                                    ? 'bg-yellow-50 text-yellow-600 font-medium'
-                                    : 'hover:bg-gray-50 text-gray-600'
-                                }`}
-                              >
-                                {subcategory.sub_category_name || subcategory.name}
-                              </button>
-                            ))}
                           </div>
                         )}
                       </div>
-                    ))
-                  ) : (
-                    <div>
-                      <div className="mb-3">
-                        <button
-                          onClick={() => handleCategorySelect(effectiveCategory)}
-                          className="w-full text-left px-3 py-2 rounded transition-colors bg-yellow-100 text-yellow-700 font-medium"
-                        >
-                          {effectiveCategory.category_name || effectiveCategory.name}
-                        </button>
-                      </div>
-
-                      <div className="ml-4 mb-2">
-                        <button
-                          onClick={() => handleShopAllCategory(effectiveCategory)}
-                          className={`w-full text-left px-3 py-1 rounded text-sm transition-colors ${
-                            isShopAllMode
-                              ? 'bg-yellow-50 text-yellow-600 font-medium'
-                              : 'hover:bg-gray-50 text-gray-600'
-                          }`}
-                        >
-                          Shop All {effectiveCategory.category_name || effectiveCategory.name}
-                        </button>
-                      </div>
-
-                      {effectiveCategory.subcategories?.length > 0 && (
-                        <div className="ml-4 space-y-1">
-                          {effectiveCategory.subcategories.map((subcategory) => (
-                            <button
-                              key={subcategory.id}
-                              onClick={() => handleSubcategorySelect(subcategory)}
-                              className={`w-full text-left px-3 py-1 rounded text-sm transition-colors ${
-                                effectiveSubcategory?.id === subcategory.id
-                                  ? 'bg-yellow-50 text-yellow-600 font-medium'
-                                  : 'hover:bg-gray-50 text-gray-600'
-                              }`}
-                            >
-                              {subcategory.sub_category_name || subcategory.name}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -402,9 +394,10 @@ const CategoryPage = ({
                       key={range.label}
                       onClick={() => handlePriceRangeChange(range)}
                       className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                        filters.priceRange[0] === range.min && filters.priceRange[1] === range.max
-                          ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
-                          : 'text-gray-600 hover:bg-gray-50'
+                        filters.priceRange[0] === range.min &&
+                        filters.priceRange[1] === range.max
+                          ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                          : "text-gray-600 hover:bg-gray-50"
                       }`}
                     >
                       {range.label}
@@ -418,7 +411,7 @@ const CategoryPage = ({
                 <div className="mb-6">
                   <h4 className="font-medium text-gray-900 mb-3">Brands</h4>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {availableBrands.map(brand => (
+                    {availableBrands.map((brand) => (
                       <label key={brand} className="flex items-center">
                         <input
                           type="checkbox"
@@ -439,26 +432,34 @@ const CategoryPage = ({
           <div className="flex-1">
             <div className="mb-6">
               <h1 className="text-3xl font-bold text-gray-900">
-                {isGlobalShopAll 
-                  ? 'All Products' 
-                  : isShopAllMode 
-                    ? `All ${effectiveCategory?.category_name || effectiveCategory?.name || 'Products'}` 
-                    : (effectiveCategory?.category_name || effectiveCategory?.name || 'Products')
-                }
+                {isGlobalShopAll
+                  ? "All Products"
+                  : isShopAllMode
+                  ? `All ${effectiveCategory?.category_name ||
+                      effectiveCategory?.name ||
+                      "Products"}`
+                  : effectiveCategory?.category_name ||
+                    effectiveCategory?.name ||
+                    "Products"}
               </h1>
               {isGlobalShopAll ? (
-                <p className="text-lg text-gray-600 mt-2">Browse all products from all categories</p>
-              ) : effectiveSubcategory && effectiveSubcategory.id !== 'all' ? (
                 <p className="text-lg text-gray-600 mt-2">
-                  {effectiveSubcategory.sub_category_name || effectiveSubcategory.name}
+                  Browse all products from all categories
+                </p>
+              ) : effectiveSubcategory && effectiveSubcategory.id !== "all" ? (
+                <p className="text-lg text-gray-600 mt-2">
+                  {effectiveSubcategory.sub_category_name ||
+                    effectiveSubcategory.name}
                 </p>
               ) : isShopAllMode ? (
                 <p className="text-lg text-gray-600 mt-2">
-                  All products in {effectiveCategory?.category_name || effectiveCategory?.name}
+                  All products in{" "}
+                  {effectiveCategory?.category_name || effectiveCategory?.name}
                 </p>
               ) : effectiveCategory ? (
                 <p className="text-lg text-gray-600 mt-2">
-                  Browse all products in {effectiveCategory.category_name || effectiveCategory.name}
+                  Browse all products in{" "}
+                  {effectiveCategory.category_name || effectiveCategory.name}
                 </p>
               ) : null}
             </div>
@@ -471,12 +472,14 @@ const CategoryPage = ({
             ) : sortedProducts.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-500 text-lg">No products found</p>
-                <p className="text-gray-400 text-sm mt-2">Try adjusting your filters or check back later</p>
+                <p className="text-gray-400 text-sm mt-2">
+                  Try adjusting your filters or check back later
+                </p>
               </div>
             ) : (
               <>
-                <ProductGrid 
-                  products={sortedProducts} 
+                <ProductGrid
+                  products={sortedProducts}
                   onProductClick={handleProductClick}
                   onAddToCart={onAddToCart}
                   onAddToWishlist={onAddToWishlist}
@@ -488,7 +491,7 @@ const CategoryPage = ({
                   onClose={() => setIsModalOpen(false)}
                   onAddToWishlist={onAddToWishlist}
                 />
-                
+
                 {hasMoreProducts() && (
                   <div className="text-center mt-8">
                     <button
@@ -496,7 +499,9 @@ const CategoryPage = ({
                       className="bg-yellow-500 text-black px-8 py-3 rounded-full font-semibold hover:bg-yellow-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={productsState.loading}
                     >
-                      {productsState.loading ? 'Loading...' : 'Load More Products'}
+                      {productsState.loading
+                        ? "Loading..."
+                        : "Load More Products"}
                     </button>
                   </div>
                 )}

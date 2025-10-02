@@ -64,6 +64,11 @@ const categoriesSlice = createSlice({
       const subcategoryId =
         typeof action.payload === 'object' ? action.payload.id : action.payload;
 
+      if (subcategoryId === 'all') {
+        state.selectedSubcategory = { id: 'all', name: 'All Products' }; 
+        return;
+        }
+
       if (!subcategoryId) {
         console.warn('No subcategory id provided');
         state.selectedSubcategory = null;

@@ -124,6 +124,9 @@ const AddProductPage = () => {
     if (newCategory.trim()) {
       try {
         const newCategoryData = await dispatch(createCategory({ category_name: newCategory.trim() })).unwrap();
+
+        await dispatch(fetchCategories()).unwrap();
+
         
         setFormData({
           ...formData,
@@ -132,6 +135,9 @@ const AddProductPage = () => {
         
         setNewCategory('');
         setShowNewCategory(false);
+
+        setShowNewSubcategory(true);
+
         alert('Category created and selected!');
       } catch (error) {
         toast.error('Failed to create category:', error);
@@ -143,9 +149,11 @@ const AddProductPage = () => {
     if (newSubcategory.trim() && formData.category) {
       try {
         const newSubcategoryData = await dispatch(createSubcategory({ 
-          subcategory_name: newSubcategory.trim(), 
+          sub_category_name: newSubcategory.trim(), 
           category_id: formData.category 
         })).unwrap();
+
+        await dispatch(fetchSubcategories()).unwrap();
         
         setFormData({
           ...formData,
