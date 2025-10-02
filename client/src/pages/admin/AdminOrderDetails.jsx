@@ -197,7 +197,7 @@ export default function AdminOrderDetails() {
 
   return (
     <div
-      className={`min-h-screen bg-gray-50 py-8" ${
+      className={`min-h-screen bg-gray-50 py-8 pt-12" ${
         showConfirmation ? "overflow-hidden" : ""
       }`}
     >

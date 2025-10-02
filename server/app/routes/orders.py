@@ -53,8 +53,14 @@ def get_orders():
             joinedload(Order.cart).joinedload(Cart.user),
             joinedload(Order.items).joinedload(OrderItem.product)
         ) 
+    
     if status and status != "all":
-        query = query.filter(Order.status == status)
+        try:
+            status_enum = OrderStatus[status]
+            query = query.filter(Order.status == status_enum.value)
+        except KeyError:
+            pass
+
 
     if search:
             query = query.join(Cart).join(User).filter(
