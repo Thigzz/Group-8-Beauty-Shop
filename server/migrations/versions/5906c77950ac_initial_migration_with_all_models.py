@@ -1,17 +1,17 @@
-"""Automated migration
+"""Initial migration with all models
 
-Revision ID: 94476ed68a66
+Revision ID: 5906c77950ac
 Revises: 
-Create Date: 2025-09-20 12:35:47.776926
+Create Date: 2025-10-02 20:27:28.438786
 
 """
 from alembic import op
-import server
 import sqlalchemy as sa
+import server
 
 
 # revision identifiers, used by Alembic.
-revision = '94476ed68a66'
+revision = '5906c77950ac'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -139,6 +139,7 @@ def upgrade():
     sa.Column('price', sa.Numeric(precision=10, scale=2), nullable=False),
     sa.Column('stock_qty', sa.Integer(), nullable=False),
     sa.Column('image_url', sa.String(length=255), nullable=True),
+    sa.Column('status', sa.Boolean(), nullable=False),
     sa.Column('category_id', server.app.models.base.GUID(), nullable=False),
     sa.Column('sub_category_id', server.app.models.base.GUID(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
@@ -161,9 +162,9 @@ def upgrade():
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('invoices',
-    sa.Column('invoice_number', sa.String(length=255), nullable=False),
-    sa.Column('order_id', sa.String(length=36), nullable=False),
-    sa.Column('user_id', sa.String(length=36), nullable=False),
+    sa.Column('order_id', server.app.models.base.GUID(), nullable=False),
+    sa.Column('user_id', server.app.models.base.GUID(), nullable=False),
+    sa.Column('invoice_number', sa.String(), nullable=False),
     sa.Column('amount', sa.Numeric(precision=10, scale=2), nullable=False),
     sa.Column('payment_status', sa.Enum('pending', 'paid', 'failed', name='paymentstatus'), nullable=True),
     sa.Column('paid_at', sa.DateTime(), nullable=True),
@@ -189,15 +190,17 @@ def upgrade():
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('payments',
-    sa.Column('invoice_id', sa.String(length=36), nullable=False),
+    sa.Column('invoice_id', sa.String(), nullable=False),
     sa.Column('payment_method', sa.Enum('mpesa', 'cash', 'credit_card', 'debit_card', 'voucher', name='paymentmethod'), nullable=True),
     sa.Column('amount', sa.Numeric(precision=10, scale=2), nullable=False),
-    sa.Column('transaction_id', sa.String(length=255), nullable=False),
+    sa.Column('transaction_id', sa.String(), nullable=True),
+    sa.Column('status', sa.Enum('pending', 'paid', 'failed', name='paymentstatus'), nullable=True),
     sa.Column('id', server.app.models.base.GUID(), nullable=False),
     sa.Column('created_at', sa.TIMESTAMP(timezone=True), nullable=True),
     sa.Column('updated_at', sa.TIMESTAMP(timezone=True), nullable=True),
     sa.ForeignKeyConstraint(['invoice_id'], ['invoices.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('transaction_id')
     )
     # ### end Alembic commands ###
 
