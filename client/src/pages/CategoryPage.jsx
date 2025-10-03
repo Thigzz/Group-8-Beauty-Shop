@@ -258,6 +258,10 @@ const CategoryPage = ({
               selectedCategory={effectiveCategory}
               selectedSubcategory={effectiveSubcategory}
               className="text-xl font-semibold"
+              sortBy={sortBy}
+              onSortChange={handleSortChange}
+              isLoading={productsState.loading}
+              showSort={true}
             />
           </div>
           <div className="flex justify-between items-center">
@@ -271,34 +275,6 @@ const CategoryPage = ({
                 Error: {productsState.error}
               </p>
             )}
-          </div>
-        </div>
-
-        {/* Sort & Filter */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 bg-white rounded-lg shadow-sm p-4">
-          <div></div>
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="lg:hidden bg-white border border-gray-300 rounded px-4 py-2 text-sm font-medium hover:bg-gray-50"
-            >
-              Filters
-            </button>
-            <div className="relative">
-              <select
-                value={sortBy}
-                onChange={(e) => handleSortChange(e.target.value)}
-                className="appearance-none bg-white border border-gray-300 rounded px-4 py-2 pr-8 focus:outline-none focus:border-yellow-500 text-sm"
-                disabled={productsState.loading}
-              >
-                <option value="Newest">Newest</option>
-                <option value="Price (Low → High)">Price (Low → High)</option>
-                <option value="Price (High → Low)">Price (High → Low)</option>
-                <option value="Name (A-Z)">Name (A-Z)</option>
-                <option value="Name (Z-A)">Name (Z-A)</option>
-              </select>
-              <ChevronDown className="absolute right-2 top-3 w-4 h-4 text-gray-500 pointer-events-none" />
-            </div>
           </div>
         </div>
 
