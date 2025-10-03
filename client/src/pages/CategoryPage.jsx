@@ -248,10 +248,10 @@ const CategoryPage = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <HeroSection category={effectiveCategory} />
 
-      <div className="container mx-auto px-4 py-6">
+      <div className="w-full mx-auto px-4 lg:px-6 xl:px-8 py-8 flex-1">
         <div className="mb-8 bg-white rounded-xl shadow-sm p-6">
           <div className="mb-4">
             <Breadcrumb
