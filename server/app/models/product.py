@@ -13,7 +13,7 @@ class Product(Base):
     description = Column(Text)
     price = Column(Numeric(10, 2), nullable=False)
     stock_qty = Column(Integer, nullable=False)
-    image_url = Column(String(255))
+    image_url = Column(Text)
     status = Column(Boolean, default=True, nullable=False)
 
 
