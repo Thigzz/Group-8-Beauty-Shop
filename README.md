@@ -1,4 +1,10 @@
 # 🛍️ Pambo Beauty Shop
+![React](https://img.shields.io/badge/Frontend-React-blue?logo=react)
+![Redux Toolkit](https://img.shields.io/badge/State-Redux_Toolkit-764ABC?logo=redux)
+![TailwindCSS](https://img.shields.io/badge/Styling-TailwindCSS-38B2AC?logo=tailwindcss)
+![Flask](https://img.shields.io/badge/Backend-Flask-000000?logo=flask)
+![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-336791?logo=postgresql)
+![CI/CD](https://img.shields.io/badge/CI/CD-GitHub_Actions-2088FF?logo=githubactions)
 
 The Pambo beauty Shop Application is a full-stack e-commerce platform that allows users to browse products, manage their carts, place orders, and track invoices. Admins can manage products view overall performance and manage customers on the platform.
 
@@ -102,77 +108,158 @@ An **admin user** can:
 A list of the available API routes can be found here: [API Routes](server/Routes.md)
 
 
-## Setup Instructions
-1. Clone the Repository
+## 🛠️ Setup Instructions
 
-    ``git clone git@github.com:Thigzz/Group-8-Beauty-Shop.git``
+### ⚙️ LOCAL SETUP
 
-    ``cd Group-8-Beauty-Shop``
+---
 
-2. Backend Setup
+#### 1. Clone the Repository
 
-    `cd server`
+* **What we’re doing:** Copy the project from GitHub to your local machine.
 
-    `python3 -m venv venv`
+```bash
+git clone git@github.com:Thigzz/Group-8-Beauty-Shop.git
+```
 
-    `source venv/bin/activate`  # (Linux/Mac)
+#### 2. Navigate into the Project Directory
 
-    `venv\Scripts\activate`     # (Windows)
+* **What we’re doing:** Enter the main project folder.
 
-    `pip install -r requirements.txt`
+```bash
+cd Group-8-Beauty-Shop
+```
 
-    `flask db upgrade`  # apply migrations
-    
-    `python seed.py`  # seed data
+#### 3. Create a Virtual Environment
 
-    `flask run`
+* **What we’re doing:** Set up an isolated environment for backend dependencies.
 
+```bash
+python3 -m venv venv
+```
 
-The backend will run at http://127.0.0.1:5000
+#### 4. Activate the Virtual Environment
 
-3. Frontend Setup
+* **What we’re doing:** Turn on the environment so Python uses the correct dependencies.
 
-    `cd client`
+```bash
+source venv/bin/activate  # (Linux/Mac)
+venv\Scripts\activate     # (Windows)
+```
 
-    `npm install`
+---
 
-    `npm run dev`
+### ⚙️ Backend Setup
 
+---
 
-The frontend will run at http://localhost:5173
+#### 5. Navigate to the Backend Folder
 
-## Running the Application
+* **What we’re doing:** Move into the backend directory.
 
-- Start the backend server (flask run).
+```bash
+cd server
+```
 
-- Start the frontend (npm run dev).
+#### 6. Install Dependencies
 
-- Open your browser at http://localhost:5173 to access the app.
+* **What we’re doing:** Install all Python dependencies for the backend.
 
+```bash
+pip install -r requirements.txt
+```
 
+#### 7. Apply Migrations
 
-## Authors
+* **What we’re doing:** Create and apply database tables.
 
-Ruth Siyoi
+```bash
+flask db upgrade
+```
 
-Ike Mwithiga
+#### 8. Seed the Database
 
-Justin Kipkorir
+* **What we’re doing:** Add starter data for testing.
 
-Simon Warui
+```bash
+flask seed-db
+```
 
-##  Acknowledgement
-1. Our technical mentors: Ian Okumu, Charles Swaleh and Kelvin Kipchumba for your guidance throughout this journey
+#### 9. Run the Backend Server
 
-2. Design inspiration : We thank https://www.lintonsbeauty.com/ for the inspiration it gave us to create our product
+* **What we’re doing:** Start the Flask backend API.
 
-3. Product and placeholder images sourced from open image libraries such as [Unsplash](https://unsplash.com/), [Pexels](https://www.pexels.com/), and other publicly available resources.  
+```bash
+flask run
+```
 
-## 📸 Image & Asset Credits  
-All images and icons used in this project are for **educational and demonstration purposes only**.  
-We do not own the rights to these images. Full rights belong to their respective owners and sources.  
+Backend runs at: `http://127.0.0.1:5000`
 
-## License
+---
+
+### 💻 Frontend Setup
+
+---
+
+#### 1. Navigate to Client Directory
+
+* **What we’re doing:** Move to the frontend folder.
+
+```bash
+cd ../client
+```
+
+#### 2. Install Dependencies
+
+* **What we’re doing:** Install all necessary frontend packages.
+
+```bash
+npm install
+```
+
+#### 3. Run the Frontend Server
+
+* **What we’re doing:** Start the local development environment for the frontend.
+
+```bash
+npm run dev
+```
+
+Frontend runs at: `http://localhost:5173`
+
+---
+
+## 🧪 Running the Application
+
+1. Start the backend (`flask run`)
+2. Start the frontend (`npm run dev`)
+3. Open your browser at `http://localhost:5173`
+
+---
+
+## 👨‍💻 Authors
+
+| Author                                                                                                                                                                            |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [![Ruth Siyoi](https://img.shields.io/badge/Ruth_Siyoi-100000?style=flat\&logo=github\&logoColor=white\&labelColor=black\&color=purple)](https://github.com/rsiyoi)               |
+| [![Ike Mwithiga](https://img.shields.io/badge/Ike_Mwithiga-100000?style=flat\&logo=github\&logoColor=white\&labelColor=black\&color=blue)](https://github.com/Thigzz)             |
+| [![Justin Kipkorir](https://img.shields.io/badge/Justin_Kipkorir-100000?style=flat\&logo=github\&logoColor=white\&labelColor=black\&color=green)](https://github.com/justin-0100) |
+| [![Simon Warui](https://img.shields.io/badge/Simon_Warui-100000?style=flat\&logo=github\&logoColor=white\&labelColor=black\&color=orange)](https://github.com/Simonwarui01)       |
+
+---
+
+## 📸 Image & Asset Credits
+
+All images and icons used are for **educational and demonstration purposes only**. Rights belong to their respective owners.
+
+---
+
+## 🪪 License
+
+**Copyright (c) 2025 Ruth Siyoi, Ike Mwithiga, Justin Kipkorir, Simon Warui**
+All rights reserved.
+
+This project is not open source. Unauthorized copying, modification, or distribution is strictly prohibited.
 
 Copyright (c) 2025 Ruth Siyoi, Ike Mwithiga, Justin Kipkorir, Simon Warui  
 All rights reserved.  
